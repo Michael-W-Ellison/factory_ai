@@ -36,7 +36,7 @@ class HUD:
         self.color_bad = (255, 100, 100)
         self.color_bg = (0, 0, 0)
 
-    def render(self, screen, resource_manager, entity_manager, clock=None):
+    def render(self, screen, resource_manager, entity_manager, clock=None, power_manager=None, building_manager=None):
         """
         Render the HUD.
 
@@ -45,13 +45,17 @@ class HUD:
             resource_manager: ResourceManager instance
             entity_manager: EntityManager instance
             clock: Pygame clock (optional, for FPS display)
+            power_manager: PowerManager instance (optional)
+            building_manager: BuildingManager instance (optional)
         """
         # Top-left panel: Resources and money
         self._render_resources_panel(screen, resource_manager, entity_manager)
 
-        # Top-right panel: Robot info
+        # Top-right panel: Robot info or Power info
         if entity_manager.selected_robot:
             self._render_robot_panel(screen, entity_manager.selected_robot)
+        elif power_manager and building_manager:
+            self._render_power_panel(screen, power_manager, building_manager)
 
         # Bottom-left: Controls help
         self._render_controls_help(screen)
@@ -187,6 +191,130 @@ class HUD:
         else:
             empty_text = self.font_small.render("Inventory: Empty", True, self.color_text)
             screen.blit(empty_text, (panel_x + 10, panel_y + y_offset))
+
+    def _render_power_panel(self, screen, power_manager, building_manager):
+        """Render power system info panel at top-right."""
+        panel_width = 240
+        panel_height = 200
+        panel_x = self.screen_width - panel_width - 10
+        panel_y = 10
+        line_height = 20
+
+        # Background panel
+        panel_surface = pygame.Surface((panel_width, panel_height))
+        panel_surface.set_alpha(180)
+        panel_surface.fill(self.color_bg)
+        screen.blit(panel_surface, (panel_x, panel_y))
+
+        # Title
+        title_text = self.font_medium.render("Power System", True, self.color_good)
+        screen.blit(title_text, (panel_x + 10, panel_y + 10))
+
+        y_offset = 35
+
+        # Power generation
+        generation = power_manager.total_generation
+        gen_text = self.font_small.render(
+            f"Generation: {generation:.1f}W",
+            True, self.color_good
+        )
+        screen.blit(gen_text, (panel_x + 10, panel_y + y_offset))
+        y_offset += line_height
+
+        # Power consumption
+        consumption = power_manager.total_consumption
+        cons_color = self.color_warning if consumption > generation else self.color_text
+        cons_text = self.font_small.render(
+            f"Consumption: {consumption:.1f}W",
+            True, cons_color
+        )
+        screen.blit(cons_text, (panel_x + 10, panel_y + y_offset))
+        y_offset += line_height
+
+        # Net power
+        net_power = generation - consumption
+        if net_power > 0:
+            net_color = self.color_good
+            net_label = "Surplus:"
+        elif net_power < 0:
+            net_color = self.color_bad
+            net_label = "Deficit:"
+        else:
+            net_color = self.color_text
+            net_label = "Net:"
+
+        net_text = self.font_small.render(
+            f"{net_label} {abs(net_power):.1f}W",
+            True, net_color
+        )
+        screen.blit(net_text, (panel_x + 10, panel_y + y_offset))
+        y_offset += line_height + 5
+
+        # Stored power
+        stored = power_manager.current_power
+        max_storage = power_manager.max_storage
+        storage_ratio = stored / max_storage if max_storage > 0 else 0
+
+        if storage_ratio < 0.2:
+            storage_color = self.color_bad
+        elif storage_ratio < 0.5:
+            storage_color = self.color_warning
+        else:
+            storage_color = self.color_good
+
+        storage_text = self.font_small.render(
+            f"Storage: {stored:.0f}/{max_storage:.0f}",
+            True, storage_color
+        )
+        screen.blit(storage_text, (panel_x + 10, panel_y + y_offset))
+        y_offset += line_height
+
+        # Storage bar
+        bar_x = panel_x + 10
+        bar_y = panel_y + y_offset
+        bar_width = panel_width - 20
+        bar_height = 15
+
+        # Background bar
+        pygame.draw.rect(screen, (50, 50, 50), (bar_x, bar_y, bar_width, bar_height))
+
+        # Fill bar
+        if storage_ratio > 0:
+            fill_width = int(bar_width * storage_ratio)
+            pygame.draw.rect(screen, storage_color, (bar_x, bar_y, fill_width, bar_height))
+
+        # Border
+        pygame.draw.rect(screen, (150, 150, 150), (bar_x, bar_y, bar_width, bar_height), 1)
+
+        y_offset += line_height + 5
+
+        # System status
+        if power_manager.blackout:
+            status = "STATUS: BLACKOUT"
+            status_color = self.color_bad
+        elif power_manager.brownout:
+            status = "STATUS: BROWNOUT"
+            status_color = self.color_warning
+        elif net_power > 0:
+            status = "STATUS: NORMAL"
+            status_color = self.color_good
+        else:
+            status = "STATUS: BALANCED"
+            status_color = self.color_text
+
+        status_text = self.font_small.render(status, True, status_color)
+        screen.blit(status_text, (panel_x + 10, panel_y + y_offset))
+        y_offset += line_height + 5
+
+        # Building counts
+        building_stats = building_manager.get_building_counts()
+        total_buildings = sum(building_stats.values())
+
+        buildings_text = self.font_small.render(
+            f"Buildings: {total_buildings}",
+            True, self.color_text
+        )
+        screen.blit(buildings_text, (panel_x + 10, panel_y + y_offset))
 
     def _render_controls_help(self, screen):
         """Render controls help at bottom-left."""

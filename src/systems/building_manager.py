@@ -111,7 +111,7 @@ class BuildingManager:
             Building or None: Building at position
         """
         building_id = self.grid_occupancy.get((grid_x, grid_y))
-        if building_id:
+        if building_id is not None:  # Fix: building_id can be 0 which is falsy
             return self.buildings.get(building_id)
         return None
 
@@ -206,6 +206,15 @@ class BuildingManager:
         for building in sorted_buildings:
             building.render(screen, camera)
 
+    def get_building_counts(self):
+        """
+        Get count of buildings by type.
+
+        Returns:
+            dict: Building type -> count
+        """
+        return {btype: len(blist) for btype, blist in self.buildings_by_type.items()}
+
     def get_stats(self):
         """
         Get statistics about buildings.
@@ -215,7 +224,7 @@ class BuildingManager:
         """
         return {
             'total_buildings': len(self.buildings),
-            'by_type': {btype: len(blist) for btype, blist in self.buildings_by_type.items()},
+            'by_type': self.get_building_counts(),
             'total_power_generation': self.calculate_total_power_generation(),
             'total_power_consumption': self.calculate_total_power_consumption(),
         }

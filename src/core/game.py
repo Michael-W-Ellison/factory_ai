@@ -254,7 +254,8 @@ class Game:
         self.entities.render(self.screen, self.camera)
 
         # Render HUD (overlays everything)
-        self.ui.render(self.screen, self.resources, self.entities, self.clock)
+        self.ui.render(self.screen, self.resources, self.entities, self.clock,
+                      self.power, self.buildings)
 
         # Show paused indicator
         if self.paused:
