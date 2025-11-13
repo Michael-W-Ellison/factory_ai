@@ -775,3 +775,309 @@ class PoliceStation(CityBuilding):
     def start_deconstruction(self) -> bool:
         """Police station cannot be deconstructed."""
         return False
+
+
+class FireHouse(CityBuilding):
+    """Fire station - emergency services building."""
+
+    def __init__(self, grid_x: int, grid_y: int):
+        """
+        Initialize a fire house.
+
+        Args:
+            grid_x (int): Grid X position
+            grid_y (int): Grid Y position
+        """
+        super().__init__(grid_x, grid_y, width=5, height=4, building_type='fire_house')
+
+        self.name = "Fire House"
+        self.legal_to_deconstruct = False  # Cannot deconstruct
+        self.deconstruction_time = 9999.0
+        self.noise_level = 10
+        self.color = (200, 80, 80)  # Red
+        self.outline_color = (150, 40, 40)
+        self.max_occupants = 12  # Firefighters
+
+        # No materials - cannot be deconstructed
+        self.materials = {}
+
+    def start_deconstruction(self) -> bool:
+        """Fire house cannot be deconstructed."""
+        return False
+
+
+class Library(CityBuilding):
+    """Public library - community building."""
+
+    def __init__(self, grid_x: int, grid_y: int):
+        """
+        Initialize a library.
+
+        Args:
+            grid_x (int): Grid X position
+            grid_y (int): Grid Y position
+        """
+        super().__init__(grid_x, grid_y, width=4, height=4, building_type='library')
+
+        self.name = "Library"
+        self.legal_to_deconstruct = False  # Public building
+        self.deconstruction_time = 9999.0
+        self.noise_level = 10
+        self.color = (140, 120, 100)  # Brown/tan
+        self.outline_color = (100, 80, 60)
+        self.max_occupants = 20  # Librarians and visitors
+
+        # No materials - cannot be deconstructed
+        self.materials = {}
+
+    def start_deconstruction(self) -> bool:
+        """Library cannot be deconstructed."""
+        return False
+
+
+class CityHall(CityBuilding):
+    """City hall - government building."""
+
+    def __init__(self, grid_x: int, grid_y: int):
+        """
+        Initialize city hall.
+
+        Args:
+            grid_x (int): Grid X position
+            grid_y (int): Grid Y position
+        """
+        super().__init__(grid_x, grid_y, width=6, height=5, building_type='city_hall')
+
+        self.name = "City Hall"
+        self.legal_to_deconstruct = False  # Government building
+        self.deconstruction_time = 9999.0
+        self.noise_level = 10
+        self.color = (180, 180, 200)  # Light blue-gray
+        self.outline_color = (130, 130, 150)
+        self.max_occupants = 30  # Government workers
+
+        # No materials - cannot be deconstructed
+        self.materials = {}
+
+    def start_deconstruction(self) -> bool:
+        """City hall cannot be deconstructed."""
+        return False
+
+
+class Courthouse(CityBuilding):
+    """Courthouse - government/judicial building."""
+
+    def __init__(self, grid_x: int, grid_y: int):
+        """
+        Initialize a courthouse.
+
+        Args:
+            grid_x (int): Grid X position
+            grid_y (int): Grid Y position
+        """
+        super().__init__(grid_x, grid_y, width=5, height=5, building_type='courthouse')
+
+        self.name = "Courthouse"
+        self.legal_to_deconstruct = False  # Government building
+        self.deconstruction_time = 9999.0
+        self.noise_level = 10
+        self.color = (160, 160, 180)  # Stone gray
+        self.outline_color = (110, 110, 130)
+        self.max_occupants = 25  # Judges, lawyers, staff
+
+        # No materials - cannot be deconstructed
+        self.materials = {}
+
+    def start_deconstruction(self) -> bool:
+        """Courthouse cannot be deconstructed."""
+        return False
+
+
+class School(CityBuilding):
+    """School - educational building."""
+
+    def __init__(self, grid_x: int, grid_y: int):
+        """
+        Initialize a school.
+
+        Args:
+            grid_x (int): Grid X position
+            grid_y (int): Grid Y position
+        """
+        super().__init__(grid_x, grid_y, width=6, height=6, building_type='school')
+
+        self.name = "School"
+        self.legal_to_deconstruct = False  # Public building
+        self.deconstruction_time = 9999.0
+        self.noise_level = 10
+        self.color = (200, 180, 140)  # Yellowish
+        self.outline_color = (150, 130, 90)
+        self.max_occupants = 50  # Teachers and students during day
+
+        # No materials - cannot be deconstructed
+        self.materials = {}
+
+    def start_deconstruction(self) -> bool:
+        """School cannot be deconstructed."""
+        return False
+
+
+class BusTerminal(CityBuilding):
+    """Bus terminal - public transportation hub."""
+
+    def __init__(self, grid_x: int, grid_y: int):
+        """
+        Initialize a bus terminal.
+
+        Args:
+            grid_x (int): Grid X position
+            grid_y (int): Grid Y position
+        """
+        super().__init__(grid_x, grid_y, width=6, height=4, building_type='bus_terminal')
+
+        self.name = "Bus Terminal"
+        self.legal_to_deconstruct = False  # Public infrastructure
+        self.deconstruction_time = 9999.0
+        self.noise_level = 10
+        self.color = (180, 200, 180)  # Light green
+        self.outline_color = (130, 150, 130)
+        self.max_occupants = 30  # Staff and waiting passengers
+
+        # Bus routes (will be populated by city generator)
+        self.bus_routes = []
+
+        # No materials - cannot be deconstructed
+        self.materials = {}
+
+    def start_deconstruction(self) -> bool:
+        """Bus terminal cannot be deconstructed."""
+        return False
+
+
+class TrainStation(CityBuilding):
+    """Train station - cargo and passenger terminal."""
+
+    def __init__(self, grid_x: int, grid_y: int):
+        """
+        Initialize a train station.
+
+        Args:
+            grid_x (int): Grid X position
+            grid_y (int): Grid Y position
+        """
+        super().__init__(grid_x, grid_y, width=8, height=6, building_type='train_station')
+
+        self.name = "Train Station"
+        self.legal_to_deconstruct = False  # Public infrastructure
+        self.deconstruction_time = 9999.0
+        self.noise_level = 10
+        self.color = (120, 140, 120)  # Dark green
+        self.outline_color = (70, 90, 70)
+        self.max_occupants = 25
+
+        # Marketplace functionality
+        self.is_marketplace = True
+        self.accepts_materials = ['metal', 'plastic', 'glass', 'paper', 'rubber', 'textile', 'electronic', 'wood']
+        self.material_prices = {  # Per kg
+            'metal': 2.5,
+            'plastic': 1.8,
+            'glass': 1.2,
+            'paper': 0.8,
+            'rubber': 2.0,
+            'textile': 1.5,
+            'electronic': 5.0,
+            'wood': 1.0,
+        }
+
+        # No materials - cannot be deconstructed
+        self.materials = {}
+
+    def start_deconstruction(self) -> bool:
+        """Train station cannot be deconstructed."""
+        return False
+
+
+class Warehouse(CityBuilding):
+    """Warehouse - bulk materials marketplace."""
+
+    def __init__(self, grid_x: int, grid_y: int):
+        """
+        Initialize a warehouse.
+
+        Args:
+            grid_x (int): Grid X position
+            grid_y (int): Grid Y position
+        """
+        super().__init__(grid_x, grid_y, width=7, height=7, building_type='warehouse')
+
+        self.name = "Warehouse"
+        self.legal_to_deconstruct = False  # Commercial building
+        self.deconstruction_time = 9999.0
+        self.noise_level = 10
+        self.color = (140, 140, 140)  # Gray
+        self.outline_color = (90, 90, 90)
+        self.max_occupants = 15
+
+        # Marketplace functionality
+        self.is_marketplace = True
+        self.accepts_materials = ['metal', 'plastic', 'glass', 'paper', 'rubber', 'textile', 'electronic', 'wood']
+        self.material_prices = {  # Per kg
+            'metal': 2.3,
+            'plastic': 1.6,
+            'glass': 1.0,
+            'paper': 0.7,
+            'rubber': 1.8,
+            'textile': 1.3,
+            'electronic': 4.5,
+            'wood': 0.9,
+        }
+
+        # No materials - cannot be deconstructed
+        self.materials = {}
+
+    def start_deconstruction(self) -> bool:
+        """Warehouse cannot be deconstructed."""
+        return False
+
+
+class Dock(CityBuilding):
+    """Dock - waterfront shipping terminal."""
+
+    def __init__(self, grid_x: int, grid_y: int):
+        """
+        Initialize a dock.
+
+        Args:
+            grid_x (int): Grid X position
+            grid_y (int): Grid Y position
+        """
+        super().__init__(grid_x, grid_y, width=10, height=5, building_type='dock')
+
+        self.name = "Dock"
+        self.legal_to_deconstruct = False  # Infrastructure
+        self.deconstruction_time = 9999.0
+        self.noise_level = 10
+        self.color = (100, 120, 140)  # Blue-gray
+        self.outline_color = (60, 70, 90)
+        self.max_occupants = 20
+
+        # Marketplace functionality
+        self.is_marketplace = True
+        self.accepts_materials = ['metal', 'plastic', 'glass', 'paper', 'rubber', 'textile', 'electronic', 'wood']
+        self.material_prices = {  # Per kg (best prices - shipping bulk)
+            'metal': 2.8,
+            'plastic': 2.0,
+            'glass': 1.3,
+            'paper': 0.9,
+            'rubber': 2.2,
+            'textile': 1.7,
+            'electronic': 5.5,
+            'wood': 1.1,
+        }
+
+        # No materials - cannot be deconstructed
+        self.materials = {}
+
+    def start_deconstruction(self) -> bool:
+        """Dock cannot be deconstructed."""
+        return False
