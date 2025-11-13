@@ -323,6 +323,13 @@ def test_construction_manager_start():
     assert len(construction_mgr.active_sites) == 1, "Should have started construction"
     assert construction_mgr.queue[0].started, "Order should be marked as started"
 
+    # Assign a robot to the construction site
+    site = construction_mgr.active_sites[0]
+    success = construction_mgr.assign_robot_to_site(robot_id=1, site=site)
+    print(f"  Assigned robot to site: {success}")
+    assert success, "Should assign robot successfully"
+    assert len(site.robots_working) == 1, "Site should have 1 robot"
+
     print("  ✓ Construction manager starts construction correctly")
 
 
@@ -353,6 +360,11 @@ def test_construction_completion():
 
     print(f"  Active sites: {len(construction_mgr.active_sites)}")
     print(f"  Buildings: {len(building_manager.buildings)}")
+
+    # Assign a robot to the construction site
+    site = construction_mgr.active_sites[0]
+    construction_mgr.assign_robot_to_site(robot_id=1, site=site)
+    print(f"  Assigned robot to construction site")
 
     # Complete construction (1 second + a bit)
     construction_mgr.update(1.5)

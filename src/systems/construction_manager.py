@@ -232,9 +232,18 @@ class ConstructionManager:
         # Start queued constructions if under max concurrent
         while (len(self.active_sites) < self.max_concurrent and
                len(self.queue) > 0):
-            order = self.queue[0]
-            if not order.started:
-                self._start_construction(order)
+            # Find first unstarted order
+            unstarted_order = None
+            for order in self.queue:
+                if not order.started:
+                    unstarted_order = order
+                    break
+
+            # If found, start it; otherwise break
+            if unstarted_order:
+                self._start_construction(unstarted_order)
+            else:
+                break
 
         # Update active construction sites
         for site in self.active_sites[:]:
@@ -293,6 +302,13 @@ class ConstructionManager:
         if order is None:
             return
 
+        # Free construction site tiles BEFORE placing building
+        for dy in range(order.height_tiles):
+            for dx in range(order.width_tiles):
+                tile = self.grid.get_tile(order.grid_x + dx, order.grid_y + dy)
+                if tile:
+                    tile.occupied = False
+
         # Import building classes as needed
         # This is a simplified version - in practice you'd have a factory pattern
         from src.entities.buildings.factory import Factory
@@ -307,16 +323,9 @@ class ConstructionManager:
         # Add more building types as needed
 
         if building:
-            # Place the building
+            # Place the building (building manager will mark tiles as occupied)
             self.building_manager.place_building(building)
             print(f"Construction complete: {building.name} at ({order.grid_x}, {order.grid_y})")
-
-        # Free construction site tiles (building manager will re-occupy)
-        for dy in range(order.height_tiles):
-            for dx in range(order.width_tiles):
-                tile = self.grid.get_tile(order.grid_x + dx, order.grid_y + dy)
-                if tile:
-                    tile.occupied = False
 
         # Remove from active sites and queue
         self.active_sites.remove(site)
