@@ -13,8 +13,13 @@ class EntityManager:
     Handles creation, updating, rendering, and removal of entities.
     """
 
-    def __init__(self):
-        """Initialize the entity manager."""
+    def __init__(self, grid=None, resource_manager=None):
+        """Initialize the entity manager.
+
+        Args:
+            grid: Grid object (for pathfinding)
+            resource_manager: ResourceManager (for depositing materials)
+        """
         # All entities by ID
         self.entities = {}
 
@@ -26,23 +31,35 @@ class EntityManager:
         # Selected robot (for player control)
         self.selected_robot = None
 
-    def create_robot(self, x, y):
+        # Systems
+        self.grid = grid
+        self.resource_manager = resource_manager
+
+        # Factory position (for robots to return to)
+        self.factory_pos = None
+
+    def create_robot(self, x, y, autonomous=True):
         """
         Create a new robot.
 
         Args:
             x (float): World X position
             y (float): World Y position
+            autonomous (bool): If True, robot operates autonomously
 
         Returns:
             Robot: The created robot
         """
-        robot = Robot(x, y)
+        robot = Robot(x, y, autonomous=autonomous)
         self.entities[robot.id] = robot
         self.robots.append(robot)
 
-        # Auto-select first robot
-        if self.selected_robot is None:
+        # Set factory position if available
+        if self.factory_pos:
+            robot.factory_pos = self.factory_pos
+
+        # Auto-select first robot if not autonomous
+        if not autonomous and self.selected_robot is None:
             self.select_robot(robot)
 
         print(f"Created {robot}")
@@ -129,15 +146,32 @@ class EntityManager:
         Args:
             dt (float): Delta time in seconds
         """
-        # Update all entities
-        for entity in list(self.entities.values()):
-            entity.update(dt)
+        # Update robots with grid and entity_manager context
+        for robot in self.robots:
+            robot.update(dt, grid=self.grid, entity_manager=self)
+
+        # Update other entities (collectibles don't need special context)
+        for collectible in self.collectibles:
+            collectible.update(dt)
 
         # Handle collection for all robots
         self._handle_collection()
 
         # Remove inactive entities
         self._remove_inactive_entities()
+
+    def set_factory_position(self, x, y):
+        """
+        Set the factory position for all robots.
+
+        Args:
+            x (float): World X position of factory
+            y (float): World Y position of factory
+        """
+        self.factory_pos = (x, y)
+        # Update existing robots
+        for robot in self.robots:
+            robot.factory_pos = self.factory_pos
 
     def _handle_collection(self):
         """

@@ -108,7 +108,7 @@ class HUD:
     def _render_robot_panel(self, screen, robot):
         """Render selected robot info panel at top-right."""
         panel_width = 220
-        panel_height = 140
+        panel_height = 165
         panel_x = self.screen_width - panel_width - 10
         panel_y = 10
         line_height = 20
@@ -120,11 +120,21 @@ class HUD:
         screen.blit(panel_surface, (panel_x, panel_y))
 
         # Title
+        mode = "AUTO" if robot.autonomous else "MANUAL"
         title_text = self.font_medium.render(
-            f"Robot #{robot.id}",
+            f"Robot #{robot.id} [{mode}]",
             True, self.color_good
         )
         screen.blit(title_text, (panel_x + 10, panel_y + 10))
+
+        # State (for autonomous robots)
+        if robot.autonomous:
+            state_name = robot.state.name if hasattr(robot.state, 'name') else str(robot.state)
+            state_text = self.font_small.render(
+                f"State: {state_name}",
+                True, self.color_text
+            )
+            screen.blit(state_text, (panel_x + 10, panel_y + 35))
 
         # Inventory load
         load_ratio = robot.current_load / robot.max_capacity if robot.max_capacity > 0 else 0
@@ -135,11 +145,12 @@ class HUD:
         else:
             load_color = self.color_good
 
+        y_offset = 55 if robot.autonomous else 35
         load_text = self.font_small.render(
             f"Load: {robot.current_load:.1f}/{robot.max_capacity}kg",
             True, load_color
         )
-        screen.blit(load_text, (panel_x + 10, panel_y + 35))
+        screen.blit(load_text, (panel_x + 10, panel_y + y_offset))
 
         # Power
         power_ratio = robot.current_power / robot.power_capacity if robot.power_capacity > 0 else 0
@@ -150,14 +161,15 @@ class HUD:
         else:
             power_color = self.color_good
 
+        y_offset += 20
         power_text = self.font_small.render(
             f"Power: {robot.current_power:.0f}/{robot.power_capacity}",
             True, power_color
         )
-        screen.blit(power_text, (panel_x + 10, panel_y + 55))
+        screen.blit(power_text, (panel_x + 10, panel_y + y_offset))
 
         # Inventory contents (top 3 materials)
-        y_offset = 80
+        y_offset += 25
         if robot.inventory:
             inv_title = self.font_small.render("Inventory:", True, self.color_text)
             screen.blit(inv_title, (panel_x + 10, panel_y + y_offset))

@@ -33,6 +33,7 @@ class Colors:
 class RobotState(Enum):
     """Robot behavior states."""
     IDLE = auto()
+    MANUAL = auto()  # Player is manually controlling
     MOVING_TO_OBJECT = auto()
     COLLECTING = auto()
     RETURNING_TO_FACTORY = auto()

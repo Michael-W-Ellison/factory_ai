@@ -55,9 +55,14 @@ class Game:
         self.camera.center_on(config.WORLD_WIDTH // 2, config.WORLD_HEIGHT // 2)
 
         # Initialize game systems
-        self.entities = EntityManager()
         self.resources = ResourceManager()
+        self.entities = EntityManager(grid=self.grid, resource_manager=self.resources)
         self.ui = HUD(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
+
+        # Set factory position (center of world)
+        factory_world_x = config.WORLD_WIDTH // 2
+        factory_world_y = config.WORLD_HEIGHT // 2
+        self.entities.set_factory_position(factory_world_x, factory_world_y)
 
         # Create initial game entities
         self._create_test_entities()
@@ -72,9 +77,13 @@ class Game:
         center_x = config.WORLD_WIDTH // 2
         center_y = config.WORLD_HEIGHT // 2
 
-        # Create 2 robots
-        self.entities.create_robot(center_x - 50, center_y + 100)
-        self.entities.create_robot(center_x + 50, center_y + 100)
+        # Create 2 autonomous robots
+        self.entities.create_robot(center_x - 50, center_y + 100, autonomous=True)
+        self.entities.create_robot(center_x + 50, center_y + 100, autonomous=True)
+
+        # Create 1 manual robot for player control
+        manual_robot = self.entities.create_robot(center_x, center_y + 150, autonomous=False)
+        self.entities.select_robot(manual_robot)
 
         # Create collectibles in the landfill area (left side)
         # The landfill is roughly at x: 5-25 tiles, y: 10-30 tiles
