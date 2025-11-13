@@ -368,6 +368,10 @@ class CityBuilding:
         # Draw main building body
         pygame.draw.rect(screen, fill_color, (screen_x, screen_y, width_px, height_px))
 
+        # Draw deconstruction damage effects
+        if self.being_deconstructed:
+            self._render_deconstruction_damage(screen, screen_x, screen_y, width_px, height_px)
+
         # Draw roof if specified
         if self.visuals.get('roof_color'):
             roof_color = self.visuals['roof_color']
@@ -504,6 +508,76 @@ class CityBuilding:
         knob_x = door_x + door_width - knob_size - 2
         knob_y = door_y + door_height // 2
         pygame.draw.circle(screen, (200, 180, 100), (knob_x, knob_y), knob_size)
+
+    def _render_deconstruction_damage(self, screen, base_x, base_y, width, height):
+        """Render progressive deconstruction damage based on progress."""
+        import random
+
+        progress = self.deconstruction_progress
+        damage_seed = self.grid_x * 1000 + self.grid_y
+        rng = random.Random(damage_seed)
+
+        # Stage 1 (0-25%): Broken windows (black out windows)
+        if progress > 0.0:
+            window_pattern = self.visuals.get('window_pattern', {})
+            rows = window_pattern.get('rows', 2)
+            cols = window_pattern.get('cols', 2)
+
+            # Calculate window positions (simplified from _draw_windows)
+            window_width = max(4, int(width / (cols + 2) * 0.8))
+            window_height = max(4, int(height / (rows + 3) * 0.7))
+            margin_x = (width - (window_width * cols)) // (cols + 1)
+            margin_y = (height - (window_height * rows)) // (rows + 2)
+            start_y = base_y + margin_y
+
+            # Break windows progressively
+            for row in range(rows):
+                for col in range(cols):
+                    # More windows break as progress increases
+                    if rng.random() < (progress / 0.25):
+                        win_x = base_x + margin_x + col * (window_width + margin_x)
+                        win_y = start_y + row * (window_height + margin_y)
+                        # Draw black/broken window
+                        pygame.draw.rect(screen, (20, 20, 20), (win_x, win_y, window_width, window_height))
+                        # Cracks
+                        pygame.draw.line(screen, (40, 40, 40), (win_x, win_y), (win_x + window_width, win_y + window_height), 1)
+                        pygame.draw.line(screen, (40, 40, 40), (win_x + window_width, win_y), (win_x, win_y + window_height), 1)
+
+        # Stage 2 (25-50%): Holes in walls
+        if progress > 0.25:
+            num_holes = int((progress - 0.25) / 0.25 * 5)
+            for i in range(num_holes):
+                hole_x = base_x + rng.randint(int(width * 0.1), int(width * 0.9))
+                hole_y = base_y + rng.randint(int(height * 0.2), int(height * 0.8))
+                hole_size = rng.randint(4, 8)
+                pygame.draw.circle(screen, (30, 30, 30), (hole_x, hole_y), hole_size)
+                pygame.draw.circle(screen, (60, 60, 60), (hole_x, hole_y), hole_size, 1)
+
+        # Stage 3 (50-75%): Partial wall collapse (vertical cracks)
+        if progress > 0.5:
+            num_cracks = int((progress - 0.5) / 0.25 * 4)
+            for i in range(num_cracks):
+                crack_x = base_x + rng.randint(int(width * 0.1), int(width * 0.9))
+                crack_width = rng.randint(2, 4)
+                crack_color = (40, 40, 40)
+                pygame.draw.rect(screen, crack_color, (crack_x, base_y, crack_width, height))
+
+        # Stage 4 (75-100%): Rubble and debris
+        if progress > 0.75:
+            # Draw rubble piles
+            num_rubble = int((progress - 0.75) / 0.25 * 8)
+            for i in range(num_rubble):
+                rubble_x = base_x + rng.randint(0, width)
+                rubble_y = base_y + height - rng.randint(5, 15)
+                rubble_size = rng.randint(3, 6)
+                rubble_color = tuple(max(0, int(c * 0.6)) for c in self.color)
+                pygame.draw.circle(screen, rubble_color, (rubble_x, rubble_y), rubble_size)
+
+            # Missing wall sections (show as background)
+            if progress > 0.85:
+                section_width = int(width * 0.3)
+                section_x = base_x + rng.randint(0, width - section_width)
+                pygame.draw.rect(screen, (50, 50, 50), (section_x, base_y, section_width, height))
 
     def __repr__(self):
         """String representation for debugging."""
