@@ -25,6 +25,8 @@ from src.systems.police_manager import PoliceManager
 from src.ui.hud import HUD
 from src.ui.research_ui import ResearchUI
 from src.entities.buildings import Factory, LandfillGasExtraction
+from src.world.river_generator import RiverGenerator
+from src.world.bridge_builder import BridgeBuilder
 
 
 class Game:
@@ -65,6 +67,13 @@ class Game:
 
         # Generate procedural city
         self.grid.generate_city(seed=42)  # Use seed for consistent testing
+
+        # Initialize geographic features (rivers, bridges, ocean)
+        self.river_generator = RiverGenerator(self.grid, seed=42)
+        self.bridge_builder = BridgeBuilder(self.grid, resource_manager=None)
+
+        # Generate geographic features
+        self._generate_geographic_features()
 
         # Center camera on factory (middle of world)
         self.camera.center_on(config.WORLD_WIDTH // 2, config.WORLD_HEIGHT // 2)
@@ -175,6 +184,40 @@ class Game:
             self.entities.create_collectible(x, y, material, quantity)
 
         print(f"Created {len(self.entities.robots)} robots and {len(self.entities.collectibles)} collectibles")
+
+    def _generate_geographic_features(self):
+        """Generate rivers, ocean, and bridges for the game world."""
+        print("Generating geographic features...")
+
+        # Generate ocean at south edge (for aesthetic/gameplay boundary)
+        ocean_stats = self.river_generator.generate_ocean(
+            edges=['south'],
+            depth=4,
+            create_docks=True,
+            dock_spacing=12
+        )
+
+        # Generate 1-2 rivers across the map
+        river_count = random.randint(1, 2)
+        for i in range(river_count):
+            self.river_generator.generate_random_river(
+                width_range=(3, 4),
+                length_range=(25, 40),
+                meandering=0.25,
+                avoid_buildings=True
+            )
+
+        # Auto-place bridges at narrow crossing points
+        bridge_results = self.bridge_builder.auto_place_bridges(
+            max_bridges=3,
+            max_width=6,
+            min_width=2,
+            pay_cost=False  # Free bridges during world generation
+        )
+
+        successful_bridges = sum(1 for success, _, _ in bridge_results if success)
+        print(f"Geographic features generated: {ocean_stats['ocean_tiles']} ocean tiles, "
+              f"{ocean_stats['dock_tiles']} docks, {river_count} rivers, {successful_bridges} bridges")
 
     def _register_landfill_pollution(self):
         """Register all landfill tiles as pollution sources based on their fullness."""

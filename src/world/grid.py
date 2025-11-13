@@ -291,17 +291,18 @@ class Grid:
 
     def update(self, dt):
         """
-        Update grid state (placeholder for future use).
+        Update grid state (water animations, terrain effects).
 
         Args:
             dt (float): Delta time in seconds
         """
-        # For now, the grid doesn't need updating
-        # Later, this could handle things like:
-        # - Landfill regeneration
-        # - Terrain changes
-        # - Environmental effects
-        pass
+        # Update water tile animations
+        for y in range(self.height_tiles):
+            for x in range(self.width_tiles):
+                tile = self.tiles[y][x]
+                if tile:
+                    # Update water/ocean animation frames
+                    tile.update_animation(dt)
 
     def __repr__(self):
         """String representation for debugging."""
