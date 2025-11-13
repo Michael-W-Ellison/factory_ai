@@ -18,6 +18,7 @@ from src.systems.research_manager import ResearchManager
 from src.systems.pollution_manager import PollutionManager
 from src.systems.vehicle_manager import VehicleManager
 from src.systems.fence_manager import FenceManager
+from src.systems.npc_manager import NPCManager
 from src.ui.hud import HUD
 from src.ui.research_ui import ResearchUI
 from src.entities.buildings import Factory, LandfillGasExtraction
@@ -73,6 +74,7 @@ class Game:
         self.pollution = PollutionManager(grid_width, grid_height)
         self.vehicles = VehicleManager(self.grid)
         self.fences = FenceManager(self.grid)
+        self.npcs = NPCManager(self.grid)
         self.entities = EntityManager(grid=self.grid, resource_manager=self.resources, research_manager=self.research)
         self.ui = HUD(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
         self.research_ui = ResearchUI(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
@@ -100,6 +102,9 @@ class Game:
 
         # Spawn fences around buildings
         self.fences.spawn_fences_around_buildings(seed=42, fence_coverage=0.6)
+
+        # Spawn NPCs in the city
+        self.npcs.spawn_npcs_in_city(seed=42)
 
         print("Game initialized successfully!")
         print(f"World size: {config.WORLD_WIDTH}x{config.WORLD_HEIGHT} pixels")
@@ -300,6 +305,9 @@ class Game:
         # Update fences
         self.fences.update(adjusted_dt)
 
+        # Update NPCs
+        self.npcs.update(adjusted_dt)
+
     def _handle_robot_input(self):
         """Handle arrow key input for controlling the selected robot."""
         if not self.entities.selected_robot:
@@ -338,6 +346,9 @@ class Game:
 
         # Render fences (after vehicles, before entities)
         self.fences.render(self.screen, self.camera)
+
+        # Render NPCs (after fences, before entities)
+        self.npcs.render(self.screen, self.camera)
 
         # Render entities
         self.entities.render(self.screen, self.camera)
