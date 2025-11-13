@@ -19,6 +19,7 @@ from src.systems.pollution_manager import PollutionManager
 from src.systems.vehicle_manager import VehicleManager
 from src.systems.fence_manager import FenceManager
 from src.systems.npc_manager import NPCManager
+from src.systems.detection_manager import DetectionManager
 from src.ui.hud import HUD
 from src.ui.research_ui import ResearchUI
 from src.entities.buildings import Factory, LandfillGasExtraction
@@ -75,6 +76,7 @@ class Game:
         self.vehicles = VehicleManager(self.grid)
         self.fences = FenceManager(self.grid)
         self.npcs = NPCManager(self.grid)
+        self.detection = DetectionManager(self.grid, self.npcs)
         self.entities = EntityManager(grid=self.grid, resource_manager=self.resources, research_manager=self.research)
         self.ui = HUD(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
         self.research_ui = ResearchUI(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
@@ -308,6 +310,10 @@ class Game:
         # Update NPCs
         self.npcs.update(adjusted_dt)
 
+        # Update detection system
+        detection_reports = self.detection.update(self.entities.robots, adjusted_dt)
+        # TODO: Handle detection reports (increase suspicion)
+
     def _handle_robot_input(self):
         """Handle arrow key input for controlling the selected robot."""
         if not self.entities.selected_robot:
@@ -352,6 +358,9 @@ class Game:
 
         # Render entities
         self.entities.render(self.screen, self.camera)
+
+        # Render detection UI (after entities)
+        self.detection.render_detection_ui(self.screen, self.camera, self.entities.robots)
 
         # Render pollution overlay (if enabled)
         self.pollution.render_overlay(self.screen, self.camera, config.TILE_SIZE)
