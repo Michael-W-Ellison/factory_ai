@@ -56,6 +56,9 @@ class Game:
         # Create test world
         self.grid.create_test_world()
 
+        # Generate procedural city
+        self.grid.generate_city(seed=42)  # Use seed for consistent testing
+
         # Center camera on factory (middle of world)
         self.camera.center_on(config.WORLD_WIDTH // 2, config.WORLD_HEIGHT // 2)
 

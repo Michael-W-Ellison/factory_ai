@@ -5,6 +5,10 @@ Grid class - manages the tile-based game world.
 import pygame
 import random
 from src.world.tile import Tile, TileType
+from src.world.city_generator import CityGenerator
+from src.entities.city_building import (
+    CityBuilding, House, Store, Office, CityFactory, PoliceStation
+)
 
 
 class Grid:
@@ -39,6 +43,11 @@ class Grid:
                 tile = Tile(x, y, TileType.GRASS)
                 row.append(tile)
             self.tiles.append(row)
+
+        # City generation
+        self.city_generator = None
+        self.city_buildings = []  # List of CityBuilding instances
+        self.city_generated = False
 
         print(f"Grid created: {width_tiles}x{height_tiles} tiles ({self.world_width}x{self.world_height} pixels)")
 
@@ -169,6 +178,78 @@ class Grid:
 
         print("Test world created with factory, landfill, and city areas")
 
+    def generate_city(self, seed=None):
+        """
+        Generate a procedural city with buildings and roads.
+
+        Args:
+            seed (int, optional): Random seed for reproducible generation
+        """
+        if self.city_generated:
+            print("City already generated")
+            return
+
+        print("Generating city...")
+
+        # Create city generator
+        self.city_generator = CityGenerator(
+            self.world_width,
+            self.world_height,
+            self.tile_size
+        )
+
+        # Generate city data
+        city_data = self.city_generator.generate(seed=seed)
+
+        # Apply roads to tiles
+        for (road_x, road_y) in city_data['road_tiles']:
+            self.set_tile_type(road_x, road_y, TileType.ROAD_TAR)
+
+        # Create building instances
+        building_map = {
+            'house': lambda data: House(
+                data['x'], data['y'],
+                livable=(data['subtype'] == 'livable')
+            ),
+            'store': lambda data: Store(data['x'], data['y']),
+            'office': lambda data: Office(data['x'], data['y']),
+            'city_factory': lambda data: CityFactory(data['x'], data['y']),
+            'police_station': lambda data: PoliceStation(data['x'], data['y'])
+        }
+
+        for building_data in city_data['buildings']:
+            building_type = building_data['type']
+            if building_type in building_map:
+                building = building_map[building_type](building_data)
+                self.city_buildings.append(building)
+
+                # Mark tiles as building tiles
+                for by in range(building.height):
+                    for bx in range(building.width):
+                        tile_x = building.grid_x + bx
+                        tile_y = building.grid_y + by
+                        if 0 <= tile_x < self.width_tiles and 0 <= tile_y < self.height_tiles:
+                            self.set_tile_type(tile_x, tile_y, TileType.BUILDING)
+
+        self.city_generated = True
+        print(f"City generated with {len(self.city_buildings)} buildings")
+
+    def get_city_building_at(self, grid_x, grid_y):
+        """
+        Get city building at grid position.
+
+        Args:
+            grid_x (int): Grid X coordinate
+            grid_y (int): Grid Y coordinate
+
+        Returns:
+            CityBuilding or None
+        """
+        for building in self.city_buildings:
+            if building.contains_point(grid_x, grid_y):
+                return building
+        return None
+
     def render(self, screen, camera, show_grid=True):
         """
         Render the visible portion of the grid.
@@ -199,6 +280,14 @@ class Grid:
 
                 # Render the tile
                 tile.render(screen, screen_x, screen_y, self.tile_size, show_grid)
+
+        # Render city buildings (on top of tiles)
+        if self.city_generated:
+            for building in self.city_buildings:
+                # Check if building is in visible area
+                if (building.grid_x < end_x and building.grid_x + building.width > start_x and
+                    building.grid_y < end_y and building.grid_y + building.height > start_y):
+                    building.render(screen, camera, self.tile_size)
 
     def update(self, dt):
         """
