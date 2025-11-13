@@ -88,6 +88,9 @@ class Game:
         self.pollution.add_source(center_grid_x, center_grid_y, 2.0)  # Factory pollution
         self.pollution.add_source(15, 20, 1.0)  # Landfill gas extraction pollution
 
+        # Register landfill tiles as pollution sources
+        self._register_landfill_pollution()
+
         print("Game initialized successfully!")
         print(f"World size: {config.WORLD_WIDTH}x{config.WORLD_HEIGHT} pixels")
         print(f"Grid size: {grid_width}x{grid_height} tiles")
@@ -148,6 +151,24 @@ class Game:
             self.entities.create_collectible(x, y, material, quantity)
 
         print(f"Created {len(self.entities.robots)} robots and {len(self.entities.collectibles)} collectibles")
+
+    def _register_landfill_pollution(self):
+        """Register all landfill tiles as pollution sources based on their fullness."""
+        from src.world.tile import TileType
+
+        landfill_count = 0
+        for y in range(self.grid.height_tiles):
+            for x in range(self.grid.width_tiles):
+                tile = self.grid.get_tile(x, y)
+                if tile and tile.tile_type == TileType.LANDFILL:
+                    # Calculate pollution based on fullness (inverse of depletion)
+                    fullness = 1.0 - tile.depletion_level
+                    pollution_rate = fullness * 0.5  # Max 0.5 per tile when full
+                    if pollution_rate > 0:
+                        self.pollution.add_source(x, y, pollution_rate)
+                        landfill_count += 1
+
+        print(f"Registered {landfill_count} landfill tiles as pollution sources")
 
     def run(self):
         """Main game loop."""

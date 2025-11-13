@@ -74,6 +74,21 @@ class PollutionManager:
         if (grid_x, grid_y) in self.sources:
             del self.sources[(grid_x, grid_y)]
 
+    def update_source(self, grid_x: int, grid_y: int, rate: float):
+        """
+        Update a pollution source's generation rate.
+
+        Args:
+            grid_x (int): Grid X position
+            grid_y (int): Grid Y position
+            rate (float): New pollution generation per second
+        """
+        if rate > 0:
+            self.sources[(grid_x, grid_y)] = rate
+        elif (grid_x, grid_y) in self.sources:
+            # Remove if rate is 0
+            del self.sources[(grid_x, grid_y)]
+
     def add_pollution(self, grid_x: int, grid_y: int, amount: float):
         """
         Add pollution to a tile.

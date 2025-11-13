@@ -100,18 +100,26 @@ class Tile:
         else:
             self.walkable = True
 
-    def add_depletion(self, amount: float):
+    def add_depletion(self, amount: float, pollution_manager=None):
         """
         Add depletion to this tile (for landfill tiles being collected).
 
         Args:
             amount (float): Amount to deplete (0.0-1.0)
+            pollution_manager: PollutionManager to update pollution (optional)
         """
         self.depletion_level = min(1.0, self.depletion_level + amount)
 
         # Update color for landfill tiles
         if self.tile_type == TileType.LANDFILL:
             self.color = self._get_landfill_color_for_depletion()
+
+            # Update pollution generation (more trash = more pollution)
+            if pollution_manager:
+                fullness = 1.0 - self.depletion_level
+                # Max pollution rate of 0.5 per tile when full, 0 when empty
+                pollution_rate = fullness * 0.5
+                pollution_manager.update_source(self.grid_x, self.grid_y, pollution_rate)
 
     def render(self, screen, x, y, tile_size, show_grid=True):
         """
