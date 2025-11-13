@@ -62,6 +62,11 @@ class ProcessingBuilding(Building):
         self.color = config.get('color', (100, 100, 100))
         self.outline_color = config.get('outline_color', (80, 80, 80))
 
+        # Research multipliers (default to 1.0 = no effect)
+        self.research_speed_mult = 1.0
+        self.research_efficiency_mult = 1.0
+        self.research_power_mult = 1.0
+
     def can_accept_material(self, material_type):
         """
         Check if building can accept this material type.
@@ -206,13 +211,32 @@ class ProcessingBuilding(Building):
             return f"{quality}_{base_material}"
 
     def _apply_level_bonuses(self):
-        """Apply bonuses for current level."""
+        """Apply bonuses for current level, incorporating research effects."""
+        # Start with base values
+        speed = self.base_processing_speed
+        efficiency = self.base_efficiency
+        power = self.base_power_consumption
+
+        # Apply research multipliers first
+        speed = speed / self.research_speed_mult  # Lower time = faster
+        efficiency = efficiency * self.research_efficiency_mult
+        power = power / self.research_power_mult  # Lower consumption = more efficient
+
+        # Then apply level bonuses on top
         # Each level improves processing speed, efficiency, and quality
         speed_bonus = 1.0 - (self.level - 1) * 0.15  # Faster (-15% per level)
-        self.processing_speed = self.base_processing_speed * speed_bonus
+        speed = speed * speed_bonus
 
         efficiency_bonus = (self.level - 1) * 0.03  # +3% efficiency per level
-        self.efficiency = min(0.98, self.base_efficiency + efficiency_bonus)
+        efficiency = efficiency + efficiency_bonus
+
+        power_increase = (self.level - 1) * 1.0  # More power needed per level
+        power = power + power_increase
+
+        # Apply final values with caps
+        self.processing_speed = speed
+        self.efficiency = min(0.98, efficiency)  # Cap at 98%
+        self.power_consumption = power
 
         # Improve quality distribution (shift towards higher quality)
         quality_shift = (self.level - 1) * 0.05
@@ -223,8 +247,20 @@ class ProcessingBuilding(Building):
             'high': 0.05 + quality_shift * 1.0
         }
 
-        # More power needed
-        self.power_consumption = self.base_power_consumption + (self.level - 1) * 1.0
+    def apply_research_effects(self, research_manager):
+        """
+        Apply research bonuses to processing building stats.
+
+        Args:
+            research_manager: ResearchManager instance with active effects
+        """
+        # Store research multipliers (default to 1.0 if not researched)
+        self.research_speed_mult = research_manager.get_effect_multiplier('processing_speed')
+        self.research_efficiency_mult = research_manager.get_effect_multiplier('processing_efficiency')
+        self.research_power_mult = research_manager.get_effect_multiplier('building_power_efficiency')
+
+        # Recalculate stats with both research and level bonuses
+        self._apply_level_bonuses()
 
     def get_info(self):
         """Get building information including processing stats."""

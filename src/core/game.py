@@ -226,11 +226,12 @@ class Game:
         # Update research
         self.research.update(adjusted_dt)
 
-        # Apply research effects to robots when research completes
+        # Apply research effects to robots and buildings when research completes
         if self.research.effects_changed:
             self.entities.apply_research_effects_to_robots(self.research)
+            self.buildings.apply_research_effects_to_buildings(self.research)
             self.research.effects_changed = False
-            print("Applied research effects to all robots")
+            print("Applied research effects to all robots and buildings")
 
         # Update entities (includes collection mechanics)
         self.entities.update(adjusted_dt)

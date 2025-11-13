@@ -229,6 +229,18 @@ class BuildingManager:
             'total_power_consumption': self.calculate_total_power_consumption(),
         }
 
+    def apply_research_effects_to_buildings(self, research_manager):
+        """
+        Apply research effects to all buildings that support it.
+
+        Args:
+            research_manager: ResearchManager instance
+        """
+        for building in self.buildings.values():
+            # Check if building has apply_research_effects method
+            if hasattr(building, 'apply_research_effects'):
+                building.apply_research_effects(research_manager)
+
     def __repr__(self):
         """String representation for debugging."""
         return f"BuildingManager(buildings={len(self.buildings)})"
