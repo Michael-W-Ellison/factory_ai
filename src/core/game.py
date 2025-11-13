@@ -73,6 +73,9 @@ class Game:
         self.ui = HUD(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
         self.research_ui = ResearchUI(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
 
+        # Factory reference (for visual upgrades)
+        self.factory = None
+
         # Place starting buildings
         self._place_starting_buildings()
 
@@ -96,13 +99,13 @@ class Game:
         center_grid_y = (config.WORLD_HEIGHT // config.TILE_SIZE) // 2
 
         # Place Factory at center (5x5)
-        factory = Factory(center_grid_x - 2, center_grid_y - 2)
-        if self.buildings.place_building(factory):
+        self.factory = Factory(center_grid_x - 2, center_grid_y - 2)
+        if self.buildings.place_building(self.factory):
             # Set factory position for robots
-            factory_world_x = factory.x + factory.width // 2
-            factory_world_y = factory.y + factory.height // 2
+            factory_world_x = self.factory.x + self.factory.width // 2
+            factory_world_y = self.factory.y + self.factory.height // 2
             self.entities.set_factory_position(factory_world_x, factory_world_y)
-            print(f"Factory placed at grid ({factory.grid_x}, {factory.grid_y})")
+            print(f"Factory placed at grid ({self.factory.grid_x}, {self.factory.grid_y})")
 
         # Place Landfill Gas Extraction near landfill area (left side)
         # Landfill is roughly at grid coordinates (5-25, 10-30)
@@ -239,6 +242,10 @@ class Game:
 
         # Update research
         self.research.update(adjusted_dt)
+
+        # Update factory visual upgrades (for research_active indicator)
+        if self.factory:
+            self.factory.update_visual_upgrades(self.research)
 
         # Apply research effects to robots and buildings when research completes
         if self.research.effects_changed:
