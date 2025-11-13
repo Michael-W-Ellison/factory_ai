@@ -1,7 +1,7 @@
 # Comprehensive Development Todo List
 # Recycling Factory Game - Complete Implementation
 
-**Status:** Phases 1-3 Complete | Current Phase: 4
+**Status:** Phases 1-3 Complete, Phase 7 (partial) | Current Phase: 7 (Environmental Content)
 **Last Updated:** 2025-11-13
 
 ---
@@ -38,6 +38,24 @@
 - [x] Factory deposit/unload system
 - [x] Multiple robots (autonomous + manual)
 - [x] Pathfinding integration
+
+### Phase 7: City & World (Partial) ✓
+- [x] 7.3: Vehicles in City (spawning, working vs scrap)
+- [x] 7.4: Fences and Walls (chain link, wooden, brick)
+- [x] 7.5: NPC System (daily schedules, vision, detection)
+- [x] 7.6: Detection System (line-of-sight, accumulation, UI)
+- [x] 7.7: Police System (patrols, behaviors, suspicion integration)
+- [x] 7.8: Suspicion System (tiers, decay, UI meter)
+- [x] Directional rendering and animations for NPCs, Police, Vehicles
+- [x] Environmental buildings (Fire House, Library, City Hall, Courthouse, School, Bus Terminal, Train Station, Warehouse, Dock)
+- [x] Environmental props (Benches, Light Poles, Trash Cans, Bicycles)
+- [x] Marketplace system (material sales, delivery vehicles, pricing)
+
+**Note:** Phase 7 sections 7.11-7.14 are documented below but not yet implemented. These cover:
+- Geographic features (rivers, ocean, bridges)
+- Vehicle traffic system (proper lane usage, movement)
+- Bus transportation system (routes, NPCs using buses)
+- Environmental content integration (city generator updates)
 
 ---
 
@@ -827,15 +845,233 @@
   - [ ] Police shift changes
   - [ ] Traffic patterns
 
-### 7.10 Testing Phase 7
-- [ ] Test city generation
+### 7.11 Geographic Features (Rivers, Ocean, Bridges)
+- [ ] Add terrain/water system
+  - [ ] Create TerrainType enum (LAND, WATER, BRIDGE, DOCK)
+  - [ ] Add terrain_type to Tile class
+  - [ ] Update Grid to support terrain types
+  - [ ] Render water tiles (animated blue)
+  - [ ] Render land vs water boundaries
+
+- [ ] River generation
+  - [ ] Create RiverGenerator class
+  - [ ] Generate river paths across map (Perlin noise or random walk)
+  - [ ] Rivers flow from north to south (or random directions)
+  - [ ] River width: 3-5 tiles
+  - [ ] Rivers divide cities into sections
+  - [ ] Ensure river tiles block normal pathfinding
+
+- [ ] Bridge system
+  - [ ] Create Bridge class (special building/terrain)
+  - [ ] Place bridges across rivers at regular intervals
+  - [ ] Bridge types: road bridge (vehicles), pedestrian bridge (NPCs only)
+  - [ ] Bridges connect road networks on both sides
+  - [ ] Allow pathfinding across bridges
+  - [ ] Visual: raised structure over water
+
+- [ ] Ocean generation
+  - [ ] Place ocean on map edges (configurable which edges)
+  - [ ] Ocean tiles block pathfinding completely
+  - [ ] Dock buildings must be adjacent to ocean/water
+  - [ ] Visual: deeper blue, animated waves
+
+- [ ] Waterfront features
+  - [ ] Dock building placement adjacent to water
+  - [ ] Ships at docks (visual only, or functional for deliveries)
+  - [ ] Boardwalk/pier structures
+  - [ ] Beach tiles between land and ocean
+
+- [ ] Pathfinding updates
+  - [ ] Update A* to respect water tiles (impassable)
+  - [ ] Allow pathfinding across bridges
+  - [ ] NPCs/vehicles route around rivers via bridges
+  - [ ] Calculate bridge crossings in city routes
+
+### 7.12 Vehicle Traffic System
+- [ ] Road network graph
+  - [ ] Create RoadNetwork class (src/systems/road_network.py)
+  - [ ] Build graph of road tiles and connections
+  - [ ] Mark road directions (one-way vs two-way)
+  - [ ] Identify intersections and turns
+  - [ ] Calculate valid lanes per road segment
+
+- [ ] Traffic lanes
+  - [ ] Right-side driving (or configurable for region)
+  - [ ] Each road has 2 lanes (one each direction)
+  - [ ] Vehicles stay in correct lane for direction
+  - [ ] Lane switching at intersections only
+  - [ ] Mark road centers and lane boundaries
+
+- [ ] Vehicle spawning system
+  - [ ] Create TrafficManager (src/systems/traffic_manager.py)
+  - [ ] Spawn civilian vehicles at city edges
+  - [ ] Spawn delivery vehicles at marketplaces
+  - [ ] Spawn police vehicles at police station
+  - [ ] Vehicle density: 10-20 vehicles per city block
+  - [ ] Vehicle types: car, truck, van, bus, police car
+
+- [ ] Vehicle movement
+  - [ ] Vehicles follow road lanes
+  - [ ] Turn at intersections (planned routes)
+  - [ ] Speed: 40-60 px/s depending on vehicle type
+  - [ ] Acceleration/deceleration at stops
+  - [ ] Stop at intersections (basic traffic rules)
+  - [ ] Yield to vehicles already in intersection
+
+- [ ] Vehicle pathfinding
+  - [ ] Use RoadNetwork graph for routes
+  - [ ] Calculate shortest path on roads
+  - [ ] Vehicles have destinations (random or specific)
+  - [ ] Recalculate route if blocked
+  - [ ] Park at destination (if building)
+
+- [ ] Traffic behavior
+  - [ ] Follow vehicle in front (maintain distance)
+  - [ ] Slow down if vehicle ahead
+  - [ ] Stop for pedestrians crossing (optional)
+  - [ ] Emergency vehicles (police) can speed/ignore rules
+  - [ ] Turn signals before turning (visual indicator)
+
+- [ ] Parked vehicles
+  - [ ] Spawn parked cars near buildings
+  - [ ] Park on side of road (not in lanes)
+  - [ ] Parked vehicles are stationary
+  - [ ] Working vs scrap condition (existing system)
+  - [ ] Random spawn during day, despawn at night
+
+- [ ] Visual updates
+  - [ ] Vehicles render with correct rotation (existing)
+  - [ ] Brake lights when slowing
+  - [ ] Headlights at night
+  - [ ] Turn signal indicators
+
+### 7.13 Bus Transportation System
+- [ ] Bus infrastructure
+  - [ ] Create Bus class extends Vehicle
+  - [ ] Larger size: 50x24 pixels
+  - [ ] Yellow/orange color (school bus or city bus)
+  - [ ] Capacity: 20 NPC passengers
+  - [ ] Speed: slower than cars (30 px/s)
+
+- [ ] Bus route system
+  - [ ] Create BusRoute class
+  - [ ] Routes defined as list of stops
+  - [ ] Bus terminal is central hub
+  - [ ] Routes connect: terminal ↔ residential ↔ commercial ↔ industrial
+  - [ ] 3-5 routes per city
+  - [ ] Each route has 5-10 stops
+
+- [ ] Bus stops
+  - [ ] Create BusStop prop (small shelter)
+  - [ ] Place stops along bus routes
+  - [ ] Stops every 15-20 tiles along route
+  - [ ] Visual: small shelter with bench
+  - [ ] NPCs wait at stops
+
+- [ ] Bus behavior
+  - [ ] Bus follows route waypoints
+  - [ ] Stops at each bus stop for 5-10 seconds
+  - [ ] Loads/unloads passengers
+  - [ ] Multiple buses per route (staggered timing)
+  - [ ] Buses run 6am-10pm (off schedule at night)
+
+- [ ] NPC bus usage
+  - [ ] NPCs pathfind to nearest bus stop
+  - [ ] Wait at stop for bus
+  - [ ] Board bus if going in desired direction
+  - [ ] Ride bus to stop near destination
+  - [ ] Disembark and walk to final destination
+  - [ ] NPCs prefer bus for distances >50 tiles
+
+- [ ] Bus schedule
+  - [ ] Buses arrive at stops on schedule
+  - [ ] Every 10-15 game minutes per route
+  - [ ] Display arrival time at stops (UI)
+  - [ ] NPCs check schedule before going to stop
+
+- [ ] Bus rendering
+  - [ ] Large bus sprite with windows
+  - [ ] Show passenger count (visual indicator)
+  - [ ] Route number displayed on bus
+  - [ ] Direction indicator
+  - [ ] Animated doors when stopped
+
+### 7.14 Environmental Content Integration
+- [ ] City generator updates
+  - [ ] Update CityGenerator to place new buildings
+  - [ ] Downtown zone: city hall, courthouse, library, train station
+  - [ ] Industrial zone: warehouses
+  - [ ] Waterfront zone: docks (if ocean/river present)
+  - [ ] Residential zone: schools, bus terminals
+  - [ ] Emergency services: fire house, police station
+
+- [ ] Building placement rules
+  - [ ] Fire house: near residential, 1 per 20 blocks
+  - [ ] Library: near downtown or residential, 1-2 per city
+  - [ ] School: in residential zones, 1 per 15 blocks
+  - [ ] City hall: downtown center, 1 per city
+  - [ ] Courthouse: near city hall, 1 per city
+  - [ ] Bus terminal: central location, 1 per city (larger cities)
+  - [ ] Train station: industrial or downtown, 1 per city
+  - [ ] Warehouse: industrial zone, 2-4 per city
+  - [ ] Dock: waterfront only, 1-2 per city (if water present)
+
+- [ ] Prop placement system
+  - [ ] Create PropManager (src/systems/prop_manager.py)
+  - [ ] Place benches in parks (3-5 per park)
+  - [ ] Place light poles along roads (every 5-10 tiles)
+  - [ ] Place trash cans near buildings and parks (random)
+  - [ ] Place bicycles near houses and commercial buildings (random)
+  - [ ] Density: 50-100 props per city
+
+- [ ] Prop rendering
+  - [ ] Render props after ground, before buildings
+  - [ ] Benches face random directions
+  - [ ] Light poles illuminate at night (visual glow)
+  - [ ] Trash cans near building entrances
+  - [ ] Bicycles lean against walls/fences
+
+- [ ] Marketplace integration
+  - [ ] Integrate MarketplaceManager into game loop
+  - [ ] Register marketplaces during city generation
+  - [ ] Add "Sell Materials" UI near player factory
+  - [ ] Show marketplace locations on map
+  - [ ] Calculate delivery routes for vehicles
+  - [ ] Update resource manager with sales income
+
+- [ ] Delivery vehicle integration
+  - [ ] Spawn delivery vehicles at marketplaces
+  - [ ] Vehicles pathfind to player factory on roads
+  - [ ] Use TrafficManager for road navigation
+  - [ ] Load materials at factory (animation)
+  - [ ] Return to marketplace with materials
+  - [ ] Despawn after delivery complete
+
+- [ ] UI updates for new content
+  - [ ] Add building info tooltips (hover over buildings)
+  - [ ] Show NPC count in buildings
+  - [ ] Marketplace prices display
+  - [ ] Bus route map (optional)
+  - [ ] Delivery status notifications
+  - [ ] Environmental stats (total props, vehicles, etc.)
+
+### 7.15 Testing Phase 7 (Updated)
+- [ ] Test city generation with new buildings
+- [ ] Test geographic features (rivers, bridges, ocean)
+- [ ] Test vehicle traffic and lane usage
+- [ ] Test bus routes and NPC bus usage
+- [ ] Test prop placement and rendering
+- [ ] Test marketplace sales and deliveries
 - [ ] Test NPC schedules and pathfinding
 - [ ] Test detection system
 - [ ] Test police patrols
 - [ ] Test suspicion accumulation/decay
 - [ ] Test day/night transitions
-- [ ] Performance test with 100+ NPCs
+- [ ] Performance test with 100+ NPCs + vehicles + props
 - [ ] Balance detection chances
+- [ ] Verify pathfinding across bridges
+- [ ] Test traffic flow at intersections
+- [ ] Test delivery vehicle routes
 
 ---
 
