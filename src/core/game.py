@@ -20,6 +20,7 @@ from src.systems.vehicle_manager import VehicleManager
 from src.systems.fence_manager import FenceManager
 from src.systems.npc_manager import NPCManager
 from src.systems.detection_manager import DetectionManager
+from src.systems.suspicion_manager import SuspicionManager
 from src.ui.hud import HUD
 from src.ui.research_ui import ResearchUI
 from src.entities.buildings import Factory, LandfillGasExtraction
@@ -77,6 +78,7 @@ class Game:
         self.fences = FenceManager(self.grid)
         self.npcs = NPCManager(self.grid)
         self.detection = DetectionManager(self.grid, self.npcs)
+        self.suspicion = SuspicionManager()
         self.entities = EntityManager(grid=self.grid, resource_manager=self.resources, research_manager=self.research)
         self.ui = HUD(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
         self.research_ui = ResearchUI(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
@@ -312,7 +314,13 @@ class Game:
 
         # Update detection system
         detection_reports = self.detection.update(self.entities.robots, adjusted_dt)
-        # TODO: Handle detection reports (increase suspicion)
+
+        # Process detection reports (increase suspicion)
+        for report in detection_reports:
+            self.suspicion.process_detection_report(report)
+
+        # Update suspicion (decay over time)
+        self.suspicion.update(adjusted_dt, self.npcs.game_time)
 
     def _handle_robot_input(self):
         """Handle arrow key input for controlling the selected robot."""
@@ -367,7 +375,7 @@ class Game:
 
         # Render HUD (overlays everything)
         self.ui.render(self.screen, self.resources, self.entities, self.clock,
-                      self.power, self.buildings, self.research)
+                      self.power, self.buildings, self.research, self.suspicion)
 
         # Render research UI (if visible)
         self.research_ui.render(self.screen, self.research, self.resources.money)

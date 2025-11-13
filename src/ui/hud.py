@@ -36,7 +36,7 @@ class HUD:
         self.color_bad = (255, 100, 100)
         self.color_bg = (0, 0, 0)
 
-    def render(self, screen, resource_manager, entity_manager, clock=None, power_manager=None, building_manager=None, research_manager=None):
+    def render(self, screen, resource_manager, entity_manager, clock=None, power_manager=None, building_manager=None, research_manager=None, suspicion_manager=None):
         """
         Render the HUD.
 
@@ -48,6 +48,7 @@ class HUD:
             power_manager: PowerManager instance (optional)
             building_manager: BuildingManager instance (optional)
             research_manager: ResearchManager instance (optional)
+            suspicion_manager: SuspicionManager instance (optional)
         """
         # Top-left panel: Resources and money
         self._render_resources_panel(screen, resource_manager, entity_manager)
@@ -68,6 +69,10 @@ class HUD:
         # Top-center: Research progress (if active)
         if research_manager and research_manager.current_research:
             self._render_research_progress(screen, research_manager)
+
+        # Bottom-center: Suspicion meter (if available)
+        if suspicion_manager:
+            self._render_suspicion_meter(screen, suspicion_manager)
 
     def _render_resources_panel(self, screen, resource_manager, entity_manager):
         """Render the resources panel at top-left."""
@@ -459,4 +464,56 @@ class HUD:
             True, self.color_text
         )
         info_rect = info_text.get_rect(centerx=panel_x + panel_width // 2, top=bar_y + bar_height + 5)
+        screen.blit(info_text, info_rect)
+    def _render_suspicion_meter(self, screen, suspicion_manager):
+        """Render the suspicion meter at bottom-center."""
+        meter_width = 300
+        meter_height = 40
+        meter_x = (self.screen_width - meter_width) // 2
+        meter_y = self.screen_height - meter_height - 60
+
+        # Background panel
+        panel_surface = pygame.Surface((meter_width, meter_height))
+        panel_surface.set_alpha(200)
+        panel_surface.fill(self.color_bg)
+        screen.blit(panel_surface, (meter_x, meter_y))
+
+        # Tier and level
+        tier_name = suspicion_manager.tier_names[suspicion_manager.current_tier]
+        level = suspicion_manager.suspicion_level
+
+        # Tier color
+        tier_color = suspicion_manager.tier_colors[suspicion_manager.current_tier]
+
+        # Title
+        title_text = self.font_small.render("SUSPICION", True, self.color_text)
+        screen.blit(title_text, (meter_x + 10, meter_y + 5))
+
+        # Progress bar
+        bar_width = meter_width - 20
+        bar_height = 12
+        bar_x = meter_x + 10
+        bar_y = meter_y + 23
+
+        # Background
+        pygame.draw.rect(screen, (40, 40, 40), (bar_x, bar_y, bar_width, bar_height))
+
+        # Fill based on suspicion level
+        fill_width = int(bar_width * (level / 100.0))
+        pygame.draw.rect(screen, tier_color, (bar_x, bar_y, fill_width, bar_height))
+
+        # Tier markers (20, 40, 60, 80)
+        for threshold in [20, 40, 60, 80]:
+            marker_x = bar_x + int(bar_width * (threshold / 100.0))
+            pygame.draw.line(screen, (150, 150, 150), (marker_x, bar_y), (marker_x, bar_y + bar_height), 2)
+
+        # Border
+        pygame.draw.rect(screen, (200, 200, 200), (bar_x, bar_y, bar_width, bar_height), 2)
+
+        # Level and tier text
+        info_text = self.font_small.render(
+            f"{level:.1f}  •  {tier_name}",
+            True, tier_color
+        )
+        info_rect = info_text.get_rect(right=meter_x + meter_width - 10, centery=meter_y + 12)
         screen.blit(info_text, info_rect)
