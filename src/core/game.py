@@ -14,6 +14,7 @@ from src.systems.entity_manager import EntityManager
 from src.systems.resource_manager import ResourceManager
 from src.systems.building_manager import BuildingManager
 from src.systems.power_manager import PowerManager
+from src.systems.research_manager import ResearchManager
 from src.ui.hud import HUD
 from src.entities.buildings import Factory, LandfillGasExtraction
 
@@ -61,6 +62,7 @@ class Game:
         self.resources = ResourceManager()
         self.buildings = BuildingManager(self.grid)
         self.power = PowerManager(self.buildings)
+        self.research = ResearchManager()
         self.entities = EntityManager(grid=self.grid, resource_manager=self.resources)
         self.ui = HUD(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
 
@@ -210,6 +212,9 @@ class Game:
 
         # Update power system
         self.power.update(adjusted_dt, self.buildings)
+
+        # Update research
+        self.research.update(adjusted_dt)
 
         # Update entities (includes collection mechanics)
         self.entities.update(adjusted_dt)
