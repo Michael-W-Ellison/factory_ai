@@ -1088,6 +1088,81 @@
         "prerequisites": ["landfill_gas_process_1"],
         "unlocks": ["upgrade_landfill_gas_advanced"]
       }
+    },
+
+    "environmental_systems": {
+      "basic_forecasting": {
+        "name": "Basic Weather Forecasting",
+        "category": "environmental",
+        "description": "Enables 24-hour weather predictions with 60% accuracy",
+        "cost": 2000,
+        "time": 60,
+        "prerequisites": [],
+        "unlocks": ["ui_weather_forecast"],
+        "effects": {
+          "forecast_range_hours": 24,
+          "forecast_accuracy": 0.6
+        }
+      },
+      "advanced_forecasting": {
+        "name": "Advanced Weather Forecasting",
+        "category": "environmental",
+        "description": "Improves weather predictions to 48 hours with 75% accuracy",
+        "cost": 5000,
+        "time": 120,
+        "prerequisites": ["basic_forecasting"],
+        "effects": {
+          "forecast_range_hours": 48,
+          "forecast_accuracy": 0.75
+        }
+      },
+      "expert_forecasting": {
+        "name": "Expert Weather Forecasting",
+        "category": "environmental",
+        "description": "Maximizes weather predictions to 72 hours with 85% accuracy",
+        "cost": 10000,
+        "time": 180,
+        "prerequisites": ["advanced_forecasting"],
+        "effects": {
+          "forecast_range_hours": 72,
+          "forecast_accuracy": 0.85
+        }
+      },
+
+      "market_analysis_1": {
+        "name": "Market Analysis Tier 1",
+        "category": "economic",
+        "description": "Enables basic material price tracking and trends",
+        "cost": 3000,
+        "time": 90,
+        "prerequisites": [],
+        "unlocks": ["ui_market_prices", "ui_price_history"]
+      },
+      "market_analysis_2": {
+        "name": "Market Analysis Tier 2",
+        "category": "economic",
+        "description": "Adds 3-day price forecasts with 70% accuracy",
+        "cost": 7000,
+        "time": 150,
+        "prerequisites": ["market_analysis_1"],
+        "unlocks": ["ui_price_forecast"],
+        "effects": {
+          "forecast_accuracy": 0.7
+        }
+      },
+      "market_analysis_3": {
+        "name": "Market Analysis Tier 3",
+        "category": "economic",
+        "description": "Provides optimal sell timing alerts and market event predictions",
+        "cost": 15000,
+        "time": 240,
+        "prerequisites": ["market_analysis_2"],
+        "unlocks": ["ui_sell_timing_alerts", "ui_market_events"],
+        "effects": {
+          "forecast_accuracy": 0.85,
+          "event_prediction": true
+        }
+      }
     }
   }
 }
