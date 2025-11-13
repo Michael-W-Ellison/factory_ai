@@ -29,6 +29,7 @@ from src.world.river_generator import RiverGenerator
 from src.world.bridge_builder import BridgeBuilder
 from src.systems.road_network import RoadNetwork
 from src.systems.traffic_manager import TrafficManager
+from src.systems.bus_manager import BusManager
 
 
 class Game:
@@ -81,6 +82,13 @@ class Game:
         self.road_network = RoadNetwork(self.grid)
         self.traffic_manager = TrafficManager(self.grid, self.road_network)
         self.traffic_manager.set_target_vehicle_count(10)  # Moderate traffic
+
+        # Initialize bus system (public transportation)
+        self.bus_manager = BusManager(self.grid, self.road_network)
+        self.bus_manager.target_routes = 3  # Generate 3 bus routes
+        self.bus_manager.buses_per_route = 2  # 2 buses per route
+        self.bus_manager.generate_routes()
+        self.bus_manager.spawn_buses()
 
         # Center camera on factory (middle of world)
         self.camera.center_on(config.WORLD_WIDTH // 2, config.WORLD_HEIGHT // 2)
@@ -364,6 +372,9 @@ class Game:
         # Update traffic system (moving vehicles on roads)
         self.traffic_manager.update(adjusted_dt)
 
+        # Update bus system (public transportation)
+        self.bus_manager.update(adjusted_dt)
+
         # Update fences
         self.fences.update(adjusted_dt)
 
@@ -436,6 +447,9 @@ class Game:
 
         # Render traffic vehicles (after static vehicles)
         self.traffic_manager.render(self.screen, self.camera)
+
+        # Render bus system (buses and bus stops)
+        self.bus_manager.render(self.screen, self.camera)
 
         # Render fences (after vehicles, before entities)
         self.fences.render(self.screen, self.camera)
