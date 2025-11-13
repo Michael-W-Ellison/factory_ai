@@ -34,6 +34,7 @@ from src.systems.prop_manager import PropManager
 from src.systems.camera_manager import CameraManager
 from src.systems.camera_hacking_manager import CameraHackingManager
 from src.systems.inspection_manager import InspectionManager
+from src.systems.material_inventory import MaterialInventory
 from src.ui.inspection_ui import InspectionUI
 
 
@@ -128,8 +129,11 @@ class Game:
         # Initialize camera hacking system (requires camera_manager, research, and suspicion)
         self.camera_hacking = CameraHackingManager(self.camera_manager, self.research, self.suspicion)
 
-        # Initialize inspection system (requires resources and suspicion)
-        self.inspection = InspectionManager(self.resources, self.suspicion)
+        # Initialize material inventory system (tracks materials by source for inspections)
+        self.material_inventory = MaterialInventory()
+
+        # Initialize inspection system (requires resources, suspicion, and material inventory)
+        self.inspection = InspectionManager(self.resources, self.suspicion, self.material_inventory)
         self.inspection_ui = InspectionUI(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
 
         # Factory reference (for visual upgrades)

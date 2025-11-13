@@ -38,16 +38,18 @@ class InspectionManager:
     Players get 24-48 game hours warning before inspection.
     """
 
-    def __init__(self, resource_manager, suspicion_manager):
+    def __init__(self, resource_manager, suspicion_manager, material_inventory=None):
         """
         Initialize inspection manager.
 
         Args:
             resource_manager: ResourceManager instance
             suspicion_manager: SuspicionManager instance
+            material_inventory: MaterialInventory instance (optional, for illegal material detection)
         """
         self.resources = resource_manager
         self.suspicion = suspicion_manager
+        self.material_inventory = material_inventory
 
         # Inspection state
         self.status = InspectionStatus.NONE
@@ -160,16 +162,53 @@ class InspectionManager:
         """
         Calculate inspection result based on illegal materials and suspicion.
 
-        For now, uses a probability-based system.
-        In Phase 8.4, will check actual illegal material tags.
+        If material_inventory is available, uses actual illegal material counts.
+        Otherwise, uses probability-based system.
 
         Returns:
             InspectionResult: The inspection outcome
         """
-        # Simplified probability-based system for now
-        # Higher suspicion = higher chance of failing
+        # Check if we have material inventory for accurate detection
+        if self.material_inventory is not None:
+            return self._calculate_result_from_materials()
 
-        # Base probabilities (will be modified by illegal materials in Phase 8.4)
+        # Fallback to probability-based system
+        return self._calculate_result_probabilistic()
+
+    def _calculate_result_from_materials(self) -> InspectionResult:
+        """Calculate result based on actual illegal materials."""
+        illegal_count = self.material_inventory.get_illegal_material_count()
+        illegal_value = self.material_inventory.get_illegal_material_value()
+        suspicious_amounts = self.material_inventory.has_suspicious_amounts()
+
+        # Determine severity based on illegal materials
+        if illegal_count == 0 and len(suspicious_amounts) == 0:
+            # Clean - no illegal materials
+            return InspectionResult.PASS
+
+        elif illegal_count < 50 and illegal_value < 500:
+            # Minor violations - small amount of illegal materials
+            # 60% chance to detect
+            if random.random() < 0.6:
+                return InspectionResult.FAIL_MINOR
+            else:
+                return InspectionResult.PASS
+
+        elif illegal_count < 200 or illegal_value < 2000:
+            # Major violations - significant illegal materials
+            # 90% chance to detect
+            if random.random() < 0.9:
+                return InspectionResult.FAIL_MAJOR
+            else:
+                return InspectionResult.FAIL_MINOR
+
+        else:
+            # Critical violations - extensive illegal operation
+            # Always detected
+            return InspectionResult.FAIL_CRITICAL
+
+    def _calculate_result_probabilistic(self) -> InspectionResult:
+        """Calculate result based on suspicion probability (fallback)."""
         suspicion_level = self.suspicion.suspicion_level
 
         if suspicion_level < 60:
