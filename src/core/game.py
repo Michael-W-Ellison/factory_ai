@@ -33,6 +33,8 @@ from src.systems.bus_manager import BusManager
 from src.systems.prop_manager import PropManager
 from src.systems.camera_manager import CameraManager
 from src.systems.camera_hacking_manager import CameraHackingManager
+from src.systems.inspection_manager import InspectionManager
+from src.ui.inspection_ui import InspectionUI
 
 
 class Game:
@@ -125,6 +127,10 @@ class Game:
 
         # Initialize camera hacking system (requires camera_manager, research, and suspicion)
         self.camera_hacking = CameraHackingManager(self.camera_manager, self.research, self.suspicion)
+
+        # Initialize inspection system (requires resources and suspicion)
+        self.inspection = InspectionManager(self.resources, self.suspicion)
+        self.inspection_ui = InspectionUI(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
 
         # Factory reference (for visual upgrades)
         self.factory = None
@@ -444,6 +450,9 @@ class Game:
         # Update police
         self.police.update(adjusted_dt, self.npcs.game_time)
 
+        # Update inspection system
+        self.inspection.update(adjusted_dt, self.npcs.game_time)
+
         # Check if police captured any robots (game over condition)
         captured = self.police.check_captures(self.entities.robots)
         if captured:
@@ -525,6 +534,10 @@ class Game:
 
         # Render research UI (if visible)
         self.research_ui.render(self.screen, self.research, self.resources.money)
+
+        # Render inspection UI (warnings, progress, results)
+        adjusted_dt = self.clock.get_time() / 1000.0
+        self.inspection_ui.render(self.screen, self.inspection, adjusted_dt)
 
         # Show paused indicator
         if self.paused:
