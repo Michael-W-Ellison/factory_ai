@@ -31,6 +31,7 @@ from src.systems.road_network import RoadNetwork
 from src.systems.traffic_manager import TrafficManager
 from src.systems.bus_manager import BusManager
 from src.systems.prop_manager import PropManager
+from src.systems.camera_manager import CameraManager
 
 
 class Game:
@@ -95,6 +96,12 @@ class Game:
         self.prop_manager = PropManager(self.grid, self.road_network)
         self.prop_manager.target_prop_count = 100  # Target number of props
         self.prop_manager.generate_props()
+
+        # Initialize camera system (security cameras for surveillance)
+        self.camera_manager = CameraManager(self.grid, self.road_network)
+        self.camera_manager.target_camera_count = 25  # Target number of cameras
+        # Note: Police stations will be added in future phase, for now place on roads/buildings
+        self.camera_manager.place_cameras()
 
         # Center camera on factory (middle of world)
         self.camera.center_on(config.WORLD_WIDTH // 2, config.WORLD_HEIGHT // 2)
@@ -386,6 +393,9 @@ class Game:
         is_night = False  # Placeholder - will be replaced with actual day/night check
         self.prop_manager.update(adjusted_dt, is_night)
 
+        # Update camera system (camera timers)
+        self.camera_manager.update(adjusted_dt)
+
         # Update fences
         self.fences.update(adjusted_dt)
 
@@ -473,6 +483,9 @@ class Game:
 
         # Render police (after NPCs, before entities)
         self.police.render(self.screen, self.camera)
+
+        # Render cameras (security infrastructure)
+        self.camera_manager.render(self.screen, self.camera)
 
         # Render entities
         self.entities.render(self.screen, self.camera)
