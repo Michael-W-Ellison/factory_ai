@@ -3,6 +3,7 @@ Robot entity - the player's collector/builder robots.
 """
 
 import pygame
+import math
 from src.entities.entity import Entity
 from src.core.constants import Colors, RobotState
 
@@ -62,6 +63,15 @@ class Robot(Entity):
         self.target_object = None  # CollectibleObject we're moving towards
         self.factory_pos = None  # Position of factory for returning
         self.collection_radius = 50.0  # How close we need to be to collect
+
+        # Upgrade level (1-5, affects visuals and capabilities)
+        self.upgrade_level = 1
+
+        # Movement direction and animation
+        self.facing_angle = 90.0  # degrees (0=right, 90=down, 180=left, 270=up)
+        self.animation_frame = 0  # 0 or 1 for movement animation
+        self.animation_timer = 0.0
+        self.animation_speed = 0.25  # Seconds per frame (faster than NPCs)
 
     def add_material(self, material_type, quantity):
         """
@@ -153,13 +163,28 @@ class Robot(Entity):
 
     def _update_manual(self, dt):
         """Update robot in manual control mode."""
+        moving = (self.velocity_x != 0 or self.velocity_y != 0)
+
+        # Update animation
+        if moving:
+            self.animation_timer += dt
+            if self.animation_timer >= self.animation_speed:
+                self.animation_timer = 0.0
+                self.animation_frame = 1 - self.animation_frame
+        else:
+            self.animation_frame = 0
+            self.animation_timer = 0.0
+
         # Apply movement
-        if self.velocity_x != 0 or self.velocity_y != 0:
+        if moving:
             # Normalize diagonal movement
             length = (self.velocity_x ** 2 + self.velocity_y ** 2) ** 0.5
             if length > 0:
                 self.velocity_x = (self.velocity_x / length) * self.speed
                 self.velocity_y = (self.velocity_y / length) * self.speed
+
+            # Update facing angle
+            self.facing_angle = math.degrees(math.atan2(self.velocity_y, self.velocity_x))
 
             # Move
             self.x += self.velocity_x * dt
@@ -337,6 +362,9 @@ class Robot(Entity):
     def _follow_path(self, dt, grid):
         """Follow the current path."""
         if not self.path or self.current_path_index >= len(self.path):
+            # Not moving, reset animation
+            self.animation_frame = 0
+            self.animation_timer = 0.0
             return
 
         # Get current waypoint
@@ -358,6 +386,15 @@ class Robot(Entity):
 
         # Move towards waypoint
         if distance > 0:
+            # Update animation
+            self.animation_timer += dt
+            if self.animation_timer >= self.animation_speed:
+                self.animation_timer = 0.0
+                self.animation_frame = 1 - self.animation_frame
+
+            # Update facing angle
+            self.facing_angle = math.degrees(math.atan2(dy, dx))
+
             self.velocity_x = (dx / distance) * self.speed
             self.velocity_y = (dy / distance) * self.speed
 
@@ -372,6 +409,10 @@ class Robot(Entity):
             # Reset velocity
             self.velocity_x = 0
             self.velocity_y = 0
+        else:
+            # Not moving, reset animation
+            self.animation_frame = 0
+            self.animation_timer = 0.0
 
     def move(self, dx, dy):
         """
@@ -386,7 +427,7 @@ class Robot(Entity):
 
     def render(self, screen, camera):
         """
-        Render robot to screen.
+        Render robot to screen with directional orientation and upgrade-based visuals.
 
         Args:
             screen: Pygame surface
@@ -398,45 +439,219 @@ class Robot(Entity):
         # Convert world coordinates to screen coordinates
         screen_x, screen_y = camera.world_to_screen(self.x, self.y)
 
-        if camera.is_visible(self.x, self.y, self.width, self.height):
-            # Draw robot body
-            rect = pygame.Rect(screen_x, screen_y, self.width, self.height)
-            pygame.draw.rect(screen, self.color, rect)
+        if not camera.is_visible(self.x, self.y, self.width, self.height):
+            return
 
-            # Draw border (darker green)
-            pygame.draw.rect(screen, (0, 180, 0), rect, 2)
+        # Apply camera zoom
+        width_px = int(self.width * camera.zoom)
+        height_px = int(self.height * camera.zoom)
 
-            # Draw selection indicator if selected
-            if self.selected:
-                selection_rect = pygame.Rect(screen_x - 2, screen_y - 2,
-                                            self.width + 4, self.height + 4)
-                pygame.draw.rect(screen, Colors.YELLOW, selection_rect, 2)
+        # Get upgrade level visual properties
+        level_props = self._get_level_visuals()
 
-            # Draw capacity indicator (small bar showing how full)
-            if self.max_capacity > 0:
-                bar_width = self.width
-                bar_height = 3
-                bar_x = screen_x
-                bar_y = screen_y - 6
+        # Calculate direction
+        angle = self.facing_angle % 360
+        angle_rad = math.radians(angle)
+        cos_a = math.cos(angle_rad)
+        sin_a = math.sin(angle_rad)
 
-                # Background (gray)
-                pygame.draw.rect(screen, (60, 60, 60),
-                               (bar_x, bar_y, bar_width, bar_height))
+        # Draw treads/wheels (animated when moving)
+        tread_offset = 2 if self.animation_frame == 1 else -2
+        tread_width = level_props['tread_width']
+        tread_length = level_props['tread_length']
 
-                # Fill (green -> yellow -> red as it fills)
-                fill_ratio = self.current_load / self.max_capacity
-                fill_width = int(bar_width * fill_ratio)
+        # Calculate tread positions (perpendicular to facing direction)
+        tread_spread = width_px // 2
+        left_offset_x = -sin_a * tread_spread
+        left_offset_y = cos_a * tread_spread
+        right_offset_x = sin_a * tread_spread
+        right_offset_y = -cos_a * tread_spread
 
-                if fill_ratio < 0.5:
-                    fill_color = (0, 255, 0)  # Green
-                elif fill_ratio < 0.8:
-                    fill_color = (255, 255, 0)  # Yellow
-                else:
-                    fill_color = (255, 100, 0)  # Orange
+        # Left tread
+        left_tread_x = int(screen_x + left_offset_x)
+        left_tread_y = int(screen_y + left_offset_y + tread_offset)
+        left_tread_rect = pygame.Rect(left_tread_x - tread_width//2, left_tread_y - tread_length//2,
+                                       tread_width, tread_length)
+        pygame.draw.rect(screen, (40, 40, 40), left_tread_rect)
+        pygame.draw.rect(screen, (20, 20, 20), left_tread_rect, 1)
 
-                if fill_width > 0:
-                    pygame.draw.rect(screen, fill_color,
-                                   (bar_x, bar_y, fill_width, bar_height))
+        # Right tread
+        right_tread_x = int(screen_x + right_offset_x)
+        right_tread_y = int(screen_y + right_offset_y - tread_offset)
+        right_tread_rect = pygame.Rect(right_tread_x - tread_width//2, right_tread_y - tread_length//2,
+                                        tread_width, tread_length)
+        pygame.draw.rect(screen, (40, 40, 40), right_tread_rect)
+        pygame.draw.rect(screen, (20, 20, 20), right_tread_rect, 1)
+
+        # Draw main body (chassis)
+        body_width = level_props['body_width']
+        body_height = level_props['body_height']
+        body_rect = pygame.Rect(screen_x - body_width//2, screen_y - body_height//2,
+                                body_width, body_height)
+        pygame.draw.rect(screen, level_props['body_color'], body_rect)
+        pygame.draw.rect(screen, level_props['outline_color'], body_rect, 2)
+
+        # Draw "head" or sensor array (offset in facing direction)
+        head_size = level_props['head_size']
+        head_offset_x = cos_a * body_width * 0.3
+        head_offset_y = sin_a * body_height * 0.3
+        head_pos = (int(screen_x + head_offset_x), int(screen_y + head_offset_y))
+        head_rect = pygame.Rect(head_pos[0] - head_size//2, head_pos[1] - head_size//2,
+                                head_size, head_size)
+        pygame.draw.rect(screen, level_props['head_color'], head_rect)
+        pygame.draw.rect(screen, (0, 150, 0), head_rect, 1)
+
+        # Draw facing direction indicator/sensor (small glowing dot)
+        indicator_dist = head_size // 2 + 3
+        indicator_x = int(head_pos[0] + cos_a * indicator_dist)
+        indicator_y = int(head_pos[1] + sin_a * indicator_dist)
+        pygame.draw.circle(screen, (0, 255, 0), (indicator_x, indicator_y), 2)  # Green sensor dot
+
+        # Draw arms/manipulators (if upgraded enough)
+        if self.upgrade_level >= 2:
+            arm_length = level_props['arm_length']
+            arm_width = level_props['arm_width']
+
+            # Left arm
+            left_arm_x = int(screen_x + left_offset_x * 0.7)
+            left_arm_y = int(screen_y + left_offset_y * 0.7)
+            left_arm_end_x = int(left_arm_x + cos_a * arm_length)
+            left_arm_end_y = int(left_arm_y + sin_a * arm_length)
+            pygame.draw.line(screen, (120, 120, 120), (left_arm_x, left_arm_y),
+                           (left_arm_end_x, left_arm_end_y), arm_width)
+
+            # Right arm
+            right_arm_x = int(screen_x + right_offset_x * 0.7)
+            right_arm_y = int(screen_y + right_offset_y * 0.7)
+            right_arm_end_x = int(right_arm_x + cos_a * arm_length)
+            right_arm_end_y = int(right_arm_y + sin_a * arm_length)
+            pygame.draw.line(screen, (120, 120, 120), (right_arm_x, right_arm_y),
+                           (right_arm_end_x, right_arm_end_y), arm_width)
+
+        # Draw selection indicator if selected
+        if self.selected:
+            selection_rect = pygame.Rect(screen_x - body_width//2 - 2, screen_y - body_height//2 - 2,
+                                        body_width + 4, body_height + 4)
+            pygame.draw.rect(screen, Colors.YELLOW, selection_rect, 2)
+
+        # Draw capacity indicator (small bar showing how full)
+        if self.max_capacity > 0:
+            bar_width = body_width
+            bar_height = 3
+            bar_x = screen_x - bar_width//2
+            bar_y = screen_y - body_height//2 - 8
+
+            # Background (gray)
+            pygame.draw.rect(screen, (60, 60, 60),
+                           (bar_x, bar_y, bar_width, bar_height))
+
+            # Fill (green -> yellow -> red as it fills)
+            fill_ratio = self.current_load / self.max_capacity
+            fill_width = int(bar_width * fill_ratio)
+
+            if fill_ratio < 0.5:
+                fill_color = (0, 255, 0)  # Green
+            elif fill_ratio < 0.8:
+                fill_color = (255, 255, 0)  # Yellow
+            else:
+                fill_color = (255, 100, 0)  # Orange
+
+            if fill_width > 0:
+                pygame.draw.rect(screen, fill_color,
+                               (bar_x, bar_y, fill_width, bar_height))
+
+        # Draw upgrade level indicator (when zoomed in)
+        if camera.zoom >= 0.8:
+            font = pygame.font.Font(None, 12)
+            level_text = f"L{self.upgrade_level}"
+            text_surface = font.render(level_text, True, (0, 255, 0))
+            text_rect = text_surface.get_rect(center=(screen_x, screen_y + body_height//2 + 8))
+            # Background
+            bg_rect = text_rect.inflate(4, 2)
+            pygame.draw.rect(screen, (0, 0, 0), bg_rect)
+            screen.blit(text_surface, text_rect)
+
+    def _get_level_visuals(self):
+        """
+        Get visual properties based on upgrade level.
+
+        Returns:
+            dict: Visual properties for current level
+        """
+        # Base sizes that scale with upgrade level
+        # Level 1: Spindly, fragile-looking
+        # Level 5: Thick, strong, advanced-looking
+
+        if self.upgrade_level == 1:
+            # Spindly, basic robot
+            return {
+                'body_width': 20,
+                'body_height': 20,
+                'body_color': (80, 200, 80),  # Light green
+                'outline_color': (40, 100, 40),
+                'head_size': 8,
+                'head_color': (100, 220, 100),
+                'tread_width': 4,
+                'tread_length': 12,
+                'arm_length': 0,  # No arms at level 1
+                'arm_width': 0,
+            }
+        elif self.upgrade_level == 2:
+            # Improved, slightly thicker
+            return {
+                'body_width': 24,
+                'body_height': 24,
+                'body_color': (70, 200, 70),
+                'outline_color': (35, 100, 35),
+                'head_size': 10,
+                'head_color': (90, 220, 90),
+                'tread_width': 5,
+                'tread_length': 14,
+                'arm_length': 8,
+                'arm_width': 2,
+            }
+        elif self.upgrade_level == 3:
+            # Advanced, solid build
+            return {
+                'body_width': 28,
+                'body_height': 28,
+                'body_color': (60, 200, 60),
+                'outline_color': (30, 100, 30),
+                'head_size': 12,
+                'head_color': (80, 220, 80),
+                'tread_width': 6,
+                'tread_length': 16,
+                'arm_length': 10,
+                'arm_width': 3,
+            }
+        elif self.upgrade_level == 4:
+            # Heavy-duty, robust
+            return {
+                'body_width': 32,
+                'body_height': 32,
+                'body_color': (50, 180, 50),
+                'outline_color': (25, 90, 25),
+                'head_size': 14,
+                'head_color': (70, 200, 70),
+                'tread_width': 7,
+                'tread_length': 18,
+                'arm_length': 12,
+                'arm_width': 4,
+            }
+        else:  # Level 5
+            # Maximum upgrade, powerful and imposing
+            return {
+                'body_width': 36,
+                'body_height': 36,
+                'body_color': (40, 160, 40),
+                'outline_color': (20, 80, 20),
+                'head_size': 16,
+                'head_color': (60, 180, 60),
+                'tread_width': 8,
+                'tread_length': 20,
+                'arm_length': 14,
+                'arm_width': 5,
+            }
 
     def __repr__(self):
         """String representation for debugging."""
