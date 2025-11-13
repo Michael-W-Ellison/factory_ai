@@ -30,6 +30,7 @@ from src.world.bridge_builder import BridgeBuilder
 from src.systems.road_network import RoadNetwork
 from src.systems.traffic_manager import TrafficManager
 from src.systems.bus_manager import BusManager
+from src.systems.prop_manager import PropManager
 
 
 class Game:
@@ -89,6 +90,11 @@ class Game:
         self.bus_manager.buses_per_route = 2  # 2 buses per route
         self.bus_manager.generate_routes()
         self.bus_manager.spawn_buses()
+
+        # Initialize prop system (benches, light poles, trash cans, bicycles)
+        self.prop_manager = PropManager(self.grid, self.road_network)
+        self.prop_manager.target_prop_count = 100  # Target number of props
+        self.prop_manager.generate_props()
 
         # Center camera on factory (middle of world)
         self.camera.center_on(config.WORLD_WIDTH // 2, config.WORLD_HEIGHT // 2)
@@ -375,6 +381,11 @@ class Game:
         # Update bus system (public transportation)
         self.bus_manager.update(adjusted_dt)
 
+        # Update prop system (turn lights on/off based on time - placeholder for now)
+        # TODO: Integrate with day/night cycle when implemented
+        is_night = False  # Placeholder - will be replaced with actual day/night check
+        self.prop_manager.update(adjusted_dt, is_night)
+
         # Update fences
         self.fences.update(adjusted_dt)
 
@@ -438,6 +449,9 @@ class Game:
 
         # Render grid
         self.grid.render(self.screen, self.camera, config.SHOW_GRID)
+
+        # Render props (after grid, before buildings)
+        self.prop_manager.render(self.screen, self.camera)
 
         # Render buildings (before entities so robots appear on top)
         self.buildings.render(self.screen, self.camera)
