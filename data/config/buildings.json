@@ -1,0 +1,432 @@
+{
+  "buildings": {
+    "factory": {
+      "name": "Factory Control Center",
+      "category": "core",
+      "description": "The control center for the AI/Player. Can initially recycle first level resources, highly inefficient.",
+      "cost": 0,
+      "power_consumption": 5.0,
+      "size": {"width": 5, "height": 5},
+      "starting_building": true,
+      "upgradeable": true,
+      "max_level": 5,
+      "functions": ["robot_command", "resource_storage", "basic_processing"]
+    },
+
+    "landfill_gas_extraction": {
+      "name": "Landfill Gas Extraction Wells and Piping",
+      "category": "power",
+      "description": "Carries dirty methane from landfill to the factory",
+      "cost": 0,
+      "power_generation": 10.0,
+      "size": {"width": 2, "height": 2},
+      "starting_building": true,
+      "outputs": ["dirty_methane"],
+      "output_rate": 5.0,
+      "degrades_with_landfill": true,
+      "pollution": 2.0
+    },
+
+    "solar_array": {
+      "name": "Solar Array",
+      "category": "power",
+      "description": "Generates power based on sunlight",
+      "cost": 2000,
+      "power_generation": 15.0,
+      "size": {"width": 3, "height": 3},
+      "requires_research": "solar_array_1",
+      "upgradeable": true,
+      "max_level": 3,
+      "time_dependent": true,
+      "pollution": 0.0
+    },
+
+    "landfill_gas_plant": {
+      "name": "Landfill Gas Plant",
+      "category": "processing",
+      "description": "Converts bio-waste/bio-slop into methane",
+      "cost": 3000,
+      "power_consumption": 3.0,
+      "size": {"width": 4, "height": 4},
+      "requires_research": "landfill_gas_plant",
+      "inputs": ["bio_slop"],
+      "outputs": ["dirty_methane", "impure_methane", "pure_methane", "ultra_pure_methane"],
+      "processing_speed": 1.0,
+      "upgradeable": true,
+      "max_level": 3,
+      "upgrade_names": ["Primary Treatment", "Secondary Treatment", "Advanced Treatment"],
+      "pollution": 3.0
+    },
+
+    "bio_waste_treatment_tank": {
+      "name": "Bio-Waste Treatment Tank",
+      "category": "processing",
+      "description": "Converts bio-waste into bio-slop",
+      "cost": 1500,
+      "power_consumption": 2.0,
+      "size": {"width": 3, "height": 3},
+      "requires_research": "bio_waste_treatment",
+      "inputs": ["organic", "wood"],
+      "outputs": ["bio_slop"],
+      "processing_speed": 2.0,
+      "pollution": 1.5
+    },
+
+    "wind_turbine": {
+      "name": "Wind Turbine",
+      "category": "power",
+      "description": "Generates variable energy over time",
+      "cost": 2500,
+      "power_generation": 20.0,
+      "size": {"width": 2, "height": 2},
+      "requires_research": "wind_power_1",
+      "upgradeable": true,
+      "max_level": 3,
+      "variable_output": true,
+      "affected_by": ["wind_speed", "nearby_buildings"],
+      "pollution": 0.0
+    },
+
+    "natural_gas_generator": {
+      "name": "Natural Gas Generator",
+      "category": "power",
+      "description": "Uses methane to generate power",
+      "cost": 3500,
+      "power_generation": 40.0,
+      "power_consumption": 0,
+      "size": {"width": 3, "height": 3},
+      "requires_research": "combustion",
+      "inputs": ["dirty_methane", "impure_methane", "pure_methane", "ultra_pure_methane"],
+      "fuel_consumption_rate": 2.0,
+      "pollution": "variable",
+      "pollution_by_fuel": {
+        "dirty_methane": 8.0,
+        "impure_methane": 4.0,
+        "pure_methane": 1.0,
+        "ultra_pure_methane": 0.2
+      }
+    },
+
+    "steam_generator": {
+      "name": "Steam Generator",
+      "category": "power",
+      "description": "Uses waste paper/waste rubber/charcoal to generate power",
+      "cost": 2000,
+      "power_generation": 30.0,
+      "size": {"width": 3, "height": 3},
+      "requires_research": "combustion",
+      "inputs": ["waste_paper", "waste_rubber", "charcoal"],
+      "fuel_consumption_rate": 3.0,
+      "pollution": 6.0
+    },
+
+    "crude_oil_refinery": {
+      "name": "Crude Oil Refinery",
+      "category": "processing",
+      "description": "Refines oils into usable products",
+      "cost": 5000,
+      "power_consumption": 5.0,
+      "size": {"width": 4, "height": 4},
+      "requires_research": "combustion",
+      "inputs": ["petroleum"],
+      "outputs": ["refined_oil", "bitumen"],
+      "processing_speed": 1.0,
+      "upgradeable": true,
+      "pollution": 5.0,
+      "upgrades": ["Stack Filters"]
+    },
+
+    "coal_oven": {
+      "name": "Coal Oven",
+      "category": "processing",
+      "description": "Converts wood products into charcoal",
+      "cost": 1800,
+      "power_consumption": 2.0,
+      "size": {"width": 3, "height": 3},
+      "requires_research": "combustion",
+      "inputs": ["wood"],
+      "outputs": ["charcoal", "tar"],
+      "processing_speed": 1.5,
+      "upgradeable": true,
+      "pollution": 4.0,
+      "upgrades": ["Woodgas Return"]
+    },
+
+    "metal_refinery": {
+      "name": "Metal Refinery",
+      "category": "processing",
+      "description": "Recycles metal products",
+      "cost": 4000,
+      "power_consumption": 6.0,
+      "size": {"width": 4, "height": 4},
+      "requires_research": "metal_refinery",
+      "inputs": ["metal", "iron", "steel", "copper"],
+      "outputs": ["refined_metal", "refined_iron", "refined_steel", "refined_copper", "rich_slag", "poor_slag"],
+      "processing_speed": 1.0,
+      "upgradeable": true,
+      "max_level": 3,
+      "pollution": 2.0,
+      "upgrades": ["Smeltery", "Secondary Heating Coils", "Laser Heating Array"]
+    },
+
+    "glassworks": {
+      "name": "Glassworks",
+      "category": "processing",
+      "description": "Recycles glass products",
+      "cost": 3000,
+      "power_consumption": 4.0,
+      "size": {"width": 3, "height": 3},
+      "requires_research": "glassworks",
+      "inputs": ["glass"],
+      "outputs": ["gray_glass_blanks", "colored_glass_blanks", "bullet_proof_glass"],
+      "processing_speed": 1.0,
+      "upgradeable": true,
+      "max_level": 3,
+      "pollution": 1.0,
+      "upgrades": ["Sorting", "Secondary Heating Coils"]
+    },
+
+    "plastic_recycler": {
+      "name": "Plastic Recycler",
+      "category": "processing",
+      "description": "Recycles plastic products",
+      "cost": 3500,
+      "power_consumption": 4.0,
+      "size": {"width": 3, "height": 3},
+      "requires_research": "plastic_recycler",
+      "inputs": ["plastic"],
+      "outputs": ["waste_plastic", "low_quality_plastic", "medium_quality_plastic", "high_quality_plastic"],
+      "processing_speed": 1.0,
+      "upgradeable": true,
+      "max_level": 3,
+      "pollution": 2.0,
+      "upgrades": ["Type Sorting", "Washing", "Chemical Recycling"]
+    },
+
+    "rubber_recycler": {
+      "name": "Rubber Recycler",
+      "category": "processing",
+      "description": "Recycles rubber products",
+      "cost": 3200,
+      "power_consumption": 3.5,
+      "size": {"width": 3, "height": 3},
+      "requires_research": "rubber_recycler",
+      "inputs": ["rubber"],
+      "outputs": ["waste_rubber", "low_quality_rubber", "medium_quality_rubber", "high_quality_rubber"],
+      "processing_speed": 1.0,
+      "upgradeable": true,
+      "max_level": 3,
+      "pollution": 2.5,
+      "upgrades": ["Shredder", "Chemical Treatment", "Vulcanizer"]
+    },
+
+    "paper_recycler": {
+      "name": "Paper Recycler",
+      "category": "processing",
+      "description": "Recycles paper/cardboard products",
+      "cost": 2500,
+      "power_consumption": 3.0,
+      "size": {"width": 3, "height": 3},
+      "requires_research": "paper_recycler",
+      "inputs": ["paper"],
+      "outputs": ["waste_paper", "low_quality_paper", "medium_quality_paper", "high_quality_paper"],
+      "processing_speed": 1.2,
+      "upgradeable": true,
+      "max_level": 3,
+      "pollution": 1.0,
+      "upgrades": ["Sorting", "Pulping", "Cleaning"]
+    },
+
+    "server_farm": {
+      "name": "Server Farm",
+      "category": "infrastructure",
+      "description": "Increases research speed, consumes power",
+      "cost": 5000,
+      "power_consumption": 10.0,
+      "size": {"width": 3, "height": 3},
+      "requires_research": "server_farm_1",
+      "research_speed_bonus": 0.5,
+      "upgradeable": true,
+      "max_level": 3,
+      "stackable": true,
+      "pollution": 0.0
+    },
+
+    "battery_storage": {
+      "name": "Battery Storage",
+      "category": "power",
+      "description": "Stores excess power",
+      "cost": 3000,
+      "power_storage": 1000,
+      "size": {"width": 2, "height": 2},
+      "requires_research": "battery_bank_1",
+      "upgradeable": true,
+      "max_level": 3,
+      "stackable": true,
+      "pollution": 0.0
+    },
+
+    "toxic_incinerator": {
+      "name": "Toxic Incinerator",
+      "category": "processing",
+      "description": "Disposes of toxic waste (very dirty)",
+      "cost": 4000,
+      "power_consumption": 8.0,
+      "size": {"width": 3, "height": 3},
+      "requires_research": "waste_disposal",
+      "inputs": ["toxic", "hazardous"],
+      "outputs": [],
+      "processing_speed": 0.5,
+      "pollution": 15.0
+    },
+
+    "wall_slag": {
+      "name": "Slag Wall",
+      "category": "defense",
+      "description": "Basic wall that restricts movement",
+      "cost": 50,
+      "health": 100,
+      "size": {"width": 1, "height": 1},
+      "requires_research": "barriers_1",
+      "blocks_movement": true
+    },
+
+    "wall_metal": {
+      "name": "Metal Wall",
+      "category": "defense",
+      "description": "Strong wall that restricts movement",
+      "cost": 150,
+      "health": 300,
+      "size": {"width": 1, "height": 1},
+      "requires_research": "barriers_2",
+      "blocks_movement": true
+    },
+
+    "wall_laser": {
+      "name": "Laser Wall",
+      "category": "defense",
+      "description": "Advanced wall that restricts movement",
+      "cost": 500,
+      "health": 500,
+      "size": {"width": 1, "height": 1},
+      "requires_research": "barriers_3",
+      "blocks_movement": true,
+      "power_consumption": 0.5
+    },
+
+    "gate_scrap": {
+      "name": "Scrap Gate",
+      "category": "defense",
+      "description": "Basic gate that controls entry/exit",
+      "cost": 100,
+      "health": 150,
+      "size": {"width": 1, "height": 1},
+      "requires_research": "barriers_1",
+      "blocks_movement": false,
+      "controllable": true
+    },
+
+    "gate_metal": {
+      "name": "Metal Gate",
+      "category": "defense",
+      "description": "Strong gate that controls entry/exit",
+      "cost": 250,
+      "health": 400,
+      "size": {"width": 1, "height": 1},
+      "requires_research": "barriers_2",
+      "blocks_movement": false,
+      "controllable": true
+    },
+
+    "wireless_power_transmitter": {
+      "name": "Wireless Power Transmitter",
+      "category": "infrastructure",
+      "description": "Provides wireless charging to nearby robots",
+      "cost": 2500,
+      "power_consumption": 5.0,
+      "size": {"width": 2, "height": 2},
+      "requires_research": "wireless_power_1",
+      "range": 10,
+      "upgradeable": true,
+      "max_level": 3,
+      "pollution": 0.0
+    },
+
+    "wireless_signal_transmitter": {
+      "name": "Wireless Signal Transmitter",
+      "category": "infrastructure",
+      "description": "Increases robot control range",
+      "cost": 3000,
+      "power_consumption": 3.0,
+      "size": {"width": 2, "height": 2},
+      "requires_research": "wireless_transceiver_building_1",
+      "range": 20,
+      "upgradeable": true,
+      "max_level": 3,
+      "pollution": 0.0
+    },
+
+    "lightning_rod": {
+      "name": "Lightning Rod",
+      "category": "infrastructure",
+      "description": "Protects nearby buildings and robots from lightning strike damage",
+      "cost": 1500,
+      "size": {"width": 1, "height": 1},
+      "requires_research": "lightning_rod_1",
+      "range": 15,
+      "upgradeable": true,
+      "max_level": 3,
+      "energy_capture": 100,
+      "pollution": 0.0
+    },
+
+    "road_dirt": {
+      "name": "Dirt Road",
+      "category": "infrastructure",
+      "description": "Basic road that increases movement speed",
+      "cost": 10,
+      "size": {"width": 1, "height": 1},
+      "speed_multiplier": 1.2,
+      "affected_by_rain": true
+    },
+
+    "road_tar": {
+      "name": "Tar Road",
+      "category": "infrastructure",
+      "description": "Improved road that increases movement speed",
+      "cost": 30,
+      "size": {"width": 1, "height": 1},
+      "speed_multiplier": 1.5,
+      "affected_by_rain": false
+    },
+
+    "road_asphalt": {
+      "name": "Asphalt Road",
+      "category": "infrastructure",
+      "description": "Advanced road that greatly increases movement speed",
+      "cost": 50,
+      "size": {"width": 1, "height": 1},
+      "speed_multiplier": 2.0,
+      "affected_by_rain": false
+    },
+
+    "pipe": {
+      "name": "Pipe",
+      "category": "infrastructure",
+      "description": "Transports liquids between buildings",
+      "cost": 20,
+      "size": {"width": 1, "height": 1},
+      "transport_rate": 10.0
+    },
+
+    "pump": {
+      "name": "Pump",
+      "category": "infrastructure",
+      "description": "Moves liquids through pipes",
+      "cost": 150,
+      "power_consumption": 2.0,
+      "size": {"width": 1, "height": 1},
+      "pumping_rate": 20.0
+    }
+  }
+}
