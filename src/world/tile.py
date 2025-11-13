@@ -19,6 +19,15 @@ class TileType:
     BUILDING = 8
 
 
+class TerrainType:
+    """Terrain type enumeration for geographic features."""
+    LAND = 0
+    WATER = 1
+    BRIDGE = 2
+    DOCK = 3
+    OCEAN = 4
+
+
 class Tile:
     """
     Represents a single tile in the game world.
@@ -32,7 +41,7 @@ class Tile:
         terrain_data (dict): Additional terrain-specific data
     """
 
-    def __init__(self, grid_x, grid_y, tile_type=TileType.GRASS):
+    def __init__(self, grid_x, grid_y, tile_type=TileType.GRASS, terrain_type=None):
         """
         Initialize a tile.
 
@@ -40,10 +49,12 @@ class Tile:
             grid_x (int): X position in grid
             grid_y (int): Y position in grid
             tile_type (int): Type of tile
+            terrain_type (int): Terrain type (water, land, bridge, etc.)
         """
         self.grid_x = grid_x
         self.grid_y = grid_y
         self.tile_type = tile_type
+        self.terrain_type = terrain_type if terrain_type is not None else TerrainType.LAND
         self.walkable = True
         self.occupied = False
 
@@ -53,8 +64,14 @@ class Tile:
         # Landfill depletion tracking (0.0 = full, 1.0 = completely depleted)
         self.depletion_level = 0.0
 
+        # Water animation frame for animated water
+        self.water_anim_frame = 0
+
         # Visual properties
         self.color = self._get_color_for_type(tile_type)
+
+        # Update walkability based on terrain
+        self._update_walkability()
 
     def _get_color_for_type(self, tile_type):
         """Get the display color for this tile type."""
@@ -84,6 +101,19 @@ class Tile:
 
         return (r, g, b)
 
+    def _update_walkability(self):
+        """Update walkability based on tile type and terrain type."""
+        # Water blocks movement (unless bridge)
+        if self.terrain_type == TerrainType.WATER or self.terrain_type == TerrainType.OCEAN:
+            self.walkable = False
+        elif self.terrain_type == TerrainType.BRIDGE:
+            self.walkable = True
+        # Buildings block movement
+        elif self.tile_type in [TileType.FACTORY, TileType.BUILDING]:
+            self.walkable = False
+        else:
+            self.walkable = True
+
     def set_type(self, tile_type):
         """
         Change the tile type.
@@ -93,12 +123,17 @@ class Tile:
         """
         self.tile_type = tile_type
         self.color = self._get_color_for_type(tile_type)
+        self._update_walkability()
 
-        # Update walkability based on type
-        if tile_type in [TileType.FACTORY, TileType.BUILDING]:
-            self.walkable = False
-        else:
-            self.walkable = True
+    def set_terrain_type(self, terrain_type):
+        """
+        Change the terrain type.
+
+        Args:
+            terrain_type (int): New terrain type
+        """
+        self.terrain_type = terrain_type
+        self._update_walkability()
 
     def add_depletion(self, amount: float, pollution_manager=None):
         """
@@ -132,13 +167,22 @@ class Tile:
             tile_size (int): Size of tile in pixels
             show_grid (bool): Whether to draw grid lines
         """
-        # Draw tile background
         rect = pygame.Rect(x, y, tile_size, tile_size)
-        pygame.draw.rect(screen, self.color, rect)
 
-        # Draw landfill trash piles (diminish with depletion)
-        if self.tile_type == TileType.LANDFILL and self.depletion_level < 1.0:
-            self._render_trash_piles(screen, x, y, tile_size)
+        # Render based on terrain type
+        if self.terrain_type == TerrainType.WATER or self.terrain_type == TerrainType.OCEAN:
+            self._render_water(screen, x, y, tile_size)
+        elif self.terrain_type == TerrainType.BRIDGE:
+            self._render_bridge(screen, x, y, tile_size)
+        elif self.terrain_type == TerrainType.DOCK:
+            self._render_dock(screen, x, y, tile_size)
+        else:
+            # Draw normal tile background
+            pygame.draw.rect(screen, self.color, rect)
+
+            # Draw landfill trash piles (diminish with depletion)
+            if self.tile_type == TileType.LANDFILL and self.depletion_level < 1.0:
+                self._render_trash_piles(screen, x, y, tile_size)
 
         # Draw grid lines
         if show_grid:
@@ -186,6 +230,109 @@ class Tile:
             # Draw pile as small circle
             pygame.draw.circle(screen, pile_color, (pile_x, pile_y), pile_size)
 
+    def _render_water(self, screen, x, y, tile_size):
+        """Render water tile with animated effect."""
+        # Base water color
+        if self.terrain_type == TerrainType.OCEAN:
+            base_color = (10, 50, 100)  # Dark blue for ocean
+        else:
+            base_color = (30, 100, 180)  # Lighter blue for rivers
+
+        # Animate water by varying color slightly
+        import math
+        time_offset = (self.grid_x + self.grid_y) * 0.1  # Offset based on position
+        anim_value = math.sin(self.water_anim_frame * 0.1 + time_offset) * 10
+
+        water_color = (
+            min(255, max(0, int(base_color[0] + anim_value))),
+            min(255, max(0, int(base_color[1] + anim_value))),
+            min(255, max(0, int(base_color[2] + anim_value)))
+        )
+
+        rect = pygame.Rect(x, y, tile_size, tile_size)
+        pygame.draw.rect(screen, water_color, rect)
+
+        # Draw water ripple effect
+        if tile_size >= 16:
+            ripple_alpha = int(50 + anim_value * 2)
+            ripple_color = (
+                min(255, water_color[0] + 20),
+                min(255, water_color[1] + 20),
+                min(255, water_color[2] + 20)
+            )
+
+            # Draw subtle waves
+            for i in range(2):
+                wave_y = y + tile_size // 3 + i * tile_size // 3 + int(anim_value * 0.3)
+                pygame.draw.line(screen, ripple_color, (x, wave_y), (x + tile_size, wave_y), 1)
+
+    def _render_bridge(self, screen, x, y, tile_size):
+        """Render bridge tile."""
+        # Draw water underneath
+        water_color = (30, 100, 180)
+        rect = pygame.Rect(x, y, tile_size, tile_size)
+        pygame.draw.rect(screen, water_color, rect)
+
+        # Draw bridge planks
+        bridge_color = (120, 100, 80)  # Brown
+        plank_height = max(tile_size // 5, 2)
+
+        # Horizontal planks
+        for i in range(3):
+            plank_y = y + i * tile_size // 3 + tile_size // 6
+            plank_rect = pygame.Rect(x, plank_y, tile_size, plank_height)
+            pygame.draw.rect(screen, bridge_color, plank_rect)
+            pygame.draw.rect(screen, (80, 60, 40), plank_rect, 1)  # Dark border
+
+        # Bridge supports (vertical bars)
+        support_color = (100, 80, 60)
+        support_width = max(tile_size // 8, 2)
+        for i in [0, 2]:
+            support_x = x + i * tile_size // 3 + tile_size // 6
+            support_rect = pygame.Rect(support_x, y, support_width, tile_size)
+            pygame.draw.rect(screen, support_color, support_rect)
+
+    def _render_dock(self, screen, x, y, tile_size):
+        """Render dock tile."""
+        # Draw water on one side, dock platform on other
+        water_color = (30, 100, 180)
+        dock_color = (100, 90, 70)
+
+        # Half water, half dock
+        water_rect = pygame.Rect(x, y, tile_size // 2, tile_size)
+        dock_rect = pygame.Rect(x + tile_size // 2, y, tile_size // 2, tile_size)
+
+        pygame.draw.rect(screen, water_color, water_rect)
+        pygame.draw.rect(screen, dock_color, dock_rect)
+
+        # Draw dock planks
+        plank_color = (120, 100, 80)
+        for i in range(4):
+            plank_y = y + i * tile_size // 4
+            plank_rect = pygame.Rect(x + tile_size // 2, plank_y, tile_size // 2, max(2, tile_size // 8))
+            pygame.draw.rect(screen, plank_color, plank_rect)
+
+        # Draw dock posts
+        post_color = (80, 70, 50)
+        post_width = max(2, tile_size // 10)
+        for i in [0, 2]:
+            post_x = x + tile_size // 2 + i * tile_size // 4
+            post_rect = pygame.Rect(post_x, y, post_width, tile_size)
+            pygame.draw.rect(screen, post_color, post_rect)
+
+    def update_animation(self, dt):
+        """
+        Update tile animation (for water, etc.).
+
+        Args:
+            dt (float): Delta time in seconds
+        """
+        # Update water animation frame
+        if self.terrain_type in [TerrainType.WATER, TerrainType.OCEAN]:
+            self.water_anim_frame += dt * 10  # Animation speed
+            if self.water_anim_frame > 360:
+                self.water_anim_frame -= 360
+
     def __repr__(self):
         """String representation for debugging."""
-        return f"Tile({self.grid_x}, {self.grid_y}, type={self.tile_type})"
+        return f"Tile({self.grid_x}, {self.grid_y}, type={self.tile_type}, terrain={self.terrain_type})"
