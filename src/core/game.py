@@ -32,6 +32,7 @@ from src.systems.traffic_manager import TrafficManager
 from src.systems.bus_manager import BusManager
 from src.systems.prop_manager import PropManager
 from src.systems.camera_manager import CameraManager
+from src.systems.camera_hacking_manager import CameraHackingManager
 
 
 class Game:
@@ -121,6 +122,9 @@ class Game:
         self.entities = EntityManager(grid=self.grid, resource_manager=self.resources, research_manager=self.research)
         self.ui = HUD(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
         self.research_ui = ResearchUI(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
+
+        # Initialize camera hacking system (requires camera_manager, research, and suspicion)
+        self.camera_hacking = CameraHackingManager(self.camera_manager, self.research, self.suspicion)
 
         # Factory reference (for visual upgrades)
         self.factory = None
@@ -319,11 +323,24 @@ class Game:
                 elif event.key == pygame.K_p:
                     self.pollution.toggle_overlay()
 
+            # Mouse motion (for hover effects)
+            elif event.type == pygame.MOUSEMOTION:
+                mouse_x, mouse_y = pygame.mouse.get_pos()
+                world_x, world_y = self.camera.screen_to_world(mouse_x, mouse_y)
+                # Update camera hover for info display
+                self.camera_hacking.update_mouse_hover(world_x, world_y)
+
             # Mouse events
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_x, mouse_y = pygame.mouse.get_pos()
                 # Convert screen coordinates to world coordinates
                 world_x, world_y = self.camera.screen_to_world(mouse_x, mouse_y)
+
+                # Try camera hacking first (left click)
+                if event.button == 1:  # Left click
+                    hacked = self.camera_hacking.handle_click(world_x, world_y, self.npcs.game_time)
+                    if hacked:
+                        continue  # Camera hacking handled the click
 
                 # Try to select a robot
                 selected = self.entities.select_robot_at(world_x, world_y)
@@ -395,6 +412,9 @@ class Game:
 
         # Update camera system (camera timers)
         self.camera_manager.update(adjusted_dt)
+
+        # Update camera hacking system
+        self.camera_hacking.update(adjusted_dt, self.npcs.game_time)
 
         # Update fences
         self.fences.update(adjusted_dt)
@@ -492,6 +512,9 @@ class Game:
 
         # Render detection UI (after entities)
         self.detection.render_detection_ui(self.screen, self.camera, self.entities.robots)
+
+        # Render camera hacking UI (progress bars, info)
+        self.camera_hacking.render_ui(self.screen, self.camera)
 
         # Render pollution overlay (if enabled)
         self.pollution.render_overlay(self.screen, self.camera, config.TILE_SIZE)

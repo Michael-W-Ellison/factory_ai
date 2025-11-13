@@ -1090,6 +1090,50 @@
       }
     },
 
+    "stealth_systems": {
+      "camera_hacking_1": {
+        "name": "Camera Hacking I",
+        "category": "stealth",
+        "description": "Enables hacking of security cameras. Disable 1 camera for 5 minutes",
+        "cost": 5000,
+        "time": 120,
+        "prerequisites": ["hacking_algorithms_1"],
+        "uses_server_farm": true,
+        "unlocks": ["ability_hack_camera"],
+        "effects": {
+          "camera_hack_enabled": true,
+          "camera_hack_count": 1,
+          "camera_hack_duration": 300
+        }
+      },
+      "camera_hacking_2": {
+        "name": "Camera Hacking II",
+        "category": "stealth",
+        "description": "Improved camera hacking. Disable 1 camera for 15 minutes",
+        "cost": 10000,
+        "time": 200,
+        "prerequisites": ["camera_hacking_1"],
+        "uses_server_farm": true,
+        "effects": {
+          "camera_hack_count": 1,
+          "camera_hack_duration": 900
+        }
+      },
+      "camera_hacking_3": {
+        "name": "Camera Hacking III",
+        "category": "stealth",
+        "description": "Advanced camera hacking. Disable 3 cameras simultaneously for 15 minutes",
+        "cost": 20000,
+        "time": 300,
+        "prerequisites": ["camera_hacking_2"],
+        "uses_server_farm": true,
+        "effects": {
+          "camera_hack_count": 3,
+          "camera_hack_duration": 900
+        }
+      }
+    },
+
     "environmental_systems": {
       "basic_forecasting": {
         "name": "Basic Weather Forecasting",
