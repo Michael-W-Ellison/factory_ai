@@ -18,7 +18,7 @@ class Vehicle:
     is highly illegal and generates suspicion.
     """
 
-    def __init__(self, world_x: float, world_y: float, vehicle_type: str = 'car'):
+    def __init__(self, world_x: float, world_y: float, vehicle_type: str = 'car', is_scrap: bool = False):
         """
         Initialize a vehicle.
 
@@ -26,10 +26,12 @@ class Vehicle:
             world_x (float): World X position
             world_y (float): World Y position
             vehicle_type (str): Type of vehicle (car, truck, van)
+            is_scrap (bool): Whether this is a scrap vehicle (legal) or working (illegal)
         """
         self.world_x = world_x
         self.world_y = world_y
         self.vehicle_type = vehicle_type
+        self.is_scrap = is_scrap
 
         # Size based on vehicle type
         if vehicle_type == 'truck':
@@ -43,8 +45,10 @@ class Vehicle:
             self.height = 20
 
         # Deconstruction
-        self.legal_to_deconstruct = False  # Always illegal
-        self.deconstruction_time = 120.0  # 2 minutes (longer than houses)
+        # Working vehicles are illegal, scrap vehicles are legal
+        self.legal_to_deconstruct = is_scrap
+        # Scrap vehicles are faster to deconstruct (30s) vs working (45s)
+        self.deconstruction_time = 30.0 if is_scrap else 45.0
         self.noise_level = 8  # Very noisy (0-10 scale)
         self.being_deconstructed = False
         self.deconstruction_progress = 0.0  # 0.0-1.0
@@ -70,19 +74,31 @@ class Vehicle:
         rng = random.Random(int(self.world_x * 1000 + self.world_y))
 
         # Vehicle colors
-        car_colors = [
-            (180, 50, 50),    # Red
-            (50, 50, 180),    # Blue
-            (50, 150, 50),    # Green
-            (180, 180, 50),   # Yellow
-            (150, 150, 150),  # Silver
-            (80, 80, 80),     # Dark gray
-            (200, 200, 200),  # White
-            (100, 50, 50),    # Dark red
-        ]
+        if self.is_scrap:
+            # Scrap vehicles have faded, rusty colors
+            car_colors = [
+                (120, 80, 70),    # Rusty red
+                (90, 90, 100),    # Faded blue
+                (80, 100, 80),    # Faded green
+                (100, 100, 70),   # Faded yellow
+                (100, 100, 100),  # Dull gray
+                (70, 60, 50),     # Rusty brown
+            ]
+        else:
+            # Working vehicles have bright, clean colors
+            car_colors = [
+                (180, 50, 50),    # Red
+                (50, 50, 180),    # Blue
+                (50, 150, 50),    # Green
+                (180, 180, 50),   # Yellow
+                (150, 150, 150),  # Silver
+                (80, 80, 80),     # Dark gray
+                (200, 200, 200),  # White
+                (100, 50, 50),    # Dark red
+            ]
 
         self.body_color = rng.choice(car_colors)
-        self.window_color = (100, 150, 200)
+        self.window_color = (100, 150, 200) if not self.is_scrap else (60, 70, 80)
         self.wheel_color = (40, 40, 40)
         self.outline_color = tuple(max(0, c - 40) for c in self.body_color)
 

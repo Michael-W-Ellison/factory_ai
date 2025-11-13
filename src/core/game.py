@@ -16,6 +16,7 @@ from src.systems.building_manager import BuildingManager
 from src.systems.power_manager import PowerManager
 from src.systems.research_manager import ResearchManager
 from src.systems.pollution_manager import PollutionManager
+from src.systems.vehicle_manager import VehicleManager
 from src.ui.hud import HUD
 from src.ui.research_ui import ResearchUI
 from src.entities.buildings import Factory, LandfillGasExtraction
@@ -69,6 +70,7 @@ class Game:
         self.power = PowerManager(self.buildings)
         self.research = ResearchManager()
         self.pollution = PollutionManager(grid_width, grid_height)
+        self.vehicles = VehicleManager(self.grid)
         self.entities = EntityManager(grid=self.grid, resource_manager=self.resources, research_manager=self.research)
         self.ui = HUD(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
         self.research_ui = ResearchUI(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
@@ -90,6 +92,9 @@ class Game:
 
         # Register landfill tiles as pollution sources
         self._register_landfill_pollution()
+
+        # Spawn vehicles throughout the city
+        self.vehicles.spawn_vehicles_in_city(seed=42, vehicle_density=0.4)
 
         print("Game initialized successfully!")
         print(f"World size: {config.WORLD_WIDTH}x{config.WORLD_HEIGHT} pixels")
@@ -284,6 +289,9 @@ class Game:
         # Update pollution
         self.pollution.update(adjusted_dt)
 
+        # Update vehicles
+        self.vehicles.update(adjusted_dt)
+
     def _handle_robot_input(self):
         """Handle arrow key input for controlling the selected robot."""
         if not self.entities.selected_robot:
@@ -316,6 +324,9 @@ class Game:
 
         # Render buildings (before entities so robots appear on top)
         self.buildings.render(self.screen, self.camera)
+
+        # Render vehicles (after buildings, before entities)
+        self.vehicles.render(self.screen, self.camera)
 
         # Render entities
         self.entities.render(self.screen, self.camera)
