@@ -36,7 +36,7 @@ class HUD:
         self.color_bad = (255, 100, 100)
         self.color_bg = (0, 0, 0)
 
-    def render(self, screen, resource_manager, entity_manager, clock=None, power_manager=None, building_manager=None):
+    def render(self, screen, resource_manager, entity_manager, clock=None, power_manager=None, building_manager=None, research_manager=None):
         """
         Render the HUD.
 
@@ -47,6 +47,7 @@ class HUD:
             clock: Pygame clock (optional, for FPS display)
             power_manager: PowerManager instance (optional)
             building_manager: BuildingManager instance (optional)
+            research_manager: ResearchManager instance (optional)
         """
         # Top-left panel: Resources and money
         self._render_resources_panel(screen, resource_manager, entity_manager)
@@ -63,6 +64,10 @@ class HUD:
         # Top-center: FPS (if clock provided)
         if clock:
             self._render_fps(screen, clock)
+
+        # Top-center: Research progress (if active)
+        if research_manager and research_manager.current_research:
+            self._render_research_progress(screen, research_manager)
 
     def _render_resources_panel(self, screen, resource_manager, entity_manager):
         """Render the resources panel at top-left."""
@@ -389,3 +394,69 @@ class HUD:
         screen.blit(bg_surface, bg_rect)
 
         screen.blit(text, text_rect)
+
+    def _render_research_progress(self, screen, research_manager):
+        """
+        Render research progress indicator at top-center.
+
+        Args:
+            screen: Pygame surface
+            research_manager: ResearchManager instance
+        """
+        if not research_manager.current_research:
+            return
+
+        research = research_manager.get_research(research_manager.current_research)
+        if not research:
+            return
+
+        # Panel dimensions
+        panel_width = 300
+        panel_height = 80
+        panel_x = (self.screen_width - panel_width) // 2
+        panel_y = 50  # Below FPS display
+
+        # Background
+        panel_surface = pygame.Surface((panel_width, panel_height))
+        panel_surface.set_alpha(180)
+        panel_surface.fill(self.color_bg)
+        screen.blit(panel_surface, (panel_x, panel_y))
+
+        # Research name
+        name = research.get('name', 'Unknown')
+        if len(name) > 30:
+            name = name[:27] + "..."
+        name_text = self.font_medium.render(name, True, self.color_text)
+        name_rect = name_text.get_rect(centerx=panel_x + panel_width // 2, top=panel_y + 5)
+        screen.blit(name_text, name_rect)
+
+        # Progress bar
+        progress = research_manager.get_research_progress()
+        bar_width = panel_width - 20
+        bar_height = 20
+        bar_x = panel_x + 10
+        bar_y = panel_y + 35
+
+        # Background
+        pygame.draw.rect(screen, (60, 60, 60), (bar_x, bar_y, bar_width, bar_height))
+
+        # Fill (yellow/orange for in-progress)
+        fill_width = int(bar_width * progress)
+        fill_color = (255, 200, 50)
+        pygame.draw.rect(screen, fill_color, (bar_x, bar_y, fill_width, bar_height))
+
+        # Border
+        pygame.draw.rect(screen, (150, 150, 150), (bar_x, bar_y, bar_width, bar_height), 2)
+
+        # Percentage and time remaining
+        progress_pct = progress * 100
+        time_elapsed = research_manager.research_progress
+        time_total = research_manager.research_time_required
+        time_remaining = max(0, time_total - time_elapsed)
+
+        info_text = self.font_small.render(
+            f"{progress_pct:.0f}%  •  {time_remaining:.0f}s remaining",
+            True, self.color_text
+        )
+        info_rect = info_text.get_rect(centerx=panel_x + panel_width // 2, top=bar_y + bar_height + 5)
+        screen.blit(info_text, info_rect)

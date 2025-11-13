@@ -16,6 +16,7 @@ from src.systems.building_manager import BuildingManager
 from src.systems.power_manager import PowerManager
 from src.systems.research_manager import ResearchManager
 from src.ui.hud import HUD
+from src.ui.research_ui import ResearchUI
 from src.entities.buildings import Factory, LandfillGasExtraction
 
 
@@ -65,6 +66,7 @@ class Game:
         self.research = ResearchManager()
         self.entities = EntityManager(grid=self.grid, resource_manager=self.resources)
         self.ui = HUD(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
+        self.research_ui = ResearchUI(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
 
         # Place starting buildings
         self._place_starting_buildings()
@@ -158,6 +160,10 @@ class Game:
     def handle_events(self):
         """Process user input and system events."""
         for event in pygame.event.get():
+            # Let research UI handle events first if visible
+            if self.research_ui.handle_event(event, self.research, self.resources.money):
+                continue  # Event was handled by research UI
+
             # Window close button
             if event.type == pygame.QUIT:
                 self.running = False
@@ -175,6 +181,10 @@ class Game:
                 elif event.key == pygame.K_g:
                     config.SHOW_GRID = not config.SHOW_GRID
                     print(f"Grid display: {'ON' if config.SHOW_GRID else 'OFF'}")
+                # R key to open research menu
+                elif event.key == pygame.K_r:
+                    self.research_ui.toggle()
+                    print(f"Research menu: {'opened' if self.research_ui.visible else 'closed'}")
 
             # Mouse events
             elif event.type == pygame.MOUSEBUTTONDOWN:
@@ -260,7 +270,10 @@ class Game:
 
         # Render HUD (overlays everything)
         self.ui.render(self.screen, self.resources, self.entities, self.clock,
-                      self.power, self.buildings)
+                      self.power, self.buildings, self.research)
+
+        # Render research UI (if visible)
+        self.research_ui.render(self.screen, self.research, self.resources.money)
 
         # Show paused indicator
         if self.paused:
