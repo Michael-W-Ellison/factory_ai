@@ -28,20 +28,28 @@ class Robot(Entity):
         # Visual
         self.color = Colors.ROBOT_COLOR  # Green
 
-        # Movement
-        self.speed = 100.0  # Pixels per second
+        # Movement (base values before research)
+        self.base_speed = 100.0  # Pixels per second
+        self.speed = 100.0
         self.velocity_x = 0.0
         self.velocity_y = 0.0
 
-        # Inventory
+        # Inventory (base values before research)
+        self.base_capacity = 100  # kg
         self.inventory = {}  # material_type -> quantity
         self.max_capacity = 100  # kg
         self.current_load = 0  # kg
 
-        # Power
+        # Power (base values before research)
+        self.base_power_capacity = 1000  # units
         self.power_capacity = 1000  # units
         self.current_power = 1000
         self.power_consumption_rate = 1.0  # units per second when moving
+
+        # Health/Durability (base values before research)
+        self.base_health = 100
+        self.max_health = 100
+        self.current_health = 100
 
         # State
         self.selected = False  # For UI purposes
@@ -93,6 +101,40 @@ class Robot(Entity):
     def is_full(self):
         """Check if robot's inventory is full."""
         return self.current_load >= self.max_capacity
+
+    def apply_research_effects(self, research_manager):
+        """
+        Apply research bonuses to robot stats.
+
+        Args:
+            research_manager: ResearchManager instance with active effects
+        """
+        # Get multipliers from research (default to 1.0 if not researched)
+        speed_mult = research_manager.get_effect_multiplier('robot_speed')
+        capacity_mult = research_manager.get_effect_multiplier('robot_capacity')
+        power_mult = research_manager.get_effect_multiplier('robot_power_capacity')
+        health_mult = research_manager.get_effect_multiplier('robot_health')
+
+        # Apply multipliers to base values
+        old_speed = self.speed
+        old_capacity = self.max_capacity
+        old_power_capacity = self.power_capacity
+        old_max_health = self.max_health
+
+        self.speed = self.base_speed * speed_mult
+        self.max_capacity = self.base_capacity * capacity_mult
+        self.power_capacity = self.base_power_capacity * power_mult
+        self.max_health = self.base_health * health_mult
+
+        # If power capacity increased, add the difference to current power (don't lose energy)
+        if self.power_capacity > old_power_capacity:
+            power_increase = self.power_capacity - old_power_capacity
+            self.current_power = min(self.power_capacity, self.current_power + power_increase)
+
+        # If health increased, add the difference to current health
+        if self.max_health > old_max_health:
+            health_increase = self.max_health - old_max_health
+            self.current_health = min(self.max_health, self.current_health + health_increase)
 
     def update(self, dt, grid=None, entity_manager=None):
         """

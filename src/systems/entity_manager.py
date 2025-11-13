@@ -13,12 +13,13 @@ class EntityManager:
     Handles creation, updating, rendering, and removal of entities.
     """
 
-    def __init__(self, grid=None, resource_manager=None):
+    def __init__(self, grid=None, resource_manager=None, research_manager=None):
         """Initialize the entity manager.
 
         Args:
             grid: Grid object (for pathfinding)
             resource_manager: ResourceManager (for depositing materials)
+            research_manager: ResearchManager (for applying bonuses to new entities)
         """
         # All entities by ID
         self.entities = {}
@@ -34,6 +35,7 @@ class EntityManager:
         # Systems
         self.grid = grid
         self.resource_manager = resource_manager
+        self.research_manager = research_manager
 
         # Factory position (for robots to return to)
         self.factory_pos = None
@@ -57,6 +59,10 @@ class EntityManager:
         # Set factory position if available
         if self.factory_pos:
             robot.factory_pos = self.factory_pos
+
+        # Apply research effects to new robot
+        if self.research_manager:
+            robot.apply_research_effects(self.research_manager)
 
         # Auto-select first robot if not autonomous
         if not autonomous and self.selected_robot is None:
@@ -172,6 +178,16 @@ class EntityManager:
         # Update existing robots
         for robot in self.robots:
             robot.factory_pos = self.factory_pos
+
+    def apply_research_effects_to_robots(self, research_manager):
+        """
+        Apply research effects to all robots.
+
+        Args:
+            research_manager: ResearchManager instance
+        """
+        for robot in self.robots:
+            robot.apply_research_effects(research_manager)
 
     def _handle_collection(self):
         """

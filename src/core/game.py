@@ -64,7 +64,7 @@ class Game:
         self.buildings = BuildingManager(self.grid)
         self.power = PowerManager(self.buildings)
         self.research = ResearchManager()
-        self.entities = EntityManager(grid=self.grid, resource_manager=self.resources)
+        self.entities = EntityManager(grid=self.grid, resource_manager=self.resources, research_manager=self.research)
         self.ui = HUD(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
         self.research_ui = ResearchUI(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
 
@@ -225,6 +225,12 @@ class Game:
 
         # Update research
         self.research.update(adjusted_dt)
+
+        # Apply research effects to robots when research completes
+        if self.research.effects_changed:
+            self.entities.apply_research_effects_to_robots(self.research)
+            self.research.effects_changed = False
+            print("Applied research effects to all robots")
 
         # Update entities (includes collection mechanics)
         self.entities.update(adjusted_dt)

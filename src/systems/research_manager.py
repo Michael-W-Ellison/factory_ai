@@ -38,6 +38,9 @@ class ResearchManager:
         # Research effects cache (for quick lookups)
         self.active_effects: Dict[str, float] = {}
 
+        # Flag to indicate effects changed (need to reapply to entities)
+        self.effects_changed = False
+
         # Load research tree
         self._load_research_tree()
 
@@ -228,6 +231,10 @@ class ResearchManager:
             for effect_name, effect_value in effects.items():
                 # Store effects (will be applied by game systems)
                 self.active_effects[effect_name] = effect_value
+
+            # Mark that effects have changed
+            if effects:
+                self.effects_changed = True
 
         # Clear current research only if this is the research being completed
         if self.current_research == tech_id:
