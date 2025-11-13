@@ -27,6 +27,8 @@ from src.ui.research_ui import ResearchUI
 from src.entities.buildings import Factory, LandfillGasExtraction
 from src.world.river_generator import RiverGenerator
 from src.world.bridge_builder import BridgeBuilder
+from src.systems.road_network import RoadNetwork
+from src.systems.traffic_manager import TrafficManager
 
 
 class Game:
@@ -74,6 +76,11 @@ class Game:
 
         # Generate geographic features
         self._generate_geographic_features()
+
+        # Initialize traffic system (road network and traffic manager)
+        self.road_network = RoadNetwork(self.grid)
+        self.traffic_manager = TrafficManager(self.grid, self.road_network)
+        self.traffic_manager.set_target_vehicle_count(10)  # Moderate traffic
 
         # Center camera on factory (middle of world)
         self.camera.center_on(config.WORLD_WIDTH // 2, config.WORLD_HEIGHT // 2)
@@ -354,6 +361,9 @@ class Game:
         # Update vehicles
         self.vehicles.update(adjusted_dt)
 
+        # Update traffic system (moving vehicles on roads)
+        self.traffic_manager.update(adjusted_dt)
+
         # Update fences
         self.fences.update(adjusted_dt)
 
@@ -423,6 +433,9 @@ class Game:
 
         # Render vehicles (after buildings, before entities)
         self.vehicles.render(self.screen, self.camera)
+
+        # Render traffic vehicles (after static vehicles)
+        self.traffic_manager.render(self.screen, self.camera)
 
         # Render fences (after vehicles, before entities)
         self.fences.render(self.screen, self.camera)
