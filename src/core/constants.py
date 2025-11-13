@@ -72,7 +72,7 @@ class MaterialType(Enum):
 
 # Building types
 class BuildingType(Enum):
-    """Types of buildings."""
+    """Types of buildings (matches buildings.json)."""
     # Core buildings
     FACTORY = auto()
     WAREHOUSE = auto()
@@ -80,28 +80,40 @@ class BuildingType(Enum):
     # Power buildings
     LANDFILL_GAS_EXTRACTION = auto()
     SOLAR_ARRAY = auto()
-    METHANE_GENERATOR = auto()
-    BATTERY_BANK = auto()
+    WIND_TURBINE = auto()
+    NATURAL_GAS_GENERATOR = auto()
+    STEAM_GENERATOR = auto()
+    BATTERY_STORAGE = auto()
 
     # Processing buildings
-    PAPER_RECYCLER = auto()
-    PLASTIC_RECYCLER = auto()
+    LANDFILL_GAS_PLANT = auto()
+    BIO_WASTE_TREATMENT_TANK = auto()
+    CRUDE_OIL_REFINERY = auto()
+    COAL_OVEN = auto()
     METAL_REFINERY = auto()
     GLASSWORKS = auto()
+    PLASTIC_RECYCLER = auto()
     RUBBER_RECYCLER = auto()
-    BIO_WASTE_TREATMENT = auto()
+    PAPER_RECYCLER = auto()
     TOXIC_INCINERATOR = auto()
-    COAL_OVEN = auto()
-    CRUDE_OIL_REFINERY = auto()
-    LANDFILL_GAS_PLANT = auto()
 
-    # Manufacturing buildings
-    CIRCUIT_BOARD_FABRICATOR = auto()
-    MOTOR_ASSEMBLY = auto()
-    BATTERY_FABRICATION = auto()
+    # Infrastructure buildings
+    SERVER_FARM = auto()
+    WIRELESS_POWER_TRANSMITTER = auto()
+    WIRELESS_SIGNAL_TRANSMITTER = auto()
+    LIGHTNING_ROD = auto()
+    ROAD_DIRT = auto()
+    ROAD_TAR = auto()
+    ROAD_ASPHALT = auto()
+    PIPE = auto()
+    PUMP = auto()
 
-    # Storage buildings
-    SILO = auto()
+    # Defense buildings
+    WALL_SLAG = auto()
+    WALL_METAL = auto()
+    WALL_LASER = auto()
+    GATE_SCRAP = auto()
+    GATE_METAL = auto()
 
     # City buildings
     HOUSE = auto()
