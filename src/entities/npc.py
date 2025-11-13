@@ -77,6 +77,11 @@ class NPC:
         self.height = 16
         self._generate_visuals()
 
+        # Animation properties
+        self.animation_frame = 0  # 0 or 1 for walking animation
+        self.animation_timer = 0.0  # Time accumulator
+        self.animation_speed = 0.3  # Seconds per frame
+
         # ID for tracking
         self.id = id(self)
 
@@ -188,6 +193,17 @@ class NPC:
         """
         # Update schedule
         self.update_schedule(game_time)
+
+        # Update animation
+        if self.moving:
+            self.animation_timer += dt
+            if self.animation_timer >= self.animation_speed:
+                self.animation_timer = 0.0
+                self.animation_frame = 1 - self.animation_frame  # Toggle between 0 and 1
+        else:
+            # Reset animation when stopped
+            self.animation_frame = 0
+            self.animation_timer = 0.0
 
         # Update movement
         if self.moving:
@@ -314,7 +330,7 @@ class NPC:
 
     def render(self, screen: pygame.Surface, camera):
         """
-        Render the NPC.
+        Render the NPC with directional orientation and walking animation.
 
         Args:
             screen: Pygame surface
@@ -332,18 +348,66 @@ class NPC:
             screen_y + height_px < 0 or screen_y > screen.get_height()):
             return
 
-        # Draw simple NPC representation (circle for head, rectangle for body)
-        # Body
-        body_rect = pygame.Rect(screen_x - width_px//2, screen_y - height_px//2 + 4,
-                                width_px, height_px - 4)
+        # Determine direction (8-way) based on facing_angle
+        # 0=E, 45=SE, 90=S, 135=SW, 180=W, 225=NW, 270=N, 315=NE
+        angle = self.facing_angle % 360
+
+        # Convert angle to radians for calculations
+        angle_rad = math.radians(angle)
+
+        # Draw legs (animated when moving)
+        leg_offset = 3 if self.animation_frame == 1 else -3
+        leg_length = max(4, int(height_px * 0.3))
+        leg_width = max(2, int(width_px * 0.2))
+
+        # Calculate leg positions relative to facing direction
+        cos_a = math.cos(angle_rad)
+        sin_a = math.sin(angle_rad)
+
+        # Left and right leg positions (perpendicular to facing direction)
+        leg_spread = width_px // 3
+        left_offset_x = -sin_a * leg_spread
+        left_offset_y = cos_a * leg_spread
+        right_offset_x = sin_a * leg_spread
+        right_offset_y = -cos_a * leg_spread
+
+        # Draw left leg
+        left_leg_x = int(screen_x + left_offset_x)
+        left_leg_y = int(screen_y + left_offset_y + height_px//4)
+        if self.moving:
+            left_leg_y += leg_offset
+        left_leg_rect = pygame.Rect(left_leg_x - leg_width//2, left_leg_y, leg_width, leg_length)
+        pygame.draw.rect(screen, self.clothing_color, left_leg_rect)
+
+        # Draw right leg
+        right_leg_x = int(screen_x + right_offset_x)
+        right_leg_y = int(screen_y + right_offset_y + height_px//4)
+        if self.moving:
+            right_leg_y -= leg_offset
+        right_leg_rect = pygame.Rect(right_leg_x - leg_width//2, right_leg_y, leg_width, leg_length)
+        pygame.draw.rect(screen, self.clothing_color, right_leg_rect)
+
+        # Draw body (oriented towards facing direction)
+        body_width = width_px
+        body_height = int(height_px * 0.6)
+        body_rect = pygame.Rect(screen_x - body_width//2, screen_y - body_height//2,
+                                body_width, body_height)
         pygame.draw.rect(screen, self.clothing_color, body_rect)
         pygame.draw.rect(screen, self.outline_color, body_rect, 1)
 
-        # Head
+        # Draw head (offset slightly in facing direction)
         head_radius = max(3, int(width_px // 3))
-        head_pos = (screen_x, screen_y - height_px//2)
+        head_offset_x = cos_a * head_radius * 0.5
+        head_offset_y = sin_a * head_radius * 0.5
+        head_pos = (int(screen_x + head_offset_x), int(screen_y - body_height//2 + head_offset_y))
         pygame.draw.circle(screen, self.skin_color, head_pos, head_radius)
         pygame.draw.circle(screen, self.outline_color, head_pos, head_radius, 1)
+
+        # Draw facing direction indicator (small dot in front)
+        indicator_dist = head_radius + 2
+        indicator_x = int(head_pos[0] + cos_a * indicator_dist)
+        indicator_y = int(head_pos[1] + sin_a * indicator_dist)
+        pygame.draw.circle(screen, (50, 50, 50), (indicator_x, indicator_y), 2)
 
         # Activity indicator (small text above NPC for debugging)
         if camera.zoom >= 0.8:  # Only show when zoomed in enough

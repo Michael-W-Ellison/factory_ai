@@ -102,6 +102,10 @@ class Vehicle:
         self.wheel_color = (40, 40, 40)
         self.outline_color = tuple(max(0, c - 40) for c in self.body_color)
 
+        # Random facing direction (parked at random angles)
+        # 0=East, 90=South, 180=West, 270=North
+        self.facing_angle = rng.choice([0, 90, 180, 270])
+
     def start_deconstruction(self) -> bool:
         """
         Start deconstructing this vehicle.
@@ -141,12 +145,14 @@ class Vehicle:
 
     def render(self, screen: pygame.Surface, camera):
         """
-        Render the vehicle with deconstruction states.
+        Render the vehicle with directional orientation and deconstruction states.
 
         Args:
             screen: Pygame surface
             camera: Camera for world-to-screen transformation
         """
+        import math
+
         # Calculate screen position
         screen_x, screen_y = camera.world_to_screen(self.world_x, self.world_y)
 
@@ -154,9 +160,10 @@ class Vehicle:
         width_px = int(self.width * camera.zoom)
         height_px = int(self.height * camera.zoom)
 
-        # Don't render if off screen
-        if (screen_x + width_px < 0 or screen_x > screen.get_width() or
-            screen_y + height_px < 0 or screen_y > screen.get_height()):
+        # Don't render if off screen (with extra margin for rotation)
+        margin = max(width_px, height_px)
+        if (screen_x + margin < 0 or screen_x - margin > screen.get_width() or
+            screen_y + margin < 0 or screen_y - margin > screen.get_height()):
             return
 
         # Color fades as deconstruction progresses
@@ -165,24 +172,39 @@ class Vehicle:
             fade = 1.0 - (self.deconstruction_progress * 0.6)
             body_color = tuple(int(c * fade) for c in body_color)
 
-        # Draw main vehicle body
-        body_rect = pygame.Rect(screen_x, screen_y, width_px, height_px)
-        pygame.draw.rect(screen, body_color, body_rect)
-        pygame.draw.rect(screen, self.outline_color, body_rect, 2)
+        # Create a temporary surface to draw the vehicle on
+        # Use larger surface to accommodate rotation
+        temp_size = int(max(width_px, height_px) * 1.5)
+        temp_surface = pygame.Surface((temp_size, temp_size), pygame.SRCALPHA)
 
-        # Draw deconstruction damage
+        # Center position on temp surface
+        temp_x = temp_size // 2 - width_px // 2
+        temp_y = temp_size // 2 - height_px // 2
+
+        # Draw main vehicle body on temp surface
+        body_rect = pygame.Rect(temp_x, temp_y, width_px, height_px)
+        pygame.draw.rect(temp_surface, body_color, body_rect)
+        pygame.draw.rect(temp_surface, self.outline_color, body_rect, 2)
+
+        # Draw vehicle details or damage on temp surface
         if self.being_deconstructed:
-            self._render_deconstruction_damage(screen, screen_x, screen_y, width_px, height_px)
+            self._render_deconstruction_damage(temp_surface, temp_x, temp_y, width_px, height_px)
         else:
-            # Draw normal vehicle details when not being deconstructed
-            self._render_vehicle_details(screen, screen_x, screen_y, width_px, height_px)
+            self._render_vehicle_details(temp_surface, temp_x, temp_y, width_px, height_px)
 
-        # Show deconstruction progress bar
+        # Rotate the temp surface based on facing_angle
+        rotated_surface = pygame.transform.rotate(temp_surface, -self.facing_angle)
+        rotated_rect = rotated_surface.get_rect(center=(screen_x, screen_y))
+
+        # Blit the rotated surface to the screen
+        screen.blit(rotated_surface, rotated_rect.topleft)
+
+        # Show deconstruction progress bar (on top, not rotated)
         if self.being_deconstructed:
             bar_width = width_px - 4
             bar_height = 4
-            bar_x = screen_x + 2
-            bar_y = screen_y + 2
+            bar_x = screen_x - bar_width // 2
+            bar_y = screen_y - height_px // 2 - 8
 
             # Background
             pygame.draw.rect(screen, (0, 0, 0), (bar_x, bar_y, bar_width, bar_height))
