@@ -40,6 +40,7 @@ class RobotState(Enum):
     UNLOADING = auto()
     CHARGING = auto()
     UPGRADING = auto()
+    BUILDING = auto()  # Constructing a building
     BROKEN = auto()
 
 
