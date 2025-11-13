@@ -21,6 +21,7 @@ from src.systems.fence_manager import FenceManager
 from src.systems.npc_manager import NPCManager
 from src.systems.detection_manager import DetectionManager
 from src.systems.suspicion_manager import SuspicionManager
+from src.systems.police_manager import PoliceManager
 from src.ui.hud import HUD
 from src.ui.research_ui import ResearchUI
 from src.entities.buildings import Factory, LandfillGasExtraction
@@ -79,6 +80,7 @@ class Game:
         self.npcs = NPCManager(self.grid)
         self.detection = DetectionManager(self.grid, self.npcs)
         self.suspicion = SuspicionManager()
+        self.police = PoliceManager(self.grid, self.suspicion)
         self.entities = EntityManager(grid=self.grid, resource_manager=self.resources, research_manager=self.research)
         self.ui = HUD(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
         self.research_ui = ResearchUI(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
@@ -109,6 +111,9 @@ class Game:
 
         # Spawn NPCs in the city
         self.npcs.spawn_npcs_in_city(seed=42)
+
+        # Spawn initial police patrols
+        self.police.spawn_initial_patrols(seed=42)
 
         print("Game initialized successfully!")
         print(f"World size: {config.WORLD_WIDTH}x{config.WORLD_HEIGHT} pixels")
@@ -316,11 +321,29 @@ class Game:
         detection_reports = self.detection.update(self.entities.robots, adjusted_dt)
 
         # Process detection reports (increase suspicion)
+        tier_changed = False
         for report in detection_reports:
-            self.suspicion.process_detection_report(report)
+            changed = self.suspicion.process_detection_report(report)
+            if changed:
+                tier_changed = True
+            # Notify police of high-level detections
+            self.police.handle_detection_report(report)
 
         # Update suspicion (decay over time)
         self.suspicion.update(adjusted_dt, self.npcs.game_time)
+
+        # Update police presence based on suspicion (check every tier change)
+        if tier_changed:
+            self.police.update_police_presence()
+
+        # Update police
+        self.police.update(adjusted_dt, self.npcs.game_time)
+
+        # Check if police captured any robots (game over condition)
+        captured = self.police.check_captures(self.entities.robots)
+        if captured:
+            # TODO: Implement game over
+            print("⚠️ GAME OVER: Police captured robot!")
 
     def _handle_robot_input(self):
         """Handle arrow key input for controlling the selected robot."""
@@ -363,6 +386,9 @@ class Game:
 
         # Render NPCs (after fences, before entities)
         self.npcs.render(self.screen, self.camera)
+
+        # Render police (after NPCs, before entities)
+        self.police.render(self.screen, self.camera)
 
         # Render entities
         self.entities.render(self.screen, self.camera)
