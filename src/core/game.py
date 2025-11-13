@@ -15,6 +15,7 @@ from src.systems.resource_manager import ResourceManager
 from src.systems.building_manager import BuildingManager
 from src.systems.power_manager import PowerManager
 from src.systems.research_manager import ResearchManager
+from src.systems.pollution_manager import PollutionManager
 from src.ui.hud import HUD
 from src.ui.research_ui import ResearchUI
 from src.entities.buildings import Factory, LandfillGasExtraction
@@ -67,6 +68,7 @@ class Game:
         self.buildings = BuildingManager(self.grid)
         self.power = PowerManager(self.buildings)
         self.research = ResearchManager()
+        self.pollution = PollutionManager(grid_width, grid_height)
         self.entities = EntityManager(grid=self.grid, resource_manager=self.resources, research_manager=self.research)
         self.ui = HUD(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
         self.research_ui = ResearchUI(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
@@ -76,6 +78,12 @@ class Game:
 
         # Create initial game entities
         self._create_test_entities()
+
+        # Add test pollution sources (factory generates pollution)
+        center_grid_x = (config.WORLD_WIDTH // config.TILE_SIZE) // 2
+        center_grid_y = (config.WORLD_HEIGHT // config.TILE_SIZE) // 2
+        self.pollution.add_source(center_grid_x, center_grid_y, 2.0)  # Factory pollution
+        self.pollution.add_source(15, 20, 1.0)  # Landfill gas extraction pollution
 
         print("Game initialized successfully!")
         print(f"World size: {config.WORLD_WIDTH}x{config.WORLD_HEIGHT} pixels")
@@ -188,6 +196,9 @@ class Game:
                 elif event.key == pygame.K_r:
                     self.research_ui.toggle()
                     print(f"Research menu: {'opened' if self.research_ui.visible else 'closed'}")
+                # P key to toggle pollution overlay
+                elif event.key == pygame.K_p:
+                    self.pollution.toggle_overlay()
 
             # Mouse events
             elif event.type == pygame.MOUSEBUTTONDOWN:
@@ -242,6 +253,9 @@ class Game:
         # Update resources
         self.resources.update(adjusted_dt)
 
+        # Update pollution
+        self.pollution.update(adjusted_dt)
+
     def _handle_robot_input(self):
         """Handle arrow key input for controlling the selected robot."""
         if not self.entities.selected_robot:
@@ -277,6 +291,9 @@ class Game:
 
         # Render entities
         self.entities.render(self.screen, self.camera)
+
+        # Render pollution overlay (if enabled)
+        self.pollution.render_overlay(self.screen, self.camera, config.TILE_SIZE)
 
         # Render HUD (overlays everything)
         self.ui.render(self.screen, self.resources, self.entities, self.clock,
