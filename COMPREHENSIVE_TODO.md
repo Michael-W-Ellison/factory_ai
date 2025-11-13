@@ -1,7 +1,7 @@
 # Comprehensive Development Todo List
 # Recycling Factory Game - Complete Implementation
 
-**Status:** Phases 1-3 Complete, Phase 7 (partial) | Current Phase: 7 (Environmental Content)
+**Status:** Phases 1-4 Complete, Phase 7 (partial) | Current Phase: 5 (Material Processing & Components)
 **Last Updated:** 2025-11-13
 
 ---
@@ -39,6 +39,24 @@
 - [x] Multiple robots (autonomous + manual)
 - [x] Pathfinding integration
 
+### Phase 4: Building System ✓
+- [x] Building base class with properties, power tracking, and queues
+- [x] BuildingType enum with all 32 building types
+- [x] BuildingManager for placement, tracking, and updates
+- [x] Factory building (5x5, starting building, upgradeable)
+- [x] PowerManager with generation, consumption, brownout/blackout handling
+- [x] LandfillGasExtraction (starting power source, degrades over time)
+- [x] ConstructionSite entity with progress tracking and robot assignment
+- [x] ConstructionManager with queue system and robot building behavior
+- [x] Processing buildings: PaperRecycler, PlasticRecycler, MetalRefinery, Glassworks, RubberRecycler
+- [x] ProcessingBuilding base class with quality tiers and efficiency
+- [x] Storage buildings: Warehouse (4x4, 50,000kg), Silo (3x3, 100,000kg single material)
+- [x] Power buildings: SolarArray (time-dependent), MethaneGenerator (fuel-based), BatteryBank (storage)
+- [x] Advanced processing: BioWasteTreatment, ToxicIncinerator, CoalOven, CrudeOilRefinery, LandfillGasPlant
+- [x] Manufacturing buildings: CircuitBoardFab, MotorAssembly, BatteryFab
+- [x] Integration with EntityManager, Grid, ResourceManager, HUD
+- [x] Comprehensive test suite (test_construction_system.py, test_power_system.py, test_processing_buildings.py, test_storage_power_buildings.py, test_phase4_integration.py)
+
 ### Phase 7: City & World (Partial) ✓
 - [x] 7.3: Vehicles in City (spawning, working vs scrap)
 - [x] 7.4: Fences and Walls (chain link, wooden, brick)
@@ -59,7 +77,7 @@
 
 ---
 
-## PHASE 4: BUILDING SYSTEM (IN PROGRESS)
+## PHASE 4: BUILDING SYSTEM ✓ (COMPLETED - See above)
 
 ### 4.1 Building Base System
 - [ ] Create Building base class (src/entities/building.py)
