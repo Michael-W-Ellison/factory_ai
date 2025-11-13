@@ -12,7 +12,10 @@ from src.world.grid import Grid
 from src.rendering.camera import Camera
 from src.systems.entity_manager import EntityManager
 from src.systems.resource_manager import ResourceManager
+from src.systems.building_manager import BuildingManager
+from src.systems.power_manager import PowerManager
 from src.ui.hud import HUD
+from src.entities.buildings import Factory, LandfillGasExtraction
 
 
 class Game:
@@ -56,13 +59,13 @@ class Game:
 
         # Initialize game systems
         self.resources = ResourceManager()
+        self.buildings = BuildingManager(self.grid)
+        self.power = PowerManager(self.buildings)
         self.entities = EntityManager(grid=self.grid, resource_manager=self.resources)
         self.ui = HUD(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
 
-        # Set factory position (center of world)
-        factory_world_x = config.WORLD_WIDTH // 2
-        factory_world_y = config.WORLD_HEIGHT // 2
-        self.entities.set_factory_position(factory_world_x, factory_world_y)
+        # Place starting buildings
+        self._place_starting_buildings()
 
         # Create initial game entities
         self._create_test_entities()
@@ -70,6 +73,27 @@ class Game:
         print("Game initialized successfully!")
         print(f"World size: {config.WORLD_WIDTH}x{config.WORLD_HEIGHT} pixels")
         print(f"Grid size: {grid_width}x{grid_height} tiles")
+
+    def _place_starting_buildings(self):
+        """Place the starting buildings (Factory and Landfill Gas Extraction)."""
+        # Calculate center of world in grid coordinates
+        center_grid_x = (config.WORLD_WIDTH // config.TILE_SIZE) // 2
+        center_grid_y = (config.WORLD_HEIGHT // config.TILE_SIZE) // 2
+
+        # Place Factory at center (5x5)
+        factory = Factory(center_grid_x - 2, center_grid_y - 2)
+        if self.buildings.place_building(factory):
+            # Set factory position for robots
+            factory_world_x = factory.x + factory.width // 2
+            factory_world_y = factory.y + factory.height // 2
+            self.entities.set_factory_position(factory_world_x, factory_world_y)
+            print(f"Factory placed at grid ({factory.grid_x}, {factory.grid_y})")
+
+        # Place Landfill Gas Extraction near landfill area (left side)
+        # Landfill is roughly at grid coordinates (5-25, 10-30)
+        gas_extraction = LandfillGasExtraction(15, 20)
+        if self.buildings.place_building(gas_extraction):
+            print(f"Landfill Gas Extraction placed at grid ({gas_extraction.grid_x}, {gas_extraction.grid_y})")
 
     def _create_test_entities(self):
         """Create test robots and collectibles for gameplay demonstration."""
@@ -181,6 +205,12 @@ class Game:
         # Update grid
         self.grid.update(adjusted_dt)
 
+        # Update buildings
+        self.buildings.update(adjusted_dt)
+
+        # Update power system
+        self.power.update(adjusted_dt, self.buildings)
+
         # Update entities (includes collection mechanics)
         self.entities.update(adjusted_dt)
 
@@ -216,6 +246,9 @@ class Game:
 
         # Render grid
         self.grid.render(self.screen, self.camera, config.SHOW_GRID)
+
+        # Render buildings (before entities so robots appear on top)
+        self.buildings.render(self.screen, self.camera)
 
         # Render entities
         self.entities.render(self.screen, self.camera)

@@ -72,11 +72,40 @@ class MaterialType(Enum):
 
 # Building types
 class BuildingType(Enum):
-    """Types of buildings in the city."""
-    HOUSE = auto()
-    STORE = auto()
+    """Types of buildings."""
+    # Core buildings
     FACTORY = auto()
     WAREHOUSE = auto()
+
+    # Power buildings
+    LANDFILL_GAS_EXTRACTION = auto()
+    SOLAR_ARRAY = auto()
+    METHANE_GENERATOR = auto()
+    BATTERY_BANK = auto()
+
+    # Processing buildings
+    PAPER_RECYCLER = auto()
+    PLASTIC_RECYCLER = auto()
+    METAL_REFINERY = auto()
+    GLASSWORKS = auto()
+    RUBBER_RECYCLER = auto()
+    BIO_WASTE_TREATMENT = auto()
+    TOXIC_INCINERATOR = auto()
+    COAL_OVEN = auto()
+    CRUDE_OIL_REFINERY = auto()
+    LANDFILL_GAS_PLANT = auto()
+
+    # Manufacturing buildings
+    CIRCUIT_BOARD_FABRICATOR = auto()
+    MOTOR_ASSEMBLY = auto()
+    BATTERY_FABRICATION = auto()
+
+    # Storage buildings
+    SILO = auto()
+
+    # City buildings
+    HOUSE = auto()
+    STORE = auto()
     POLICE_STATION = auto()
     OFFICE = auto()
     SCHOOL = auto()
