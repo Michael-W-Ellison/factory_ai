@@ -6,9 +6,13 @@ the development phases.
 """
 
 import pygame
+import random
 import config
 from src.world.grid import Grid
 from src.rendering.camera import Camera
+from src.systems.entity_manager import EntityManager
+from src.systems.resource_manager import ResourceManager
+from src.ui.hud import HUD
 
 
 class Game:
@@ -50,14 +54,49 @@ class Game:
         # Center camera on factory (middle of world)
         self.camera.center_on(config.WORLD_WIDTH // 2, config.WORLD_HEIGHT // 2)
 
-        # TODO: Initialize other game systems as you build them
-        # self.entities = EntityManager()
-        # self.resources = ResourceManager()
-        # self.ui = UIManager()
+        # Initialize game systems
+        self.entities = EntityManager()
+        self.resources = ResourceManager()
+        self.ui = HUD(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
+
+        # Create initial game entities
+        self._create_test_entities()
 
         print("Game initialized successfully!")
         print(f"World size: {config.WORLD_WIDTH}x{config.WORLD_HEIGHT} pixels")
         print(f"Grid size: {grid_width}x{grid_height} tiles")
+
+    def _create_test_entities(self):
+        """Create test robots and collectibles for gameplay demonstration."""
+        # Create robots near the factory (center of world)
+        center_x = config.WORLD_WIDTH // 2
+        center_y = config.WORLD_HEIGHT // 2
+
+        # Create 2 robots
+        self.entities.create_robot(center_x - 50, center_y + 100)
+        self.entities.create_robot(center_x + 50, center_y + 100)
+
+        # Create collectibles in the landfill area (left side)
+        # The landfill is roughly at x: 5-25 tiles, y: 10-30 tiles
+        material_types = ['plastic', 'metal', 'glass', 'paper', 'rubber', 'organic', 'wood', 'electronic']
+
+        # Create 30 random collectibles in the landfill area
+        for _ in range(30):
+            x = random.randint(5 * config.TILE_SIZE, 25 * config.TILE_SIZE)
+            y = random.randint(10 * config.TILE_SIZE, 30 * config.TILE_SIZE)
+            material = random.choice(material_types)
+            quantity = random.uniform(5, 50)  # 5-50 kg
+            self.entities.create_collectible(x, y, material, quantity)
+
+        # Create some collectibles near the factory for easy testing
+        for i in range(5):
+            x = center_x + random.randint(-150, 150)
+            y = center_y + random.randint(-100, -20)
+            material = random.choice(material_types)
+            quantity = random.uniform(10, 30)
+            self.entities.create_collectible(x, y, material, quantity)
+
+        print(f"Created {len(self.entities.robots)} robots and {len(self.entities.collectibles)} collectibles")
 
     def run(self):
         """Main game loop."""
@@ -107,18 +146,25 @@ class Game:
                 mouse_x, mouse_y = pygame.mouse.get_pos()
                 # Convert screen coordinates to world coordinates
                 world_x, world_y = self.camera.screen_to_world(mouse_x, mouse_y)
-                grid_x, grid_y = self.grid.world_to_grid(world_x, world_y)
-                print(f"Clicked screen({mouse_x}, {mouse_y}) -> world({world_x:.0f}, {world_y:.0f}) -> grid({grid_x}, {grid_y})")
 
-                # Get the clicked tile
-                tile = self.grid.get_tile(grid_x, grid_y)
-                if tile:
-                    print(f"  Tile: {tile}")
+                # Try to select a robot
+                selected = self.entities.select_robot_at(world_x, world_y)
+                if selected:
+                    print(f"Selected {selected}")
+                else:
+                    # If no robot selected, show tile info
+                    grid_x, grid_y = self.grid.world_to_grid(world_x, world_y)
+                    tile = self.grid.get_tile(grid_x, grid_y)
+                    if tile:
+                        print(f"Clicked tile {tile} at world({world_x:.0f}, {world_y:.0f})")
 
     def update(self, dt):
         """Update game logic."""
         # Adjust delta time by game speed
         adjusted_dt = dt * self.game_speed
+
+        # Handle robot movement input
+        self._handle_robot_input()
 
         # Update camera
         self.camera.update(adjusted_dt)
@@ -126,9 +172,33 @@ class Game:
         # Update grid
         self.grid.update(adjusted_dt)
 
-        # TODO: Update other game systems
-        # self.entities.update(adjusted_dt)
-        # self.resources.update(adjusted_dt)
+        # Update entities (includes collection mechanics)
+        self.entities.update(adjusted_dt)
+
+        # Update resources
+        self.resources.update(adjusted_dt)
+
+    def _handle_robot_input(self):
+        """Handle arrow key input for controlling the selected robot."""
+        if not self.entities.selected_robot:
+            return
+
+        keys = pygame.key.get_pressed()
+        dx, dy = 0, 0
+
+        # Arrow keys for robot movement
+        if keys[pygame.K_UP]:
+            dy = -1
+        if keys[pygame.K_DOWN]:
+            dy = 1
+        if keys[pygame.K_LEFT]:
+            dx = -1
+        if keys[pygame.K_RIGHT]:
+            dx = 1
+
+        # Set robot velocity
+        if dx != 0 or dy != 0:
+            self.entities.selected_robot.move(dx, dy)
 
     def render(self):
         """Render game to screen."""
@@ -138,33 +208,11 @@ class Game:
         # Render grid
         self.grid.render(self.screen, self.camera, config.SHOW_GRID)
 
-        # TODO: Render other game elements
-        # self.entities.render(self.screen, self.camera)
-        # self.ui.render(self.screen)
+        # Render entities
+        self.entities.render(self.screen, self.camera)
 
-        # Show FPS and debug info
-        if config.DEBUG_MODE and config.SHOW_FPS:
-            font = pygame.font.Font(None, 24)
-            fps = int(self.clock.get_fps())
-            fps_text = font.render(f"FPS: {fps}", True, (255, 255, 0))
-            self.screen.blit(fps_text, (10, 10))
-
-            # Show camera position
-            cam_text = font.render(f"Camera: ({self.camera.x:.0f}, {self.camera.y:.0f})", True, (255, 255, 0))
-            self.screen.blit(cam_text, (10, 35))
-
-            # Show controls
-            controls = [
-                "WASD/Arrows: Move camera",
-                "G: Toggle grid",
-                "Space: Pause",
-                "ESC: Quit"
-            ]
-            y_offset = config.SCREEN_HEIGHT - 110
-            for control in controls:
-                text = font.render(control, True, (200, 200, 200))
-                self.screen.blit(text, (10, y_offset))
-                y_offset += 25
+        # Render HUD (overlays everything)
+        self.ui.render(self.screen, self.resources, self.entities, self.clock)
 
         # Show paused indicator
         if self.paused:
