@@ -37,6 +37,7 @@ from src.systems.inspection_manager import InspectionManager
 from src.systems.material_inventory import MaterialInventory
 from src.ui.inspection_ui import InspectionUI
 from src.systems.save_manager import SaveManager
+from src.ui.save_load_menu import SaveLoadMenu
 
 
 class Game:
@@ -154,6 +155,7 @@ class Game:
 
         # Initialize save/load system
         self.save_manager = SaveManager()
+        self.save_load_menu = SaveLoadMenu(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
 
         # Game statistics tracking
         self.stats = {
@@ -330,6 +332,10 @@ class Game:
     def handle_events(self):
         """Process user input and system events."""
         for event in pygame.event.get():
+            # Let save/load menu handle events first if visible
+            if self.save_load_menu.handle_event(event):
+                continue  # Event was handled by save/load menu
+
             # Let research UI handle events first if visible
             if self.research_ui.handle_event(event, self.research, self.resources.money):
                 continue  # Event was handled by research UI
@@ -364,6 +370,14 @@ class Game:
                 # F9 key to quick load
                 elif event.key == pygame.K_F9:
                     self._quick_load()
+                # F10 key to open save/load menu
+                elif event.key == pygame.K_F10:
+                    self.save_load_menu.toggle()
+                    # Update save list when opening menu
+                    if self.save_load_menu.visible:
+                        save_list = self.save_manager.get_save_list()
+                        self.save_load_menu.update_save_list(save_list)
+                    print(f"Save/Load menu: {'opened' if self.save_load_menu.visible else 'closed'}")
 
             # Mouse motion (for hover effects)
             elif event.type == pygame.MOUSEMOTION:
@@ -397,6 +411,9 @@ class Game:
 
     def update(self, dt):
         """Update game logic."""
+        # Handle save/load menu requests
+        self._process_save_load_requests()
+
         # Adjust delta time by game speed
         adjusted_dt = dt * self.game_speed
 
@@ -595,6 +612,9 @@ class Game:
         adjusted_dt = self.clock.get_time() / 1000.0
         self.inspection_ui.render(self.screen, self.inspection, adjusted_dt)
 
+        # Render save/load menu (if visible)
+        self.save_load_menu.render(self.screen)
+
         # Show paused indicator
         if self.paused:
             font = pygame.font.Font(None, 72)
@@ -658,3 +678,42 @@ class Game:
         if game_state:
             return SaveManager.deserialize_game_state(self, game_state)
         return False
+
+    def _process_save_load_requests(self):
+        """Process any pending save/load/delete requests from the menu."""
+        # Check for load request
+        load_save_name = self.save_load_menu.get_and_clear_load_request()
+        if load_save_name:
+            print(f"\n=== LOADING GAME: {load_save_name} ===")
+            success = self.load_game(load_save_name)
+            if success:
+                print(f"✓ Game loaded successfully from '{load_save_name}'")
+                self.save_load_menu.hide()
+            else:
+                print(f"✗ Failed to load game from '{load_save_name}'")
+
+        # Check for save request
+        save_name = self.save_load_menu.get_and_clear_save_request()
+        if save_name:
+            print(f"\n=== SAVING GAME: {save_name} ===")
+            success = self.save_game(save_name)
+            if success:
+                print(f"✓ Game saved successfully as '{save_name}'")
+                # Refresh save list
+                save_list = self.save_manager.get_save_list()
+                self.save_load_menu.update_save_list(save_list)
+            else:
+                print(f"✗ Failed to save game as '{save_name}'")
+
+        # Check for delete request
+        delete_save_name = self.save_load_menu.get_and_clear_delete_request()
+        if delete_save_name:
+            print(f"\n=== DELETING SAVE: {delete_save_name} ===")
+            success = self.save_manager.delete_save(delete_save_name)
+            if success:
+                print(f"✓ Save '{delete_save_name}' deleted successfully")
+                # Refresh save list
+                save_list = self.save_manager.get_save_list()
+                self.save_load_menu.update_save_list(save_list)
+            else:
+                print(f"✗ Failed to delete save '{delete_save_name}'")
