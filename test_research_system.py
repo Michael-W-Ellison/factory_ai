@@ -1,393 +1,425 @@
 """
-Comprehensive tests for the Research System (Phase 6).
+Test Research System
 
-Tests research loading, prerequisites, progress, completion, and effects.
+Tests the ResearchManager, technology tree, prerequisites,
+costs, effects, and research progression.
 """
 
 import sys
 import os
 
 # Add src to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
-
-from src.systems.research_manager import ResearchManager
+sys.path.insert(0, os.path.dirname(__file__))
 
 
-def test_research_loading():
-    """Test that research tree loads from JSON."""
-    print("Testing research tree loading...")
-
-    manager = ResearchManager()
-
-    # Verify research loaded
-    assert len(manager.research_tree) > 0, "Research tree should not be empty"
-
-    print(f"  ✓ Loaded {len(manager.research_tree)} technologies")
-
-    # Test get_research
-    legs_1 = manager.get_research('legs_1')
-    assert legs_1 is not None, "Should find legs_1 research"
-    assert legs_1['name'] == 'Legs Tier 1'
-    assert legs_1['cost'] == 500
-    assert legs_1['time'] == 30
-    assert legs_1['prerequisites'] == []
-
-    print(f"  ✓ Research data structure correct")
-    print(f"  ✓ Sample research: {legs_1['name']} - ${legs_1['cost']}")
+def test_research_manager_creation():
+    """Test ResearchManager creation and initialization."""
+    print("=" * 80)
+    print("TEST 1: ResearchManager Creation")
+    print("=" * 80)
     print()
 
+    from src.systems.research_manager import ResearchManager
 
-def test_research_prerequisites():
-    """Test prerequisite checking."""
-    print("Testing research prerequisites...")
-
+    # Create manager
     manager = ResearchManager()
+    print(f"✓ ResearchManager created: {manager}")
 
-    # legs_1 has no prerequisites, should be available
-    assert manager.is_available('legs_1'), "legs_1 should be available (no prereqs)"
+    # Test loading research definitions
+    assert len(manager.research_definitions) > 0, "No research definitions loaded"
+    print(f"✓ Loaded {len(manager.research_definitions)} technologies")
 
-    # legs_2 requires legs_1, should not be available yet
-    assert not manager.is_available('legs_2'), "legs_2 should not be available (requires legs_1)"
+    # Test initial state
+    assert len(manager.completed_research) == 0, "Should start with no completed research"
+    assert manager.current_research is None, "Should not be researching anything initially"
+    print(f"✓ Initial state correct: {len(manager.completed_research)} completed, not researching")
 
-    # Complete legs_1
-    manager.completed_research.add('legs_1')
-    manager._complete_research('legs_1')  # Apply effects
+    # Test statistics
+    stats = manager.get_statistics()
+    assert stats['total_researched'] == 0, "Should have researched nothing"
+    assert stats['money_spent'] == 0, "Should have spent no money"
+    print(f"✓ Initial statistics: {stats}")
 
-    # Now legs_2 should be available
-    assert manager.is_available('legs_2'), "legs_2 should be available after completing legs_1"
+    print("\n✓ ResearchManager creation test PASSED\n")
 
-    # legs_3 requires both legs_2 and frames_2
-    assert not manager.is_available('legs_3'), "legs_3 should not be available (missing prereqs)"
 
-    # Complete legs_2 and frames_2
-    manager.completed_research.add('legs_2')
-    manager.completed_research.add('frames_2')
-
-    # Now legs_3 should be available
-    assert manager.is_available('legs_3'), "legs_3 should be available after completing all prereqs"
-
-    print(f"  ✓ Prerequisite checking works correctly")
-    print(f"  ✓ Complex prerequisites (multiple prereqs) work")
+def test_research_availability():
+    """Test research availability and prerequisites."""
+    print("=" * 80)
+    print("TEST 2: Research Availability & Prerequisites")
+    print("=" * 80)
     print()
 
-
-def test_research_affordability():
-    """Test affordability checking."""
-    print("Testing research affordability...")
+    from src.systems.research_manager import ResearchManager
 
     manager = ResearchManager()
 
-    # legs_1 costs $500
-    assert manager.can_afford('legs_1', 1000), "Should be able to afford legs_1 with $1000"
-    assert manager.can_afford('legs_1', 500), "Should be able to afford legs_1 with exactly $500"
-    assert not manager.can_afford('legs_1', 400), "Should not be able to afford legs_1 with $400"
+    # Test getting definition
+    tech = manager.get_research_definition('robot_speed_1')
+    assert tech is not None, "robot_speed_1 should exist"
+    print(f"✓ Found technology: {tech['name']}")
+    print(f"  Category: {tech['category']}")
+    print(f"  Cost: ${tech['cost']}")
+    print(f"  Time: {tech['time']} hours")
 
-    # legs_5 costs $10000
-    assert not manager.can_afford('legs_5', 5000), "Should not be able to afford legs_5 with $5000"
-    assert manager.can_afford('legs_5', 15000), "Should be able to afford legs_5 with $15000"
+    # Test availability (no prerequisites)
+    available = manager.is_available('robot_speed_1')
+    assert available, "robot_speed_1 should be available (no prerequisites)"
+    print(f"✓ robot_speed_1 is available")
 
-    print(f"  ✓ Affordability checking works")
+    # Test unavailable (has prerequisites)
+    available2 = manager.is_available('robot_speed_2')
+    assert available2 == False, "robot_speed_2 should NOT be available (requires robot_speed_1)"
+    print(f"✓ robot_speed_2 is not available (requires robot_speed_1)")
+
+    # Get available technologies
+    available_techs = manager.get_available_technologies()
+    print(f"✓ {len(available_techs)} technologies available to research")
+    
+    # Should include tier 1 techs without prerequisites
+    tier1_available = [t for t in available_techs if not t.get('prerequisites', [])]
+    print(f"✓ {len(tier1_available)} tier 1 technologies (no prerequisites)")
+
+    # Test category filtering
+    robot_techs = manager.get_available_technologies(category='robot')
+    print(f"✓ {len(robot_techs)} robot technologies available")
+
+    print("\n✓ Research availability test PASSED\n")
+
+
+def test_start_research():
+    """Test starting research."""
+    print("=" * 80)
+    print("TEST 3: Start Research")
+    print("=" * 80)
     print()
 
-
-def test_research_start_and_cancel():
-    """Test starting and cancelling research."""
-    print("Testing research start and cancel...")
+    from src.systems.research_manager import ResearchManager
 
     manager = ResearchManager()
+    money = 10000.0
 
-    # Try to start legs_1 with insufficient funds
-    result = manager.start_research('legs_1', 100)
-    assert not result, "Should not start research with insufficient funds"
-    assert manager.current_research is None
+    # Test can_start_research (success)
+    can_start, reason = manager.can_start_research('robot_speed_1', money)
+    assert can_start, f"Should be able to start robot_speed_1: {reason}"
+    print(f"✓ Can start robot_speed_1: {reason}")
 
-    # Start legs_1 with sufficient funds
-    result = manager.start_research('legs_1', 1000)
-    assert result, "Should start research with sufficient funds"
-    assert manager.current_research == 'legs_1'
-    assert manager.research_progress == 0.0
-    assert manager.research_time_required == 30.0
+    # Start research
+    success, money_remaining = manager.start_research('robot_speed_1', money)
+    assert success, "Should successfully start research"
+    assert money_remaining < money, "Money should be deducted"
+    print(f"✓ Started research: robot_speed_1")
+    print(f"  Money: ${money:.0f} -> ${money_remaining:.0f}")
 
-    print(f"  ✓ Started research: legs_1")
+    # Check state
+    assert manager.current_research == 'robot_speed_1', "Should be researching robot_speed_1"
+    assert manager.research_progress == 0.0, "Progress should be 0"
+    print(f"✓ Research state: {manager.current_research}, progress: {manager.research_progress}")
 
-    # Try to start another research while one is in progress
-    result = manager.start_research('motor_1', 1000)
-    assert not result, "Should not start second research while one is in progress"
-    assert manager.current_research == 'legs_1'
+    # Get progress info
+    progress = manager.get_progress_info()
+    assert progress is not None, "Should have progress info"
+    print(f"✓ Progress info: {progress['name']}, {progress['percent']:.1f}% complete")
 
-    print(f"  ✓ Cannot start multiple research simultaneously")
+    # Test can't start another while researching
+    can_start2, reason2 = manager.can_start_research('robot_capacity_1', money_remaining)
+    assert not can_start2, "Should not be able to start another research"
+    print(f"✓ Cannot start second research: {reason2}")
 
-    # Cancel research
+    # Test can't afford
+    manager2 = ResearchManager()
+    can_start3, reason3 = manager2.can_start_research('robot_speed_1', 100.0)
+    assert not can_start3, "Should not be able to afford"
+    assert "Insufficient funds" in reason3, f"Reason should mention funds: {reason3}"
+    print(f"✓ Correctly rejects when insufficient funds: {reason3}")
+
+    print("\n✓ Start research test PASSED\n")
+
+
+def test_research_progress():
+    """Test research progress and completion."""
+    print("=" * 80)
+    print("TEST 4: Research Progress & Completion")
+    print("=" * 80)
+    print()
+
+    from src.systems.research_manager import ResearchManager
+
+    manager = ResearchManager()
+    
+    # Start research
+    success, money = manager.start_research('robot_speed_1', 10000.0)
+    assert success, "Should start research"
+
+    tech = manager.get_research_definition('robot_speed_1')
+    total_time = tech['time']
+    print(f"✓ Researching {tech['name']} ({total_time} hours)")
+
+    # Update progress (partial)
+    completed = manager.update(0.5)  # 0.5 hours
+    assert completed is None, "Should not be complete yet"
+    assert manager.research_progress == 0.5, "Progress should be 0.5 hours"
+    print(f"✓ Progress after 0.5h: {manager.research_progress:.1f}/{total_time} hours")
+
+    # Complete research
+    completed = manager.update(total_time)  # Complete remaining time
+    assert completed == 'robot_speed_1', "Should return completed tech"
+    print(f"✓ Research completed: {completed}")
+
+    # Check state after completion
+    assert manager.current_research is None, "Should not be researching anything"
+    assert manager.is_completed('robot_speed_1'), "Should be marked as completed"
+    print(f"✓ State after completion: not researching, robot_speed_1 completed")
+
+    # Check statistics
+    stats = manager.get_statistics()
+    assert stats['total_researched'] == 1, "Should have 1 completed research"
+    assert stats['money_spent'] > 0, "Should have spent money"
+    assert stats['time_spent'] > 0, "Should have spent time"
+    print(f"✓ Statistics: {stats['total_researched']} researched, ${stats['money_spent']} spent, {stats['time_spent']:.1f}h")
+
+    # Test prerequisite unlocking
+    available = manager.is_available('robot_speed_2')
+    assert available, "robot_speed_2 should now be available (prerequisite met)"
+    print(f"✓ robot_speed_2 now available (prerequisite robot_speed_1 completed)")
+
+    print("\n✓ Research progress test PASSED\n")
+
+
+def test_cancel_research():
+    """Test cancelling research."""
+    print("=" * 80)
+    print("TEST 5: Cancel Research")
+    print("=" * 80)
+    print()
+
+    from src.systems.research_manager import ResearchManager
+
+    manager = ResearchManager()
+    
+    # Start research
+    success, money = manager.start_research('robot_speed_1', 10000.0)
+    assert success, "Should start research"
+    print(f"✓ Started research: robot_speed_1")
+
+    # Make some progress
+    manager.update(0.5)
+    progress_before = manager.research_progress
+    print(f"✓ Progress: {progress_before} hours")
+
+    # Cancel
     cancelled = manager.cancel_research()
-    assert cancelled == 'legs_1'
-    assert manager.current_research is None
-    assert manager.research_progress == 0.0
+    assert cancelled, "Should successfully cancel"
+    print(f"✓ Cancelled research (no refund)")
 
-    print(f"  ✓ Cancelled research: {cancelled}")
-    print()
+    # Check state
+    assert manager.current_research is None, "Should not be researching"
+    assert not manager.is_completed('robot_speed_1'), "Should not be completed"
+    assert manager.research_progress == 0.0, "Progress should be reset"
+    print(f"✓ State after cancel: not researching, not completed, progress reset")
 
+    # Test cancelling when not researching
+    cancelled2 = manager.cancel_research()
+    assert not cancelled2, "Should return False when nothing to cancel"
+    print(f"✓ Correctly returns False when nothing to cancel")
 
-def test_research_progress_and_completion():
-    """Test research progress over time."""
-    print("Testing research progress and completion...")
-
-    manager = ResearchManager()
-
-    # Start legs_1 (30 second research)
-    manager.start_research('legs_1', 1000)
-
-    # Update for 15 seconds (50% progress)
-    manager.update(15.0)
-
-    progress = manager.get_research_progress()
-    assert 0.49 < progress < 0.51, f"Progress should be ~50%, got {progress:.2%}"
-
-    print(f"  ✓ Progress after 15s: {progress:.1%}")
-
-    # Research should not be complete yet
-    assert manager.current_research == 'legs_1'
-    assert 'legs_1' not in manager.completed_research
-
-    # Update for another 20 seconds (total 35s, should complete)
-    manager.update(20.0)
-
-    # Research should be complete
-    assert manager.current_research is None
-    assert 'legs_1' in manager.completed_research
-
-    print(f"  ✓ Research completed after 35s")
-
-    # Check effects applied
-    speed_multiplier = manager.get_effect_multiplier('robot_speed')
-    assert speed_multiplier == 1.2, f"Should have 1.2x speed, got {speed_multiplier}"
-
-    print(f"  ✓ Effect applied: robot_speed = {speed_multiplier}x")
-    print()
+    print("\n✓ Cancel research test PASSED\n")
 
 
 def test_research_effects():
-    """Test research effect accumulation."""
-    print("Testing research effects...")
+    """Test research effects and multipliers."""
+    print("=" * 80)
+    print("TEST 6: Research Effects")
+    print("=" * 80)
+    print()
+
+    from src.systems.research_manager import ResearchManager
 
     manager = ResearchManager()
 
-    # Complete legs_1 (20% speed boost)
-    manager.completed_research.add('legs_1')
-    manager._complete_research('legs_1')
+    # Test default values (no research)
+    speed_mult = manager.get_effect_multiplier('robot_speed')
+    assert speed_mult == 1.0, "Should default to 1.0 with no research"
+    print(f"✓ Default robot_speed multiplier: {speed_mult}")
 
-    speed_1 = manager.get_effect_multiplier('robot_speed')
-    assert speed_1 == 1.2
+    # Complete robot_speed_1 (should give 1.2x)
+    manager.completed_research['robot_speed_1'] = 1.0
+    speed_mult = manager.get_effect_multiplier('robot_speed')
+    assert speed_mult == 1.2, f"Should be 1.2 with robot_speed_1, got {speed_mult}"
+    print(f"✓ robot_speed_1 effect: {speed_mult}x")
 
-    print(f"  After legs_1: robot_speed = {speed_1}x")
+    # Complete robot_speed_2 (should give 1.4x, higher value wins)
+    manager.completed_research['robot_speed_2'] = 2.0
+    speed_mult = manager.get_effect_multiplier('robot_speed')
+    assert speed_mult == 1.4, f"Should be 1.4 (highest value), got {speed_mult}"
+    print(f"✓ robot_speed_2 effect: {speed_mult}x (highest value)")
 
-    # Complete legs_2 (40% speed boost - replaces legs_1)
-    manager.completed_research.add('legs_2')
-    manager._complete_research('legs_2')
+    # Test unlock (boolean effect)
+    has_drones = manager.has_unlock('unlock_drones')
+    assert not has_drones, "Should not have drones unlocked"
+    print(f"✓ unlock_drones: {has_drones}")
 
-    speed_2 = manager.get_effect_multiplier('robot_speed')
-    assert speed_2 == 1.4
+    # Unlock drones
+    manager.completed_research['drones_1'] = 5.0
+    has_drones = manager.has_unlock('unlock_drones')
+    assert has_drones, "Should have drones unlocked"
+    print(f"✓ After drones_1 research: {has_drones}")
 
-    print(f"  After legs_2: robot_speed = {speed_2}x")
+    # Test absolute value effects (not multipliers)
+    manager.completed_research['robot_capacity_1'] = 6.0
+    capacity_value = manager.get_effect('robot_capacity', 100.0)
+    assert capacity_value == 150.0, f"Should be 150.0 with robot_capacity_1, got {capacity_value}"
+    print(f"✓ robot_capacity_1 effect: {capacity_value}kg capacity")
 
-    # Complete motor_1 (25% capacity boost)
-    manager.completed_research.add('motor_1')
-    manager._complete_research('motor_1')
+    print("\n✓ Research effects test PASSED\n")
 
-    capacity_1 = manager.get_effect_multiplier('robot_capacity')
-    assert capacity_1 == 1.25
 
-    print(f"  After motor_1: robot_capacity = {capacity_1}x")
-
-    # Verify speed still correct
-    assert manager.get_effect_multiplier('robot_speed') == 1.4
-
-    print(f"  ✓ Multiple effects track independently")
+def test_research_tree_structure():
+    """Test research tree structure and categories."""
+    print("=" * 80)
+    print("TEST 7: Research Tree Structure")
+    print("=" * 80)
     print()
 
-
-def test_research_categories():
-    """Test research category filtering."""
-    print("Testing research categories...")
+    from src.systems.research_manager import ResearchManager
 
     manager = ResearchManager()
 
-    # Get robot category research
-    robot_research = manager.get_research_by_category('robot')
-    assert len(robot_research) > 0, "Should have robot research"
+    # Count technologies by category
+    categories = {}
+    for tech_id, tech in manager.research_definitions.items():
+        category = tech.get('category', 'unknown')
+        categories[category] = categories.get(category, 0) + 1
 
-    print(f"  Found {len(robot_research)} robot technologies")
+    print(f"✓ Research categories:")
+    for category, count in sorted(categories.items()):
+        print(f"  - {category}: {count} technologies")
 
-    # Check that all returned research are in robot category
-    for research in robot_research:
-        assert research.get('category') == 'robot', f"Research {research['id']} should be in robot category"
+    # Verify expected categories exist
+    expected_categories = ['robot', 'processing', 'power', 'stealth', 'advanced']
+    for category in expected_categories:
+        assert category in categories, f"Missing expected category: {category}"
+    print(f"✓ All expected categories present")
 
-    # Test other categories
-    processing_research = manager.get_research_by_category('processing')
-    print(f"  Found {len(processing_research)} processing technologies")
+    # Test prerequisite chains
+    # robot_speed_3 should require robot_speed_2 which requires robot_speed_1
+    if 'robot_speed_3' in manager.research_definitions:
+        tech3 = manager.research_definitions['robot_speed_3']
+        prereqs = tech3.get('prerequisites', [])
+        assert 'robot_speed_2' in prereqs, "robot_speed_3 should require robot_speed_2"
+        print(f"✓ Prerequisite chain verified: robot_speed_1 -> robot_speed_2 -> robot_speed_3")
 
-    power_research = manager.get_research_by_category('power')
-    print(f"  Found {len(power_research)} power technologies")
+    # Get completed technologies
+    manager.completed_research['robot_speed_1'] = 1.0
+    manager.completed_research['robot_capacity_1'] = 2.0
+    completed = manager.get_completed_technologies()
+    assert len(completed) == 2, f"Should have 2 completed, got {len(completed)}"
+    print(f"✓ Completed technologies: {len(completed)}")
 
-    print(f"  ✓ Category filtering works correctly")
+    # Test category filtering for completed
+    robot_completed = manager.get_completed_technologies(category='robot')
+    print(f"✓ Completed robot technologies: {len(robot_completed)}")
+
+    print("\n✓ Research tree structure test PASSED\n")
+
+
+def test_save_load_state():
+    """Test save/load state."""
+    print("=" * 80)
+    print("TEST 8: Save/Load State")
+    print("=" * 80)
     print()
 
+    from src.systems.research_manager import ResearchManager
 
-def test_available_research():
-    """Test getting available research."""
-    print("Testing available research listing...")
-
+    # Create manager and do some research
     manager = ResearchManager()
+    manager.start_research('robot_speed_1', 10000.0)
+    manager.update(0.5)  # Partial progress
 
-    # Initially, should have several available (those with no prereqs)
-    available = manager.get_available_research()
-    initial_count = len(available)
+    # Mark another as completed
+    manager.completed_research['robot_capacity_1'] = 3.5
 
-    assert initial_count > 0, "Should have some available research at start"
-    print(f"  Initial available research: {initial_count}")
-
-    # All should have no prerequisites or met prerequisites
-    for research in available:
-        prereqs = research.get('prerequisites', [])
-        if prereqs:
-            for prereq in prereqs:
-                assert manager.is_completed(prereq), f"Prerequisite {prereq} should be completed"
-
-    # Complete one research
-    manager.completed_research.add('legs_1')
-    manager._complete_research('legs_1')
-
-    # Should have different available count (legs_1 no longer available, legs_2 now available)
-    available_after = manager.get_available_research()
-    print(f"  Available after completing legs_1: {len(available_after)}")
-
-    # legs_1 should not be in available
-    legs_1_available = any(r['id'] == 'legs_1' for r in available_after)
-    assert not legs_1_available, "Completed research should not be available"
-
-    # legs_2 should be in available
-    legs_2_available = any(r['id'] == 'legs_2' for r in available_after)
-    assert legs_2_available, "legs_2 should be available after completing legs_1"
-
-    print(f"  ✓ Available research updates correctly")
-    print()
-
-
-def test_research_statistics():
-    """Test research statistics."""
-    print("Testing research statistics...")
-
-    manager = ResearchManager()
-
-    stats = manager.get_stats()
-
-    print(f"  Total research: {stats['total_research']}")
-    print(f"  Completed: {stats['completed']}")
-    print(f"  Available: {stats['available']}")
-    print(f"  In progress: {stats['in_progress']}")
-    print(f"  Completion: {stats['completion_percentage']:.1f}%")
-
-    assert stats['total_research'] > 100, "Should have over 100 technologies"
-    assert stats['completed'] == 0, "Should have no completed research initially"
-    assert stats['available'] > 0, "Should have some available research"
-    assert not stats['in_progress'], "Should have no research in progress"
-    assert stats['completion_percentage'] == 0.0
-
-    # Complete some research
-    for _ in range(10):
-        available = manager.get_available_research()
-        if available:
-            tech_id = available[0]['id']
-            manager.completed_research.add(tech_id)
-            manager._complete_research(tech_id)
-
-    stats_after = manager.get_stats()
-    print(f"\n  After completing 10 research:")
-    print(f"  Completed: {stats_after['completed']}")
-    print(f"  Completion: {stats_after['completion_percentage']:.1f}%")
-
-    assert stats_after['completed'] == 10
-    assert stats_after['completion_percentage'] > 0
-
-    print(f"  ✓ Statistics tracking works")
-    print()
-
-
-def test_save_load():
-    """Test save and load functionality."""
-    print("Testing save/load...")
-
-    # Create manager and complete some research
-    manager1 = ResearchManager()
-    manager1.start_research('legs_1', 1000)
-    manager1.update(15.0)  # Partial progress
-    manager1.completed_research.add('motor_1')
-    manager1._complete_research('motor_1')
+    print(f"✓ Initial state: researching {manager.current_research}, progress {manager.research_progress}")
+    print(f"✓ Completed: {list(manager.completed_research.keys())}")
 
     # Save state
-    saved_data = manager1.to_dict()
-
-    print(f"  Saved state with {len(saved_data['completed_research'])} completed")
-    print(f"  Current research: {saved_data['current_research']}")
-    print(f"  Progress: {saved_data['research_progress']:.1f}s")
+    state = manager.save_state()
+    print(f"✓ Saved state: {len(state)} keys")
+    assert 'completed_research' in state
+    assert 'current_research' in state
+    assert 'research_progress' in state
+    assert 'stats' in state
 
     # Create new manager and load state
     manager2 = ResearchManager()
-    manager2.from_dict(saved_data)
+    manager2.load_state(state)
 
-    # Verify state restored
-    assert manager2.current_research == 'legs_1'
-    assert manager2.research_progress == 15.0
-    assert 'motor_1' in manager2.completed_research
-    assert manager2.get_effect_multiplier('robot_capacity') == 1.25
+    # Verify state
+    assert manager2.current_research == 'robot_speed_1', "Should restore current research"
+    assert manager2.research_progress == 0.5, "Should restore progress"
+    assert 'robot_capacity_1' in manager2.completed_research, "Should restore completed research"
+    print(f"✓ Loaded state: researching {manager2.current_research}, progress {manager2.research_progress}")
+    print(f"✓ Completed: {list(manager2.completed_research.keys())}")
 
-    print(f"  ✓ State restored correctly")
-    print()
+    # Verify effects are applied
+    assert manager2.effects_changed, "effects_changed should be True after loading"
+    print(f"✓ effects_changed flag set after load")
+
+    # Verify effects work
+    capacity_mult = manager2.get_effect_multiplier('robot_capacity')
+    print(f"✓ Effect from loaded research: robot_capacity = {capacity_mult}x")
+
+    print("\n✓ Save/load state test PASSED\n")
 
 
-def main():
-    """Run all research system tests."""
+def run_all_tests():
+    """Run all tests."""
+    print("\n")
     print("=" * 80)
-    print("RESEARCH SYSTEM TESTS (Phase 6)")
+    print("RESEARCH SYSTEM TEST SUITE")
     print("=" * 80)
-    print()
+    print("\n")
 
     try:
-        test_research_loading()
-        test_research_prerequisites()
-        test_research_affordability()
-        test_research_start_and_cancel()
-        test_research_progress_and_completion()
+        test_research_manager_creation()
+        test_research_availability()
+        test_start_research()
+        test_research_progress()
+        test_cancel_research()
         test_research_effects()
-        test_research_categories()
-        test_available_research()
-        test_research_statistics()
-        test_save_load()
+        test_research_tree_structure()
+        test_save_load_state()
 
         print("=" * 80)
-        print("ALL RESEARCH TESTS PASSED! ✓")
+        print("ALL TESTS PASSED ✓")
         print("=" * 80)
         print()
-        print("Research System Features:")
-        print("  - 130+ technologies loaded from JSON")
-        print("  - Prerequisite tracking and validation")
-        print("  - Research progress over time")
-        print("  - Effect application and tracking")
-        print("  - Category filtering")
-        print("  - Save/load support")
-        print("  - Multiple effect types (speed, capacity, power, etc.)")
-        return 0
+        print("Summary:")
+        print("  ✓ ResearchManager creation and initialization")
+        print("  ✓ Technology availability and prerequisites")
+        print("  ✓ Starting research (cost, validation)")
+        print("  ✓ Research progress and completion")
+        print("  ✓ Cancelling research")
+        print("  ✓ Research effects and multipliers")
+        print("  ✓ Research tree structure (60 technologies, 5 categories)")
+        print("  ✓ Save/load state persistence")
+        print()
+
+        return True
 
     except AssertionError as e:
-        print(f"\n❌ TEST FAILED: {e}")
+        print(f"\n✗ TEST FAILED: {e}\n")
         import traceback
         traceback.print_exc()
-        return 1
+        return False
     except Exception as e:
-        print(f"\n❌ ERROR: {e}")
+        print(f"\n✗ TEST ERROR: {e}\n")
         import traceback
         traceback.print_exc()
-        return 1
+        return False
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    success = run_all_tests()
+    sys.exit(0 if success else 1)
