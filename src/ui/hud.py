@@ -36,7 +36,7 @@ class HUD:
         self.color_bad = (255, 100, 100)
         self.color_bg = (0, 0, 0)
 
-    def render(self, screen, resource_manager, entity_manager, clock=None, power_manager=None, building_manager=None, research_manager=None, suspicion_manager=None):
+    def render(self, screen, resource_manager, entity_manager, clock=None, power_manager=None, building_manager=None, research_manager=None, suspicion_manager=None, day=None, hour=None, minute=None):
         """
         Render the HUD.
 
@@ -52,6 +52,10 @@ class HUD:
         """
         # Top-left panel: Resources and money
         self._render_resources_panel(screen, resource_manager, entity_manager)
+
+        # Top-left (below resources): Time display
+        if day is not None and hour is not None and minute is not None:
+            self._render_time_panel(screen, day, hour, minute)
 
         # Top-right panel: Robot info or Power info
         if entity_manager.selected_robot:
@@ -517,3 +521,43 @@ class HUD:
         )
         info_rect = info_text.get_rect(right=meter_x + meter_width - 10, centery=meter_y + 12)
         screen.blit(info_text, info_rect)
+
+    def _render_time_panel(self, screen, day, hour, minute):
+        """Render the game time panel below resources panel."""
+        panel_x = 10
+        panel_y = 140  # Below resources panel
+        panel_width = 250
+        panel_height = 50
+
+        # Background panel
+        panel_surface = pygame.Surface((panel_width, panel_height))
+        panel_surface.set_alpha(180)
+        panel_surface.fill(self.color_bg)
+        screen.blit(panel_surface, (panel_x, panel_y))
+
+        # Day
+        day_text = self.font_medium.render(f"Day {day}", True, self.color_text)
+        screen.blit(day_text, (panel_x + 10, panel_y + 5))
+
+        # Time (HH:MM format)
+        time_str = f"{hour:02d}:{minute:02d}"
+        time_text = self.font_medium.render(time_str, True, self.color_good)
+        screen.blit(time_text, (panel_x + 10, panel_y + 26))
+
+        # Time of day indicator
+        if 6 <= hour < 12:
+            period = "Morning"
+            period_color = (255, 200, 100)
+        elif 12 <= hour < 18:
+            period = "Afternoon"
+            period_color = (255, 255, 150)
+        elif 18 <= hour < 22:
+            period = "Evening"
+            period_color = (200, 150, 255)
+        else:
+            period = "Night"
+            period_color = (100, 100, 200)
+
+        period_text = self.font_small.render(period, True, period_color)
+        period_rect = period_text.get_rect(right=panel_x + panel_width - 10, centery=panel_y + 15)
+        screen.blit(period_text, period_rect)

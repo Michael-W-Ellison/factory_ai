@@ -36,6 +36,7 @@ from src.systems.camera_hacking_manager import CameraHackingManager
 from src.systems.inspection_manager import InspectionManager
 from src.systems.material_inventory import MaterialInventory
 from src.ui.inspection_ui import InspectionUI
+from src.systems.save_manager import SaveManager
 
 
 class Game:
@@ -59,6 +60,12 @@ class Game:
         self.running = True
         self.paused = False
         self.game_speed = 1.0
+
+        # Game time tracking
+        self.day = 1
+        self.hour = 6
+        self.minute = 0
+        self.time_elapsed = 0.0  # Seconds elapsed for time progression
 
         # Initialize camera
         self.camera = Camera(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
@@ -144,6 +151,16 @@ class Game:
         # Initialize inspection system (requires resources, suspicion, and material inventory)
         self.inspection = InspectionManager(self.resources, self.suspicion, self.material_inventory)
         self.inspection_ui = InspectionUI(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
+
+        # Initialize save/load system
+        self.save_manager = SaveManager()
+
+        # Game statistics tracking
+        self.stats = {
+            "materials_collected": 0,
+            "money_earned": 0,
+            "buildings_built": 0
+        }
 
         # Factory reference (for visual upgrades)
         self.factory = None
@@ -341,6 +358,12 @@ class Game:
                 # P key to toggle pollution overlay
                 elif event.key == pygame.K_p:
                     self.pollution.toggle_overlay()
+                # F5 key to quick save
+                elif event.key == pygame.K_F5:
+                    self._quick_save()
+                # F9 key to quick load
+                elif event.key == pygame.K_F9:
+                    self._quick_load()
 
             # Mouse motion (for hover effects)
             elif event.type == pygame.MOUSEMOTION:
@@ -466,6 +489,25 @@ class Game:
         # Update inspection system
         self.inspection.update(adjusted_dt, self.npcs.game_time)
 
+        # Update game time (1 game minute = 1 real second by default)
+        self.time_elapsed += adjusted_dt
+        if self.time_elapsed >= 1.0:  # Every second
+            self.minute += 1
+            self.time_elapsed -= 1.0
+
+            if self.minute >= 60:
+                self.hour += 1
+                self.minute = 0
+
+                if self.hour >= 24:
+                    self.day += 1
+                    self.hour = 0
+                    print(f"\n=== Day {self.day} ===")
+
+                    # Auto-save check (every N days)
+                    game_state = SaveManager.serialize_game_state(self)
+                    self.save_manager.auto_save(game_state, self.day)
+
         # Check if police captured any robots (game over condition)
         captured = self.police.check_captures(self.entities.robots)
         if captured:
@@ -543,7 +585,8 @@ class Game:
 
         # Render HUD (overlays everything)
         self.ui.render(self.screen, self.resources, self.entities, self.clock,
-                      self.power, self.buildings, self.research, self.suspicion)
+                      self.power, self.buildings, self.research, self.suspicion,
+                      day=self.day, hour=self.hour, minute=self.minute)
 
         # Render research UI (if visible)
         self.research_ui.render(self.screen, self.research, self.resources.money)
@@ -566,3 +609,52 @@ class Game:
 
         # Update display
         pygame.display.flip()
+
+    def _quick_save(self):
+        """Quick save the game to the quicksave slot."""
+        print("\n=== QUICK SAVE ===")
+        game_state = SaveManager.serialize_game_state(self)
+        success = self.save_manager.quick_save(game_state)
+        if success:
+            print("✓ Quick save successful! (Press F9 to load)")
+        else:
+            print("✗ Quick save failed!")
+
+    def _quick_load(self):
+        """Quick load the game from the quicksave slot."""
+        print("\n=== QUICK LOAD ===")
+        game_state = self.save_manager.quick_load()
+        if game_state:
+            success = SaveManager.deserialize_game_state(self, game_state)
+            if success:
+                print("✓ Quick load successful!")
+            else:
+                print("✗ Failed to restore game state!")
+        else:
+            print("✗ No quicksave found!")
+
+    def save_game(self, save_name: str = None):
+        """
+        Save the game with an optional save name.
+
+        Args:
+            save_name: Name for the save file. If None, uses auto-save.
+        """
+        game_state = SaveManager.serialize_game_state(self)
+        success = self.save_manager.save_game(game_state, save_name)
+        return success
+
+    def load_game(self, save_name: str):
+        """
+        Load a game from a save file.
+
+        Args:
+            save_name: Name of the save file to load.
+
+        Returns:
+            True if load successful, False otherwise
+        """
+        game_state = self.save_manager.load_game(save_name)
+        if game_state:
+            return SaveManager.deserialize_game_state(self, game_state)
+        return False
