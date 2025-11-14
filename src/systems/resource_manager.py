@@ -149,6 +149,17 @@ class ResourceManager:
             total_value += self.get_material_value(material_type, quantity)
         return total_value
 
+    def modify_money(self, amount):
+        """
+        Modify the player's money (add or subtract).
+
+        Args:
+            amount (float): Amount to add (positive) or subtract (negative)
+        """
+        self.money += amount
+        if amount > 0:
+            self.total_money_earned += amount
+
     def get_material_quantity(self, material_type):
         """
         Get the quantity of a specific material in storage.
