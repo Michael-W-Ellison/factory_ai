@@ -73,6 +73,44 @@ class SuspicionManager:
             SuspicionTier.RESTRICTIONS: (255, 50, 50),   # Red
         }
 
+        # Tier-specific effects
+        self.tier_effects = {
+            SuspicionTier.NORMAL: {
+                'police_patrol_multiplier': 1.0,
+                'npc_alertness_multiplier': 1.0,
+                'camera_detection_bonus': 0.0,
+                'description': 'No effect - operations normal',
+            },
+            SuspicionTier.RUMORS: {
+                'police_patrol_multiplier': 1.25,
+                'npc_alertness_multiplier': 1.1,
+                'camera_detection_bonus': 0.05,
+                'description': '+25% police patrols, NPCs slightly more alert',
+            },
+            SuspicionTier.INVESTIGATION: {
+                'police_patrol_multiplier': 1.5,
+                'npc_alertness_multiplier': 1.25,
+                'camera_detection_bonus': 0.1,
+                'undercover_agents': True,
+                'description': '+50% police patrols, undercover agents in city',
+            },
+            SuspicionTier.INSPECTION: {
+                'police_patrol_multiplier': 2.0,
+                'npc_alertness_multiplier': 1.5,
+                'camera_detection_bonus': 0.15,
+                'checkpoints': True,
+                'description': 'Heavy police presence, checkpoints near factory',
+            },
+            SuspicionTier.RESTRICTIONS: {
+                'police_patrol_multiplier': 2.5,
+                'npc_alertness_multiplier': 2.0,
+                'camera_detection_bonus': 0.25,
+                'operation_hours_limited': True,
+                'weekly_inspections': True,
+                'description': 'Factory operations limited, mandatory weekly inspections',
+            },
+        }
+
     def get_current_tier(self) -> str:
         """
         Get current suspicion tier based on level.
@@ -204,6 +242,50 @@ class SuspicionManager:
             List of recent events
         """
         return self.suspicion_events[-count:] if self.suspicion_events else []
+
+    def get_tier_effects(self) -> Dict:
+        """
+        Get effects for current tier.
+
+        Returns:
+            Dict: Dictionary of tier effects
+        """
+        return self.tier_effects.get(self.current_tier, {})
+
+    def get_police_patrol_multiplier(self) -> float:
+        """Get police patrol multiplier for current tier."""
+        effects = self.get_tier_effects()
+        return effects.get('police_patrol_multiplier', 1.0)
+
+    def get_npc_alertness_multiplier(self) -> float:
+        """Get NPC alertness multiplier for current tier."""
+        effects = self.get_tier_effects()
+        return effects.get('npc_alertness_multiplier', 1.0)
+
+    def get_camera_detection_bonus(self) -> float:
+        """Get camera detection bonus for current tier."""
+        effects = self.get_tier_effects()
+        return effects.get('camera_detection_bonus', 0.0)
+
+    def has_undercover_agents(self) -> bool:
+        """Check if tier has undercover agents."""
+        effects = self.get_tier_effects()
+        return effects.get('undercover_agents', False)
+
+    def has_checkpoints(self) -> bool:
+        """Check if tier has checkpoints."""
+        effects = self.get_tier_effects()
+        return effects.get('checkpoints', False)
+
+    def has_operation_hours_limited(self) -> bool:
+        """Check if tier has limited operation hours."""
+        effects = self.get_tier_effects()
+        return effects.get('operation_hours_limited', False)
+
+    def has_weekly_inspections(self) -> bool:
+        """Check if tier requires weekly inspections."""
+        effects = self.get_tier_effects()
+        return effects.get('weekly_inspections', False)
 
     def get_tier_consequences(self) -> List[str]:
         """
