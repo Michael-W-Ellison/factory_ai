@@ -38,6 +38,7 @@ from src.systems.material_inventory import MaterialInventory
 from src.ui.inspection_ui import InspectionUI
 from src.systems.save_manager import SaveManager
 from src.ui.save_load_menu import SaveLoadMenu
+from src.ui.controls_help import ControlsHelp
 
 
 class Game:
@@ -156,6 +157,9 @@ class Game:
         # Initialize save/load system
         self.save_manager = SaveManager()
         self.save_load_menu = SaveLoadMenu(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
+
+        # Initialize controls/help overlay
+        self.controls_help = ControlsHelp(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
 
         # Game statistics tracking
         self.stats = {
@@ -332,6 +336,10 @@ class Game:
     def handle_events(self):
         """Process user input and system events."""
         for event in pygame.event.get():
+            # Let controls help handle events first if visible
+            if self.controls_help.handle_event(event):
+                continue  # Event was handled by controls help
+
             # Let save/load menu handle events first if visible
             if self.save_load_menu.handle_event(event):
                 continue  # Event was handled by save/load menu
@@ -370,6 +378,10 @@ class Game:
                 # F9 key to quick load
                 elif event.key == pygame.K_F9:
                     self._quick_load()
+                # H or F1 key to toggle help overlay
+                elif event.key in (pygame.K_h, pygame.K_F1):
+                    self.controls_help.toggle()
+                    print(f"Controls help: {'opened' if self.controls_help.visible else 'closed'}")
                 # F10 key to open save/load menu
                 elif event.key == pygame.K_F10:
                     self.save_load_menu.toggle()
@@ -614,6 +626,9 @@ class Game:
 
         # Render save/load menu (if visible)
         self.save_load_menu.render(self.screen)
+
+        # Render controls/help overlay (if visible)
+        self.controls_help.render(self.screen)
 
         # Show paused indicator
         if self.paused:

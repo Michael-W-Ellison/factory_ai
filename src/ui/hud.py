@@ -350,7 +350,7 @@ class HUD:
             "Click: Select robot",
             "WASD: Move camera",
             "G: Toggle grid",
-            "Space: Pause",
+            "H/F1: Show all controls",
         ]
 
         for i, control in enumerate(controls):
