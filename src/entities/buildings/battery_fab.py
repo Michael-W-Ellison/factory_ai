@@ -2,10 +2,10 @@
 Battery Fabrication - manufactures batteries from lithium and chemicals.
 """
 
-from src.entities.buildings.processing_building import ProcessingBuilding
+from src.entities.buildings.manufacturing_building import ManufacturingBuilding
 
 
-class BatteryFab(ProcessingBuilding):
+class BatteryFab(ManufacturingBuilding):
     """
     Battery Fabrication Plant.
 
@@ -26,7 +26,7 @@ class BatteryFab(ProcessingBuilding):
             'cost': 20000,
             'max_level': 3,
             'power_consumption': 9.0,
-            'processing_speed': 7.0,  # Careful chemical process
+            'processing_speed': 7.0,  # Careful chemical process (seconds per unit)
             'input_types': ['lithium', 'chemicals', 'copper', 'aluminum', 'plastic'],
             'efficiency': 0.88,
             'quality_distribution': {
@@ -38,21 +38,23 @@ class BatteryFab(ProcessingBuilding):
             'max_input_queue': 1800,
             'max_output_queue': 1200,
             'color': (100, 140, 180),  # Battery blue
-            'outline_color': (120, 160, 200)
+            'outline_color': (120, 160, 200),
+            # Manufacturing-specific
+            'recipe': {
+                'lithium': 1.0,    # 1 kg lithium
+                'chemicals': 2.0,  # 2 kg electrolyte/chemicals
+                'copper': 0.5,     # 0.5 kg copper for terminals
+                'plastic': 0.5     # 0.5 kg plastic for casing
+            },
+            'output_component': 'battery_cell',
+            'output_per_batch': 1.0,  # units per batch
+            'batch_value_multiplier': 5.0
         }
 
         super().__init__(grid_x, grid_y, width_tiles=4, height_tiles=4,
                         building_type="battery_fab", config=config)
 
-        # Manufacturing requirements
-        self.recipe = {
-            'lithium': 1.0,    # 1 kg lithium
-            'chemicals': 2.0,  # 2 kg electrolyte/chemicals
-            'copper': 0.5,     # 0.5 kg copper for terminals
-            'plastic': 0.5     # 0.5 kg plastic for casing
-        }
-        self.output_per_batch = 1.0  # kg of batteries
-        self.batch_value_multiplier = 5.0  # Very high value
+        # Additional properties
         self.hazard_level = 2  # Moderate hazard from chemicals
 
     def _apply_level_bonuses(self):

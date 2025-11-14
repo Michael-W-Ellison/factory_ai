@@ -1,0 +1,502 @@
+{
+  "version": "1.0",
+  "description": "All material types in the game with properties and quality tiers",
+  "base_materials": {
+    "organic": {
+      "name": "Organic Waste",
+      "category": "bio",
+      "base_value": 2,
+      "weight_per_unit": 1.0,
+      "description": "Food waste, yard waste, and biodegradable materials",
+      "color": [100, 80, 40],
+      "source": ["landfill", "residential", "restaurant"],
+      "quality_tiers": {
+        "raw": {
+          "value_multiplier": 0.5,
+          "description": "Unprocessed organic waste"
+        },
+        "waste": {
+          "value_multiplier": 0.1,
+          "description": "Contaminated or unusable organic material"
+        },
+        "bio_slop": {
+          "value_multiplier": 1.0,
+          "description": "Processed organic slurry (used for biogas)"
+        },
+        "compost": {
+          "value_multiplier": 1.5,
+          "description": "High-quality compost fertilizer"
+        }
+      }
+    },
+    "paper": {
+      "name": "Paper & Cardboard",
+      "category": "recyclable",
+      "base_value": 5,
+      "weight_per_unit": 1.0,
+      "description": "Paper, cardboard, and paperboard materials",
+      "color": [210, 180, 140],
+      "source": ["landfill", "residential", "commercial"],
+      "quality_tiers": {
+        "raw": {
+          "value_multiplier": 0.5,
+          "description": "Mixed paper and cardboard"
+        },
+        "waste": {
+          "value_multiplier": 0.1,
+          "description": "Contaminated or wet paper"
+        },
+        "low": {
+          "value_multiplier": 0.5,
+          "description": "Low-grade recycled paper pulp"
+        },
+        "medium": {
+          "value_multiplier": 1.0,
+          "description": "Standard recycled paper"
+        },
+        "high": {
+          "value_multiplier": 2.0,
+          "description": "Premium recycled paper pulp"
+        }
+      }
+    },
+    "plastic": {
+      "name": "Plastic",
+      "category": "recyclable",
+      "base_value": 8,
+      "weight_per_unit": 1.0,
+      "description": "Mixed plastic materials (PET, HDPE, PVC, etc.)",
+      "color": [100, 150, 200],
+      "source": ["landfill", "residential", "commercial", "industrial"],
+      "quality_tiers": {
+        "raw": {
+          "value_multiplier": 0.5,
+          "description": "Mixed unsorted plastics"
+        },
+        "waste": {
+          "value_multiplier": 0.1,
+          "description": "Non-recyclable or contaminated plastic"
+        },
+        "low": {
+          "value_multiplier": 0.5,
+          "description": "Low-grade recycled plastic pellets"
+        },
+        "medium": {
+          "value_multiplier": 1.0,
+          "description": "Standard recycled plastic"
+        },
+        "high": {
+          "value_multiplier": 2.0,
+          "description": "High-quality recycled plastic resin"
+        },
+        "ultra": {
+          "value_multiplier": 5.0,
+          "description": "Engineering-grade plastic (requires advanced research)"
+        }
+      }
+    },
+    "metal": {
+      "name": "Mixed Metal",
+      "category": "recyclable",
+      "base_value": 12,
+      "weight_per_unit": 1.0,
+      "description": "Mixed ferrous and non-ferrous metals",
+      "color": [180, 180, 180],
+      "source": ["landfill", "vehicles", "industrial", "appliances"],
+      "quality_tiers": {
+        "raw": {
+          "value_multiplier": 0.5,
+          "description": "Unsorted scrap metal"
+        },
+        "waste": {
+          "value_multiplier": 0.1,
+          "description": "Contaminated or poor quality slag"
+        },
+        "low": {
+          "value_multiplier": 0.6,
+          "description": "Low-grade recycled metal"
+        },
+        "medium": {
+          "value_multiplier": 1.0,
+          "description": "Standard recycled metal stock"
+        },
+        "high": {
+          "value_multiplier": 2.0,
+          "description": "High-purity recycled metal"
+        }
+      }
+    },
+    "iron": {
+      "name": "Iron",
+      "category": "metal",
+      "base_value": 10,
+      "weight_per_unit": 1.0,
+      "description": "Ferrous iron metal",
+      "color": [140, 120, 120],
+      "source": ["vehicles", "buildings", "fences", "industrial"],
+      "quality_tiers": {
+        "raw": {
+          "value_multiplier": 0.5,
+          "description": "Scrap iron with rust"
+        },
+        "refined": {
+          "value_multiplier": 1.0,
+          "description": "Purified iron ingots"
+        },
+        "high": {
+          "value_multiplier": 1.8,
+          "description": "High-purity iron"
+        }
+      }
+    },
+    "steel": {
+      "name": "Steel",
+      "category": "metal",
+      "base_value": 15,
+      "weight_per_unit": 1.0,
+      "description": "Steel alloy (iron + carbon)",
+      "color": [160, 160, 180],
+      "source": ["vehicles", "buildings", "industrial"],
+      "quality_tiers": {
+        "raw": {
+          "value_multiplier": 0.5,
+          "description": "Scrap steel"
+        },
+        "refined": {
+          "value_multiplier": 1.0,
+          "description": "Recycled steel stock"
+        },
+        "high": {
+          "value_multiplier": 1.8,
+          "description": "High-grade steel alloy"
+        },
+        "stainless": {
+          "value_multiplier": 3.0,
+          "description": "Stainless steel (requires chromium)"
+        }
+      }
+    },
+    "copper": {
+      "name": "Copper",
+      "category": "metal",
+      "base_value": 25,
+      "weight_per_unit": 1.0,
+      "description": "Copper metal and wire",
+      "color": [180, 100, 60],
+      "source": ["electronics", "wiring", "plumbing", "industrial"],
+      "quality_tiers": {
+        "raw": {
+          "value_multiplier": 0.5,
+          "description": "Scrap copper wire"
+        },
+        "refined": {
+          "value_multiplier": 1.0,
+          "description": "Purified copper ingots"
+        },
+        "high": {
+          "value_multiplier": 2.0,
+          "description": "High-purity copper (99.9%)"
+        }
+      }
+    },
+    "aluminum": {
+      "name": "Aluminum",
+      "category": "metal",
+      "base_value": 18,
+      "weight_per_unit": 1.0,
+      "description": "Aluminum metal",
+      "color": [200, 200, 220],
+      "source": ["vehicles", "cans", "industrial"],
+      "quality_tiers": {
+        "raw": {
+          "value_multiplier": 0.5,
+          "description": "Scrap aluminum"
+        },
+        "refined": {
+          "value_multiplier": 1.0,
+          "description": "Recycled aluminum stock"
+        },
+        "high": {
+          "value_multiplier": 2.0,
+          "description": "High-grade aluminum alloy"
+        }
+      }
+    },
+    "glass": {
+      "name": "Glass",
+      "category": "recyclable",
+      "base_value": 6,
+      "weight_per_unit": 1.0,
+      "description": "Glass materials (bottles, windows, etc.)",
+      "color": [150, 220, 220],
+      "source": ["landfill", "residential", "commercial", "vehicles"],
+      "quality_tiers": {
+        "raw": {
+          "value_multiplier": 0.5,
+          "description": "Mixed broken glass (cullet)"
+        },
+        "waste": {
+          "value_multiplier": 0.1,
+          "description": "Contaminated glass"
+        },
+        "clear": {
+          "value_multiplier": 1.0,
+          "description": "Clear recycled glass"
+        },
+        "colored": {
+          "value_multiplier": 0.8,
+          "description": "Colored glass (amber, green)"
+        },
+        "high": {
+          "value_multiplier": 2.0,
+          "description": "High-clarity glass"
+        },
+        "bulletproof": {
+          "value_multiplier": 5.0,
+          "description": "Laminated bulletproof glass (requires research)"
+        }
+      }
+    },
+    "rubber": {
+      "name": "Rubber",
+      "category": "recyclable",
+      "base_value": 7,
+      "weight_per_unit": 1.0,
+      "description": "Rubber materials (tires, hoses, etc.)",
+      "color": [40, 40, 40],
+      "source": ["vehicles", "industrial", "landfill"],
+      "quality_tiers": {
+        "raw": {
+          "value_multiplier": 0.5,
+          "description": "Shredded tire rubber"
+        },
+        "waste": {
+          "value_multiplier": 0.1,
+          "description": "Contaminated or degraded rubber"
+        },
+        "low": {
+          "value_multiplier": 0.5,
+          "description": "Low-grade crumb rubber"
+        },
+        "medium": {
+          "value_multiplier": 1.0,
+          "description": "Recycled rubber compound"
+        },
+        "high": {
+          "value_multiplier": 2.0,
+          "description": "High-quality synthetic rubber"
+        }
+      }
+    },
+    "wood": {
+      "name": "Wood",
+      "category": "organic",
+      "base_value": 4,
+      "weight_per_unit": 1.0,
+      "description": "Lumber, pallets, and wood waste",
+      "color": [120, 80, 40],
+      "source": ["landfill", "buildings", "pallets", "trees"],
+      "quality_tiers": {
+        "raw": {
+          "value_multiplier": 0.5,
+          "description": "Scrap wood and sawdust"
+        },
+        "chips": {
+          "value_multiplier": 0.8,
+          "description": "Wood chips (fuel or mulch)"
+        },
+        "lumber": {
+          "value_multiplier": 1.5,
+          "description": "Reclaimed lumber"
+        },
+        "charcoal": {
+          "value_multiplier": 2.0,
+          "description": "Charcoal (from coal oven)"
+        }
+      }
+    },
+    "concrete": {
+      "name": "Concrete",
+      "category": "construction",
+      "base_value": 3,
+      "weight_per_unit": 1.0,
+      "description": "Concrete and cement materials",
+      "color": [140, 140, 140],
+      "source": ["buildings", "roads", "demolition"],
+      "quality_tiers": {
+        "raw": {
+          "value_multiplier": 0.5,
+          "description": "Broken concrete rubble"
+        },
+        "aggregate": {
+          "value_multiplier": 0.8,
+          "description": "Crushed concrete aggregate"
+        },
+        "slag": {
+          "value_multiplier": 1.0,
+          "description": "Concrete slag (building material)"
+        }
+      }
+    },
+    "textiles": {
+      "name": "Textiles",
+      "category": "recyclable",
+      "base_value": 5,
+      "weight_per_unit": 1.0,
+      "description": "Fabric, clothing, and textile materials",
+      "color": [150, 100, 150],
+      "source": ["landfill", "residential", "commercial"],
+      "quality_tiers": {
+        "raw": {
+          "value_multiplier": 0.5,
+          "description": "Mixed textile waste"
+        },
+        "fiber": {
+          "value_multiplier": 1.0,
+          "description": "Recycled textile fibers"
+        },
+        "fabric": {
+          "value_multiplier": 1.5,
+          "description": "Reclaimed fabric material"
+        }
+      }
+    },
+    "petroleum": {
+      "name": "Petroleum Products",
+      "category": "chemical",
+      "base_value": 20,
+      "weight_per_unit": 1.0,
+      "description": "Crude oil, fuel, and petroleum byproducts",
+      "color": [20, 20, 20],
+      "source": ["vehicles", "industrial", "fuel_tanks"],
+      "quality_tiers": {
+        "crude": {
+          "value_multiplier": 0.5,
+          "description": "Crude oil or waste oil"
+        },
+        "refined": {
+          "value_multiplier": 1.0,
+          "description": "Refined petroleum fuel"
+        },
+        "diesel": {
+          "value_multiplier": 1.2,
+          "description": "Diesel fuel"
+        },
+        "bitumen": {
+          "value_multiplier": 0.8,
+          "description": "Heavy petroleum residue (for asphalt)"
+        }
+      }
+    },
+    "hazardous": {
+      "name": "Hazardous Waste",
+      "category": "toxic",
+      "base_value": -5,
+      "weight_per_unit": 1.0,
+      "description": "Toxic and hazardous materials (MUST be incinerated)",
+      "color": [200, 50, 50],
+      "source": ["industrial", "chemical", "batteries"],
+      "quality_tiers": {
+        "toxic": {
+          "value_multiplier": 1.0,
+          "description": "Toxic waste (costs money to process)"
+        },
+        "ash": {
+          "value_multiplier": 0.3,
+          "description": "Toxic ash (after incineration, sellable)"
+        }
+      }
+    },
+    "electronics": {
+      "name": "Electronic Waste",
+      "category": "valuable",
+      "base_value": 30,
+      "weight_per_unit": 1.0,
+      "description": "Circuit boards, computers, and electronic components",
+      "color": [40, 120, 40],
+      "source": ["appliances", "commercial", "industrial"],
+      "quality_tiers": {
+        "raw": {
+          "value_multiplier": 0.5,
+          "description": "Mixed e-waste"
+        },
+        "components": {
+          "value_multiplier": 1.5,
+          "description": "Salvaged electronic components"
+        },
+        "precious_metals": {
+          "value_multiplier": 10.0,
+          "description": "Gold, silver, and rare metals from electronics"
+        }
+      }
+    }
+  },
+  "fuel_materials": {
+    "methane": {
+      "name": "Methane Gas",
+      "category": "fuel",
+      "base_value": 15,
+      "description": "Methane gas for power generation",
+      "quality_tiers": {
+        "dirty": {
+          "value_multiplier": 0.5,
+          "power_output_multiplier": 0.7,
+          "description": "Landfill gas (impure methane)"
+        },
+        "pure": {
+          "value_multiplier": 1.0,
+          "power_output_multiplier": 1.0,
+          "description": "Purified methane"
+        },
+        "ultra_pure": {
+          "value_multiplier": 2.0,
+          "power_output_multiplier": 1.3,
+          "description": "Ultra-pure methane (requires advanced research)"
+        }
+      }
+    },
+    "coal": {
+      "name": "Coal",
+      "category": "fuel",
+      "base_value": 10,
+      "description": "Coal for power generation or processing",
+      "quality_tiers": {
+        "raw": {
+          "value_multiplier": 1.0,
+          "power_output_multiplier": 1.0,
+          "description": "Raw coal"
+        }
+      }
+    }
+  },
+  "chemical_materials": {
+    "chemicals": {
+      "name": "Chemicals",
+      "category": "chemical",
+      "base_value": 25,
+      "description": "Various chemical compounds (acids, etchants, solvents)",
+      "quality_tiers": {
+        "industrial": {
+          "value_multiplier": 1.0,
+          "description": "Industrial-grade chemicals"
+        },
+        "pure": {
+          "value_multiplier": 2.0,
+          "description": "High-purity chemicals"
+        }
+      }
+    },
+    "tar": {
+      "name": "Tar",
+      "category": "chemical",
+      "base_value": 8,
+      "description": "Coal tar byproduct",
+      "quality_tiers": {
+        "raw": {
+          "value_multiplier": 1.0,
+          "description": "Coal tar (from coal oven)"
+        }
+      }
+    }
+  }
+}
