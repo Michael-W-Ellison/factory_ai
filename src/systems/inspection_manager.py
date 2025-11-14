@@ -74,6 +74,15 @@ class InspectionManager:
         self.illegal_material_count = 0
         self.illegal_material_value = 0
 
+        # Restrictions (applied after FAIL_MAJOR)
+        self.has_restrictions = False
+        self.production_penalty = 0.0  # Multiplier penalty (0.0-1.0)
+        self.restrictions_end_time = 0.0  # Game time when restrictions expire
+
+        # Game over flag (set after FAIL_CRITICAL)
+        self.game_over = False
+        self.game_over_reason = ""
+
     def update(self, dt: float, game_time: float):
         """
         Update inspection system.
@@ -82,6 +91,10 @@ class InspectionManager:
             dt (float): Delta time in seconds
             game_time (float): Current game time
         """
+        # Check if restrictions have expired
+        if self.has_restrictions and game_time >= self.restrictions_end_time:
+            self._expire_restrictions()
+
         # Check if we should schedule an inspection
         if not self.inspection_scheduled and self.status == InspectionStatus.NONE:
             self._check_schedule_inspection(game_time)
@@ -153,7 +166,7 @@ class InspectionManager:
         self.last_result = result
 
         # Apply consequences
-        self._apply_consequences(result)
+        self._apply_consequences(result, game_time)
 
         # Reset state
         self._reset_inspection_state()
@@ -249,12 +262,13 @@ class InspectionManager:
             else:
                 return InspectionResult.FAIL_CRITICAL
 
-    def _apply_consequences(self, result: InspectionResult):
+    def _apply_consequences(self, result: InspectionResult, game_time: float):
         """
         Apply consequences based on inspection result.
 
         Args:
             result (InspectionResult): The inspection outcome
+            game_time (float): Current game time for scheduling
         """
         print(f"\n📋 INSPECTION RESULTS: {result.name}")
 
@@ -273,7 +287,8 @@ class InspectionManager:
             print(f"  ⚠️ Fine: $5,000")
             print(f"  ⚠️ Suspicion increased by 10")
             print(f"  ⚠️ Reinspection in 3 days")
-            # TODO: Schedule reinspection in 3 days
+            # Schedule mandatory reinspection in 3 days
+            self._schedule_reinspection(game_time, self.reinspection_interval)
 
         elif result == InspectionResult.FAIL_MAJOR:
             # FAIL (major): suspicion +30, fine $20000, restrictions applied
@@ -283,7 +298,8 @@ class InspectionManager:
             print(f"  🚨 Fine: $20,000")
             print(f"  🚨 Suspicion increased by 30")
             print(f"  🚨 Operating restrictions applied")
-            # TODO: Apply restrictions
+            # Apply restrictions (7 days, 50% production penalty)
+            self._apply_restrictions(game_time, duration=604800.0, penalty=0.5)
 
         elif result == InspectionResult.FAIL_CRITICAL:
             # FAIL (critical): game over (FBI raid immediate)
@@ -291,7 +307,8 @@ class InspectionManager:
             print(f"  💀 Extensive illegal operation discovered")
             print(f"  💀 FBI raid in progress")
             print(f"  💀 Factory shut down")
-            # TODO: Trigger game over
+            # Trigger game over
+            self._trigger_game_over("Extensive illegal operation discovered during inspection")
 
     def _reset_inspection_state(self):
         """Reset inspection state after completion."""
@@ -299,6 +316,75 @@ class InspectionManager:
         self.inspection_scheduled = False
         self.inspection_progress = 0.0
         self.countdown = 0.0
+
+    def _schedule_reinspection(self, game_time: float, delay: float):
+        """
+        Schedule a mandatory reinspection after a delay.
+
+        Args:
+            game_time (float): Current game time
+            delay (float): Delay in game seconds before reinspection
+        """
+        warning_time = delay  # Fixed delay for reinspection
+
+        self.status = InspectionStatus.SCHEDULED
+        self.inspection_scheduled = True
+        self.inspection_time = game_time + warning_time
+        self.countdown = warning_time
+        self.last_inspection_time = game_time  # Update to prevent immunity bypass
+
+        # Calculate countdown in game hours
+        hours = warning_time / 3600.0
+
+        print(f"\n⚠️ REINSPECTION SCHEDULED!")
+        print(f"  Mandatory follow-up inspection in {hours:.1f} game hours")
+        print(f"  You must pass this inspection or face harsher penalties")
+
+    def _apply_restrictions(self, game_time: float, duration: float, penalty: float):
+        """
+        Apply operating restrictions to the factory.
+
+        Args:
+            game_time (float): Current game time
+            duration (float): Duration of restrictions in game seconds
+            penalty (float): Production penalty multiplier (0.0-1.0)
+        """
+        self.has_restrictions = True
+        self.production_penalty = penalty
+        self.restrictions_end_time = game_time + duration
+
+        # Calculate duration in game days
+        days = duration / (24 * 3600.0)
+
+        print(f"\n🔒 OPERATING RESTRICTIONS APPLIED")
+        print(f"  Production reduced by {penalty * 100:.0f}% for {days:.1f} days")
+        print(f"  Government monitoring your operations")
+        print(f"  Restrictions expire: Day {int(game_time / (24 * 3600.0)) + int(days)}")
+
+    def _expire_restrictions(self):
+        """Expire operating restrictions."""
+        self.has_restrictions = False
+        self.production_penalty = 0.0
+
+        print(f"\n🔓 OPERATING RESTRICTIONS EXPIRED")
+        print(f"  Production penalties removed")
+        print(f"  Normal operations resumed")
+
+    def _trigger_game_over(self, reason: str):
+        """
+        Trigger game over state.
+
+        Args:
+            reason (str): Reason for game over
+        """
+        self.game_over = True
+        self.game_over_reason = reason
+
+        print(f"\n💀💀💀 GAME OVER 💀💀💀")
+        print(f"  Reason: {reason}")
+        print(f"  Your factory has been shut down")
+        print(f"  You are facing federal charges")
+        print(f"\n  Press ESC to exit")
 
     def force_schedule_inspection(self, game_time: float, warning_hours: float = 24.0):
         """
@@ -357,11 +443,31 @@ class InspectionManager:
             'progress_percent': self.get_inspection_progress_percent(),
             'last_result': self.last_result,
             'suspicion': self.suspicion.suspicion_level,
-            'trigger_threshold': self.suspicion_trigger_threshold
+            'trigger_threshold': self.suspicion_trigger_threshold,
+            'has_restrictions': self.has_restrictions,
+            'production_penalty': self.production_penalty,
+            'game_over': self.game_over,
+            'game_over_reason': self.game_over_reason
         }
+
+    def is_game_over(self) -> bool:
+        """Check if game over has been triggered."""
+        return self.game_over
+
+    def get_production_penalty(self) -> float:
+        """
+        Get current production penalty multiplier.
+
+        Returns:
+            float: Penalty multiplier (0.0 = no penalty, 1.0 = 100% penalty)
+        """
+        return self.production_penalty if self.has_restrictions else 0.0
 
     def __repr__(self):
         """String representation for debugging."""
+        restrictions_str = f", restrictions={self.has_restrictions}" if self.has_restrictions else ""
+        game_over_str = ", GAME_OVER" if self.game_over else ""
         return (f"InspectionManager(status={self.status.name}, "
                 f"scheduled={self.inspection_scheduled}, "
-                f"countdown={self.get_countdown_hours():.1f}h)")
+                f"countdown={self.get_countdown_hours():.1f}h"
+                f"{restrictions_str}{game_over_str})")
