@@ -1,0 +1,734 @@
+{
+  "market_fluctuation": {
+    "enabled": true,
+    "description": "Dynamic market prices for materials - players can time sales for profit",
+
+    "update_frequency_minutes": 30,
+    "forecast_available": true,
+    "forecast_accuracy": 0.7,
+    "forecast_range_days": 3,
+
+    "material_markets": {
+      "paper_products": {
+        "materials": ["waste_paper", "low_quality_paper", "medium_quality_paper", "high_quality_paper"],
+        "base_volatility": 0.15,
+        "price_range": [0.8, 1.4],
+        "trend_duration_hours": [48, 120],
+        "influenced_by": ["holidays", "seasons", "random_events"]
+      },
+      "plastics": {
+        "materials": ["waste_plastic", "low_quality_plastic", "medium_quality_plastic", "high_quality_plastic"],
+        "base_volatility": 0.2,
+        "price_range": [0.7, 1.5],
+        "trend_duration_hours": [36, 96],
+        "influenced_by": ["crude_oil_prices", "manufacturing_demand"]
+      },
+      "metals": {
+        "materials": ["refined_metal", "refined_steel", "refined_iron", "refined_copper"],
+        "base_volatility": 0.25,
+        "price_range": [0.6, 1.6],
+        "trend_duration_hours": [24, 72],
+        "influenced_by": ["construction_demand", "global_events", "scarcity"]
+      },
+      "glass": {
+        "materials": ["gray_glass_blanks", "colored_glass_blanks", "bullet_proof_glass"],
+        "base_volatility": 0.1,
+        "price_range": [0.9, 1.3],
+        "trend_duration_hours": [60, 144],
+        "influenced_by": ["construction_demand", "seasons"]
+      },
+      "rubber": {
+        "materials": ["waste_rubber", "low_quality_rubber", "medium_quality_rubber", "high_quality_rubber"],
+        "base_volatility": 0.18,
+        "price_range": [0.75, 1.45],
+        "trend_duration_hours": [48, 108],
+        "influenced_by": ["vehicle_production", "weather"]
+      },
+      "energy_products": {
+        "materials": ["charcoal", "tar", "refined_oil", "bitumen", "pure_methane", "ultra_pure_methane"],
+        "base_volatility": 0.3,
+        "price_range": [0.5, 1.8],
+        "trend_duration_hours": [12, 48],
+        "influenced_by": ["weather", "energy_crisis", "global_events"]
+      },
+      "organic_products": {
+        "materials": ["bio_slop"],
+        "base_volatility": 0.12,
+        "price_range": [0.85, 1.25],
+        "trend_duration_hours": [72, 168],
+        "influenced_by": ["agricultural_demand", "seasons"]
+      }
+    },
+
+    "market_events": {
+      "construction_boom": {
+        "probability": 0.05,
+        "duration_days": [7, 21],
+        "effects": {
+          "metals": 1.4,
+          "glass": 1.3,
+          "concrete_products": 1.5
+        }
+      },
+      "energy_crisis": {
+        "probability": 0.03,
+        "duration_days": [3, 14],
+        "effects": {
+          "energy_products": 1.8,
+          "plastics": 1.3
+        }
+      },
+      "manufacturing_boom": {
+        "probability": 0.04,
+        "duration_days": [14, 45],
+        "effects": {
+          "plastics": 1.5,
+          "metals": 1.3,
+          "rubber": 1.4
+        }
+      },
+      "market_crash": {
+        "probability": 0.02,
+        "duration_days": [5, 20],
+        "effects": {
+          "all_materials": 0.6
+        }
+      },
+      "scarcity_event": {
+        "probability": 0.03,
+        "duration_days": [7, 30],
+        "affects_random_material": true,
+        "effect_multiplier": 2.0
+      }
+    },
+
+    "ui_elements": {
+      "price_graph": true,
+      "trend_indicators": true,
+      "forecast_chart": true,
+      "best_time_to_sell_notification": true,
+      "market_news_ticker": true
+    },
+
+    "strategic_holding": {
+      "enabled": true,
+      "storage_costs_per_day": 0.01,
+      "max_hold_duration_days": 30,
+      "spoilage_risk": {
+        "organic_products": 0.05,
+        "other": 0.0
+      }
+    }
+  },
+
+  "weather_forecasting": {
+    "enabled": true,
+    "description": "Players can view weather predictions to plan operations",
+
+    "forecast_range_hours": 48,
+    "accuracy_by_range": {
+      "0-6_hours": 0.95,
+      "6-12_hours": 0.85,
+      "12-24_hours": 0.7,
+      "24-48_hours": 0.5
+    },
+
+    "research_improvements": {
+      "basic_forecasting": {
+        "cost": 2000,
+        "time": 60,
+        "forecast_range_hours": 24,
+        "base_accuracy": 0.6
+      },
+      "advanced_forecasting": {
+        "cost": 5000,
+        "time": 120,
+        "prerequisite": "basic_forecasting",
+        "forecast_range_hours": 48,
+        "accuracy_bonus": 0.15
+      },
+      "expert_forecasting": {
+        "cost": 10000,
+        "time": 180,
+        "prerequisite": "advanced_forecasting",
+        "forecast_range_hours": 72,
+        "accuracy_bonus": 0.25
+      }
+    },
+
+    "forecast_elements": {
+      "rain": {
+        "shown": true,
+        "confidence_levels": ["low", "medium", "high"],
+        "duration_estimate": true
+      },
+      "storms": {
+        "shown": true,
+        "lightning_probability": true,
+        "severity_estimate": true
+      },
+      "wind_speed": {
+        "shown": true,
+        "range_estimate": true,
+        "optimal_for_turbines_indicator": true
+      },
+      "cloud_cover": {
+        "shown": true,
+        "affects_solar_power": true
+      },
+      "temperature": {
+        "shown": true,
+        "affects_efficiency": true
+      }
+    },
+
+    "strategic_planning": {
+      "plan_operations_during_clear_weather": true,
+      "maximize_solar_during_sunny_periods": true,
+      "avoid_storms_for_robot_operations": true,
+      "use_rain_for_lower_detection": true,
+      "schedule_illegal_ops_during_bad_weather": true
+    },
+
+    "ui_elements": {
+      "forecast_panel": true,
+      "timeline_view": true,
+      "weather_alerts": true,
+      "optimal_operation_times_highlighted": true,
+      "wind_turbine_efficiency_forecast": true,
+      "solar_power_forecast": true
+    }
+  },
+
+  "drone_scouting_system": {
+    "enabled": true,
+    "description": "Flying drones scout beyond control area with fog of war mechanics",
+
+    "drone_types": {
+      "basic_scout_drone": {
+        "speed": 10.0,
+        "vision_range": 150,
+        "battery_capacity": 600,
+        "max_distance_from_factory": 500,
+        "can_see_through_buildings": false,
+        "detection_risk": 0.3,
+        "cost": 5000,
+        "requires_research": "drone_construction_1"
+      },
+      "advanced_scout_drone": {
+        "speed": 15.0,
+        "vision_range": 200,
+        "battery_capacity": 900,
+        "max_distance_from_factory": 1000,
+        "can_see_through_buildings": false,
+        "detection_risk": 0.15,
+        "cost": 12000,
+        "requires_research": "drone_construction_2"
+      },
+      "stealth_drone": {
+        "speed": 12.0,
+        "vision_range": 180,
+        "battery_capacity": 1200,
+        "max_distance_from_factory": 1500,
+        "can_see_through_buildings": false,
+        "detection_risk": 0.05,
+        "cost": 25000,
+        "requires_research": "drone_construction_3"
+      }
+    },
+
+    "fog_of_war": {
+      "enabled": true,
+      "unexplored_areas_hidden": true,
+      "explored_areas_show_terrain": true,
+      "real_time_updates_only_in_control_range": true,
+      "drone_reveals_temporarily": true,
+      "info_becomes_stale_after_minutes": 60,
+
+      "information_types": {
+        "terrain": {
+          "always_visible_once_explored": true
+        },
+        "static_objects": {
+          "buildings": "visible_once_explored",
+          "roads": "visible_once_explored",
+          "cameras": "visible_when_drone_nearby",
+          "fences": "visible_once_explored"
+        },
+        "dynamic_entities": {
+          "police": "only_when_drone_observes",
+          "citizens": "only_when_drone_observes",
+          "vehicles": "only_when_drone_observes",
+          "animals": "only_when_drone_observes"
+        },
+        "patrol_routes": {
+          "recorded_over_time": true,
+          "requires_multiple_observations": 3,
+          "confidence_increases_with_observations": true
+        }
+      }
+    },
+
+    "scouting_mechanics": {
+      "drone_must_return_to_update_map": true,
+      "data_transmitted_only_in_control_range": true,
+      "lost_connection_warning": true,
+      "autonomous_return_on_low_battery": true,
+      "auto_return_threshold": 0.25,
+
+      "observation_recording": {
+        "police_positions": {
+          "recorded": true,
+          "timestamped": true,
+          "builds_patrol_pattern": true
+        },
+        "citizen_positions": {
+          "recorded": true,
+          "builds_activity_heatmap": true
+        },
+        "camera_locations": {
+          "recorded": true,
+          "coverage_area_estimated": true
+        },
+        "traffic_patterns": {
+          "recorded": true,
+          "peak_times_identified": true
+        }
+      },
+
+      "patrol_mapping": {
+        "minimum_observations_required": 3,
+        "confidence_levels": ["uncertain", "probable", "confirmed"],
+        "time_to_map_full_route": "multiple_drone_passes",
+        "route_variations_detected": true,
+        "optimal_strike_windows_identified": true
+      }
+    },
+
+    "strategic_usage": {
+      "scout_before_autonomous_operations": true,
+      "identify_safe_collection_zones": true,
+      "track_police_movements": true,
+      "find_high_value_targets": true,
+      "plan_escape_routes": true,
+      "monitor_camera_coverage": true
+    },
+
+    "risks": {
+      "detection_by_citizens": 0.1,
+      "detection_by_police": 0.3,
+      "detection_by_cameras": 0.0,
+      "suspicion_if_detected": 5,
+      "drone_lost_if_battery_depletes": true,
+      "drone_destroyed_by_lightning": true
+    }
+  },
+
+  "line_of_sight_control": {
+    "enabled": true,
+    "description": "Robots can only be controlled within observable/control areas",
+
+    "control_range_sources": {
+      "factory": {
+        "base_range": 200,
+        "upgradeable": false
+      },
+      "wireless_signal_transmitter": {
+        "base_range": 300,
+        "upgradeable": true,
+        "max_level": 3,
+        "range_per_level": [300, 450, 600]
+      }
+    },
+
+    "outside_control_range": {
+      "player_cannot_issue_commands": true,
+      "robots_continue_last_orders": true,
+      "cannot_recall_robots": true,
+      "cannot_cancel_operations": true,
+      "no_real_time_status_updates": true,
+      "position_unknown_until_return": true,
+
+      "risks": {
+        "robot_continues_illegal_operation": true,
+        "cannot_warn_of_police_approach": true,
+        "may_get_caught": true,
+        "suspicion_generation_higher": 1.5,
+        "robot_may_be_confiscated": true
+      },
+
+      "requires_research": "autonomous_orders",
+      "warning_message_shown": true
+    },
+
+    "autonomous_operation_mode": {
+      "enabled_by_research": "autonomous_orders",
+      "robot_behavior": "follows_preset_orders",
+      "return_conditions": [
+        "inventory_full",
+        "power_low",
+        "task_complete",
+        "time_limit_reached"
+      ],
+      "emergency_return_trigger": {
+        "player_activated": true,
+        "robot_receives_when_in_range": true,
+        "ignored_when_out_of_range": true
+      }
+    },
+
+    "visibility_mechanics": {
+      "areas_in_control_range": {
+        "full_visibility": true,
+        "real_time_updates": true,
+        "can_see_police_npcs_robots": true,
+        "can_issue_commands": true
+      },
+      "areas_outside_control_range": {
+        "fog_of_war": true,
+        "last_known_state_shown": true,
+        "no_real_time_updates": true,
+        "drone_scouting_required": true
+      }
+    },
+
+    "strategic_considerations": {
+      "high_risk_high_reward": true,
+      "use_drones_to_scout_first": true,
+      "plan_autonomous_routes_carefully": true,
+      "set_time_limits_on_operations": true,
+      "prepare_for_worst_case": true
+    }
+  },
+
+  "ending_system": {
+    "enabled": true,
+    "description": "Multiple endings based on player choices and performance",
+
+    "ending_types": {
+      "perfect_cleanup": {
+        "conditions": {
+          "landfill_cleared": 1.0,
+          "suspicion_level": 0,
+          "no_violations": true,
+          "no_fines_paid": true,
+          "time_bonus_threshold": true
+        },
+        "score_multiplier": 2.0,
+        "title": "Environmental Hero",
+        "description": "Completed cleanup perfectly without any incidents. The city praises your efficiency.",
+        "unlocks": ["achievement_perfect_run", "new_game_plus"]
+      },
+      "efficient_operator": {
+        "conditions": {
+          "landfill_cleared": 1.0,
+          "suspicion_level": [0, 40],
+          "minor_violations_only": true,
+          "completion_time_good": true
+        },
+        "score_multiplier": 1.5,
+        "title": "Efficient Operator",
+        "description": "Cleaned the landfill efficiently with minimal issues. A job well done.",
+        "unlocks": ["achievement_efficient"]
+      },
+      "morally_flexible": {
+        "conditions": {
+          "landfill_cleared": 1.0,
+          "illegal_materials_processed": [1000, 10000],
+          "passed_all_inspections": true,
+          "high_profit": true
+        },
+        "score_multiplier": 1.8,
+        "title": "Morally Flexible Entrepreneur",
+        "description": "Maximized profits through creative interpretation of regulations. Clever.",
+        "unlocks": ["achievement_entrepreneur"]
+      },
+      "urban_recycler": {
+        "conditions": {
+          "landfill_cleared": 1.0,
+          "city_materials_percentage": [0.3, 0.7],
+          "caught_but_recovered": true
+        },
+        "score_multiplier": 1.6,
+        "title": "Urban Mining Specialist",
+        "description": "Aggressively recycled city infrastructure while managing the heat.",
+        "unlocks": ["achievement_urban_mining"]
+      },
+      "caught_red_handed": {
+        "conditions": {
+          "game_ended_by": "fbi_raid",
+          "evidence_found": true
+        },
+        "score_multiplier": 0.5,
+        "title": "Shutdown",
+        "description": "The FBI shut down operations. Perhaps too aggressive...",
+        "unlocks": ["achievement_caught"]
+      },
+      "slow_and_steady": {
+        "conditions": {
+          "landfill_cleared": 1.0,
+          "completion_time_slow": true,
+          "minimal_risk_taken": true,
+          "suspicion_never_above": 20
+        },
+        "score_multiplier": 1.2,
+        "title": "Slow and Steady",
+        "description": "Took the safe approach. The landfill is clean, but it took a while.",
+        "unlocks": ["achievement_patient"]
+      },
+      "speed_demon": {
+        "conditions": {
+          "landfill_cleared": 1.0,
+          "completion_time_fast": true,
+          "high_risk_operations": true
+        },
+        "score_multiplier": 1.7,
+        "title": "Speed Demon",
+        "description": "Blazing fast cleanup! High risk, high reward.",
+        "unlocks": ["achievement_speed"]
+      },
+      "eco_warrior": {
+        "conditions": {
+          "landfill_cleared": 1.0,
+          "litter_cleaned": [5000, null],
+          "air_pollution_kept_low": true,
+          "renewable_energy_only": true
+        },
+        "score_multiplier": 1.9,
+        "title": "Eco Warrior",
+        "description": "Not only cleaned the landfill, but improved the entire city's environment.",
+        "unlocks": ["achievement_eco_warrior"]
+      },
+      "criminal_mastermind": {
+        "conditions": {
+          "landfill_cleared": 1.0,
+          "illegal_materials_processed": [10000, null],
+          "bypassed_fbi": true,
+          "highest_profit": true
+        },
+        "score_multiplier": 2.5,
+        "title": "Criminal Mastermind",
+        "description": "Maximized illegal profits while evading all authorities. Impressive.",
+        "unlocks": ["achievement_mastermind", "hard_mode_plus"]
+      },
+      "bankruptcy": {
+        "conditions": {
+          "money": [null, 0],
+          "game_ended_by": "bankruptcy"
+        },
+        "score_multiplier": 0.3,
+        "title": "Bankrupt",
+        "description": "Ran out of money before completing the cleanup. Better luck next time.",
+        "unlocks": ["achievement_bankrupt"]
+      }
+    },
+
+    "ending_cutscenes": {
+      "enabled": true,
+      "text_based": true,
+      "shows_statistics": true,
+      "newspaper_headlines": true,
+      "company_response": true,
+      "city_reaction": true
+    },
+
+    "score_breakdown_shown": true,
+    "leaderboard_submission": true,
+    "replay_statistics": true
+  },
+
+  "scoring_system_v2": {
+    "description": "Comprehensive scoring that considers multiple factors",
+
+    "base_score": {
+      "total_income_earned": {
+        "weight": 1.0,
+        "calculation": "sum_of_all_sales"
+      }
+    },
+
+    "completion_speed_bonus": {
+      "enabled": true,
+      "formula": "landfill_size / (completion_days * town_size_modifier)",
+      "town_size_modifiers": {
+        "small": 1.0,
+        "medium": 1.2,
+        "large": 1.5,
+        "metropolis": 2.0
+      },
+      "landfill_size_base_days": {
+        "small": 30,
+        "medium": 60,
+        "large": 120,
+        "massive": 240
+      },
+      "bonus_calculation": {
+        "faster_than_expected": {
+          "multiplier": "days_saved * 100",
+          "max_bonus": 50000
+        },
+        "slower_than_expected": {
+          "penalty": "days_over * 50",
+          "max_penalty": 25000
+        }
+      }
+    },
+
+    "efficiency_metrics": {
+      "material_processing_efficiency": {
+        "formula": "(materials_processed / materials_collected) * 1000",
+        "perfect_efficiency": 1.0,
+        "bonus_for_high_efficiency": true
+      },
+      "power_efficiency": {
+        "formula": "(power_generated / power_consumed)",
+        "renewable_bonus_multiplier": 1.5
+      },
+      "robot_utilization": {
+        "formula": "(robot_active_time / robot_total_time)",
+        "high_utilization_bonus": true
+      }
+    },
+
+    "risk_reward_bonuses": {
+      "illegal_operations": {
+        "city_materials_processed": {
+          "per_kg": 0.5,
+          "risk_multiplier": "based_on_suspicion_at_time"
+        },
+        "successful_camera_hacks": {
+          "per_hack": 100,
+          "max_bonus": 5000
+        },
+        "inspections_passed_with_evidence": {
+          "per_inspection": 2000
+        }
+      },
+      "legal_operations": {
+        "litter_cleaned": {
+          "per_kg": 0.2
+        },
+        "air_quality_maintained": {
+          "bonus": 5000
+        },
+        "no_violations": {
+          "bonus": 10000
+        }
+      }
+    },
+
+    "penalties": {
+      "fines_paid": {
+        "multiplier": -1.0
+      },
+      "suspicion_level_at_end": {
+        "per_point": -100
+      },
+      "robots_confiscated": {
+        "per_robot": -5000
+      },
+      "inspections_failed": {
+        "per_failure": -3000
+      },
+      "environmental_damage": {
+        "air_pollution_total": {
+          "per_unit": -10
+        },
+        "improper_toxic_disposal": {
+          "per_incident": -5000
+        }
+      }
+    },
+
+    "final_calculation": {
+      "formula": "(base_score + bonuses - penalties) * ending_multiplier * difficulty_multiplier",
+      "difficulty_multipliers": {
+        "easy": 0.8,
+        "normal": 1.0,
+        "hard": 1.5,
+        "sandbox": 0.5
+      },
+      "minimum_score": 0,
+      "rank_thresholds": {
+        "s_rank": 500000,
+        "a_rank": 300000,
+        "b_rank": 150000,
+        "c_rank": 75000,
+        "d_rank": 25000,
+        "f_rank": 0
+      }
+    },
+
+    "detailed_breakdown_shown": {
+      "income": true,
+      "speed_bonus": true,
+      "efficiency_scores": true,
+      "risk_reward": true,
+      "penalties": true,
+      "multipliers": true,
+      "final_score": true,
+      "rank": true,
+      "percentile": true
+    }
+  },
+
+  "social_engineering_system": {
+    "description": "Misinformation and distraction abilities to manage rumors",
+
+    "ability_activation": {
+      "requires_research": "social_engineering_1",
+      "uses_server_farms": true,
+      "server_farm_duration_seconds": 300,
+      "cooldown_hours": 12,
+      "cost_per_use": 1000
+    },
+
+    "effects": {
+      "spread_misinformation": {
+        "suspicion_reduction": 15,
+        "rumor_confusion": true,
+        "duration_hours": 24,
+        "effectiveness_decreases_with_use": true
+      },
+      "create_distraction": {
+        "suspicion_focus_shifted": true,
+        "police_attention_diverted": 6,
+        "creates_fake_event": true,
+        "event_types": ["alleged_crime", "missing_person", "traffic_incident"]
+      },
+      "positive_pr_campaign": {
+        "highlights_litter_cleanup": true,
+        "environmental_benefits_emphasized": true,
+        "suspicion_decay_doubled": true,
+        "duration_hours": 48
+      }
+    },
+
+    "diminishing_returns": {
+      "enabled": true,
+      "effectiveness_reduction_per_use": 0.1,
+      "minimum_effectiveness": 0.3,
+      "reset_time_days": 30
+    },
+
+    "risk": {
+      "chance_of_backfire": 0.05,
+      "backfire_effect": "suspicion_increase_50_percent",
+      "increased_investigation": true
+    },
+
+    "upgrades": {
+      "tier_2": {
+        "effectiveness_bonus": 0.25,
+        "cooldown_reduction": 0.5,
+        "backfire_chance_reduction": 0.03
+      },
+      "tier_3": {
+        "effectiveness_bonus": 0.5,
+        "cooldown_reduction": 0.75,
+        "backfire_chance_reduction": 0.05,
+        "can_target_specific_zones": true
+      }
+    }
+  }
+}

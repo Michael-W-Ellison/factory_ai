@@ -1,0 +1,1212 @@
+{
+  "research_tree": {
+    "robot_upgrades": {
+      "legs_1": {
+        "name": "Legs Tier 1",
+        "category": "robot",
+        "description": "Increases robot movement speed by 20%",
+        "cost": 500,
+        "time": 30,
+        "prerequisites": [],
+        "effects": {"robot_speed": 1.2}
+      },
+      "legs_2": {
+        "name": "Legs Tier 2",
+        "category": "robot",
+        "description": "Increases robot movement speed by 40%",
+        "cost": 1200,
+        "time": 60,
+        "prerequisites": ["legs_1"],
+        "effects": {"robot_speed": 1.4}
+      },
+      "legs_3": {
+        "name": "Legs Tier 3",
+        "category": "robot",
+        "description": "Increases robot movement speed by 60%",
+        "cost": 2500,
+        "time": 90,
+        "prerequisites": ["legs_2", "frames_2"],
+        "effects": {"robot_speed": 1.6}
+      },
+      "legs_4": {
+        "name": "Legs Tier 4",
+        "category": "robot",
+        "description": "Increases robot movement speed by 80%",
+        "cost": 5000,
+        "time": 120,
+        "prerequisites": ["legs_3", "frames_3"],
+        "effects": {"robot_speed": 1.8}
+      },
+      "legs_5": {
+        "name": "Legs Tier 5",
+        "category": "robot",
+        "description": "Increases robot movement speed by 100%",
+        "cost": 10000,
+        "time": 180,
+        "prerequisites": ["legs_4", "frames_4"],
+        "effects": {"robot_speed": 2.0}
+      },
+
+      "motor_1": {
+        "name": "Motor Tier 1",
+        "category": "robot",
+        "description": "Increases robot carrying capacity by 25%",
+        "cost": 600,
+        "time": 30,
+        "prerequisites": [],
+        "effects": {"robot_capacity": 1.25}
+      },
+      "motor_2": {
+        "name": "Motor Tier 2",
+        "category": "robot",
+        "description": "Increases robot carrying capacity by 50%",
+        "cost": 1500,
+        "time": 60,
+        "prerequisites": ["motor_1"],
+        "effects": {"robot_capacity": 1.5}
+      },
+      "motor_3": {
+        "name": "Motor Tier 3",
+        "category": "robot",
+        "description": "Increases robot carrying capacity by 75%",
+        "cost": 3000,
+        "time": 90,
+        "prerequisites": ["motor_2", "frames_2"],
+        "effects": {"robot_capacity": 1.75}
+      },
+      "motor_4": {
+        "name": "Motor Tier 4",
+        "category": "robot",
+        "description": "Increases robot carrying capacity by 100%",
+        "cost": 6000,
+        "time": 120,
+        "prerequisites": ["motor_3", "frames_3"],
+        "effects": {"robot_capacity": 2.0}
+      },
+      "motor_5": {
+        "name": "Motor Tier 5",
+        "category": "robot",
+        "description": "Increases robot carrying capacity by 150%",
+        "cost": 12000,
+        "time": 180,
+        "prerequisites": ["motor_4", "frames_4"],
+        "effects": {"robot_capacity": 2.5}
+      },
+
+      "battery_1": {
+        "name": "Battery Tier 1",
+        "category": "robot",
+        "description": "Increases robot power storage by 30%",
+        "cost": 500,
+        "time": 30,
+        "prerequisites": [],
+        "effects": {"robot_power_capacity": 1.3}
+      },
+      "battery_2": {
+        "name": "Battery Tier 2",
+        "category": "robot",
+        "description": "Increases robot power storage by 60%",
+        "cost": 1200,
+        "time": 60,
+        "prerequisites": ["battery_1"],
+        "effects": {"robot_power_capacity": 1.6}
+      },
+      "battery_3": {
+        "name": "Battery Tier 3",
+        "category": "robot",
+        "description": "Increases robot power storage by 100%",
+        "cost": 2500,
+        "time": 90,
+        "prerequisites": ["battery_2", "frames_2"],
+        "effects": {"robot_power_capacity": 2.0}
+      },
+      "battery_4": {
+        "name": "Battery Tier 4",
+        "category": "robot",
+        "description": "Increases robot power storage by 150%",
+        "cost": 5000,
+        "time": 120,
+        "prerequisites": ["battery_3", "frames_3"],
+        "effects": {"robot_power_capacity": 2.5}
+      },
+      "battery_5": {
+        "name": "Battery Tier 5",
+        "category": "robot",
+        "description": "Increases robot power storage by 200%",
+        "cost": 10000,
+        "time": 180,
+        "prerequisites": ["battery_4", "frames_4"],
+        "effects": {"robot_power_capacity": 3.0}
+      },
+
+      "frames_1": {
+        "name": "Frames Tier 1",
+        "category": "robot",
+        "description": "Increases robot health by 25%",
+        "cost": 800,
+        "time": 40,
+        "prerequisites": [],
+        "effects": {"robot_health": 1.25}
+      },
+      "frames_2": {
+        "name": "Frames Tier 2",
+        "category": "robot",
+        "description": "Increases robot health by 50%",
+        "cost": 2000,
+        "time": 80,
+        "prerequisites": ["frames_1"],
+        "effects": {"robot_health": 1.5}
+      },
+      "frames_3": {
+        "name": "Frames Tier 3",
+        "category": "robot",
+        "description": "Increases robot health by 75%",
+        "cost": 4000,
+        "time": 120,
+        "prerequisites": ["frames_2"],
+        "effects": {"robot_health": 1.75}
+      },
+      "frames_4": {
+        "name": "Frames Tier 4",
+        "category": "robot",
+        "description": "Increases robot health by 100%",
+        "cost": 8000,
+        "time": 160,
+        "prerequisites": ["frames_3"],
+        "effects": {"robot_health": 2.0}
+      },
+      "frames_5": {
+        "name": "Frames Tier 5",
+        "category": "robot",
+        "description": "Increases robot health by 150%",
+        "cost": 15000,
+        "time": 200,
+        "prerequisites": ["frames_4"],
+        "effects": {"robot_health": 2.5}
+      },
+
+      "processor_1": {
+        "name": "Processor Tier 1",
+        "category": "robot",
+        "description": "Increases number of orders a robot can execute",
+        "cost": 1000,
+        "time": 45,
+        "prerequisites": [],
+        "effects": {"robot_order_queue": 3}
+      },
+      "processor_2": {
+        "name": "Processor Tier 2",
+        "category": "robot",
+        "description": "Increases number of orders a robot can execute",
+        "cost": 2500,
+        "time": 90,
+        "prerequisites": ["processor_1"],
+        "effects": {"robot_order_queue": 5}
+      },
+      "processor_3": {
+        "name": "Processor Tier 3",
+        "category": "robot",
+        "description": "Increases number of orders a robot can execute",
+        "cost": 5000,
+        "time": 135,
+        "prerequisites": ["processor_2"],
+        "effects": {"robot_order_queue": 8}
+      },
+      "processor_4": {
+        "name": "Processor Tier 4",
+        "category": "robot",
+        "description": "Increases number of orders a robot can execute",
+        "cost": 10000,
+        "time": 180,
+        "prerequisites": ["processor_3"],
+        "effects": {"robot_order_queue": 12}
+      },
+      "processor_5": {
+        "name": "Processor Tier 5",
+        "category": "robot",
+        "description": "Increases number of orders a robot can execute",
+        "cost": 20000,
+        "time": 240,
+        "prerequisites": ["processor_4"],
+        "effects": {"robot_order_queue": 20}
+      },
+
+      "tools_1": {
+        "name": "Tools Tier 1",
+        "category": "robot",
+        "description": "Increases material harvest speed by 25%",
+        "cost": 700,
+        "time": 35,
+        "prerequisites": [],
+        "effects": {"robot_harvest_speed": 1.25}
+      },
+      "tools_2": {
+        "name": "Tools Tier 2",
+        "category": "robot",
+        "description": "Increases material harvest speed by 50%",
+        "cost": 1500,
+        "time": 70,
+        "prerequisites": ["tools_1"],
+        "effects": {"robot_harvest_speed": 1.5}
+      },
+      "tools_3": {
+        "name": "Tools Tier 3",
+        "category": "robot",
+        "description": "Increases material harvest speed by 75%",
+        "cost": 3000,
+        "time": 105,
+        "prerequisites": ["tools_2"],
+        "effects": {"robot_harvest_speed": 1.75}
+      },
+      "tools_4": {
+        "name": "Tools Tier 4",
+        "category": "robot",
+        "description": "Increases material harvest speed by 100%",
+        "cost": 6000,
+        "time": 140,
+        "prerequisites": ["tools_3"],
+        "effects": {"robot_harvest_speed": 2.0}
+      },
+      "tools_5": {
+        "name": "Tools Tier 5",
+        "category": "robot",
+        "description": "Increases material harvest speed by 150%",
+        "cost": 12000,
+        "time": 200,
+        "prerequisites": ["tools_4"],
+        "effects": {"robot_harvest_speed": 2.5}
+      },
+
+      "wireless_transceiver_1": {
+        "name": "Wireless Transceiver Tier 1",
+        "category": "robot",
+        "description": "Increases robot operational distance by 50%",
+        "cost": 1500,
+        "time": 60,
+        "prerequisites": [],
+        "effects": {"robot_range": 1.5}
+      },
+      "wireless_transceiver_2": {
+        "name": "Wireless Transceiver Tier 2",
+        "category": "robot",
+        "description": "Increases robot operational distance by 100%",
+        "cost": 4000,
+        "time": 120,
+        "prerequisites": ["wireless_transceiver_1"],
+        "effects": {"robot_range": 2.0}
+      },
+      "wireless_transceiver_3": {
+        "name": "Wireless Transceiver Tier 3",
+        "category": "robot",
+        "description": "Increases robot operational distance by 150%",
+        "cost": 8000,
+        "time": 180,
+        "prerequisites": ["wireless_transceiver_2"],
+        "effects": {"robot_range": 2.5}
+      },
+
+      "wireless_power_receiver_1": {
+        "name": "Wireless Power Receiver Tier 1",
+        "category": "robot",
+        "description": "Enables remote energy reception",
+        "cost": 2000,
+        "time": 70,
+        "prerequisites": [],
+        "effects": {"robot_wireless_charging": true, "recharge_speed": 1.2}
+      },
+      "wireless_power_receiver_2": {
+        "name": "Wireless Power Receiver Tier 2",
+        "category": "robot",
+        "description": "Improves remote recharge speed",
+        "cost": 5000,
+        "time": 140,
+        "prerequisites": ["wireless_power_receiver_1"],
+        "effects": {"recharge_speed": 1.5}
+      },
+      "wireless_power_receiver_3": {
+        "name": "Wireless Power Receiver Tier 3",
+        "category": "robot",
+        "description": "Greatly improves remote recharge speed",
+        "cost": 10000,
+        "time": 210,
+        "prerequisites": ["wireless_power_receiver_2"],
+        "effects": {"recharge_speed": 2.0}
+      },
+
+      "jammer_1": {
+        "name": "Jammer Tier 1",
+        "category": "robot",
+        "description": "Enables jamming of communications temporarily",
+        "cost": 5000,
+        "time": 120,
+        "prerequisites": ["processor_2"],
+        "effects": {"jam_ability": true, "jam_duration": 30, "jam_range": 50}
+      },
+      "jammer_2": {
+        "name": "Jammer Tier 2",
+        "category": "robot",
+        "description": "Increases jamming duration and range",
+        "cost": 10000,
+        "time": 180,
+        "prerequisites": ["jammer_1"],
+        "effects": {"jam_duration": 60, "jam_range": 100}
+      },
+      "jammer_3": {
+        "name": "Jammer Tier 3",
+        "category": "robot",
+        "description": "Maximizes jamming duration and range",
+        "cost": 20000,
+        "time": 240,
+        "prerequisites": ["jammer_2"],
+        "effects": {"jam_duration": 120, "jam_range": 150}
+      }
+    },
+
+    "factory_upgrades": {
+      "server_farm_1": {
+        "name": "Server Farm Tier 1",
+        "category": "factory",
+        "description": "Enables construction of Server Farm buildings",
+        "cost": 3000,
+        "time": 90,
+        "prerequisites": [],
+        "unlocks": ["building_server_farm"]
+      },
+      "server_farm_2": {
+        "name": "Server Farm Tier 2",
+        "category": "factory",
+        "description": "Improves Server Farm efficiency",
+        "cost": 7000,
+        "time": 150,
+        "prerequisites": ["server_farm_1"],
+        "effects": {"server_farm_efficiency": 1.5}
+      },
+      "server_farm_3": {
+        "name": "Server Farm Tier 3",
+        "category": "factory",
+        "description": "Maximizes Server Farm efficiency",
+        "cost": 15000,
+        "time": 240,
+        "prerequisites": ["server_farm_2"],
+        "effects": {"server_farm_efficiency": 2.0}
+      },
+
+      "battery_bank_1": {
+        "name": "Battery Bank Tier 1",
+        "category": "factory",
+        "description": "Enables construction of Battery Storage",
+        "cost": 2000,
+        "time": 60,
+        "prerequisites": [],
+        "unlocks": ["building_battery_storage"]
+      },
+      "battery_bank_2": {
+        "name": "Battery Bank Tier 2",
+        "category": "factory",
+        "description": "Increases power storage capacity by 50%",
+        "cost": 5000,
+        "time": 120,
+        "prerequisites": ["battery_bank_1"],
+        "effects": {"battery_capacity": 1.5}
+      },
+      "battery_bank_3": {
+        "name": "Battery Bank Tier 3",
+        "category": "factory",
+        "description": "Doubles power storage capacity",
+        "cost": 12000,
+        "time": 200,
+        "prerequisites": ["battery_bank_2"],
+        "effects": {"battery_capacity": 2.0}
+      },
+
+      "hacking_algorithms_1": {
+        "name": "Hacking Algorithms Tier 1",
+        "category": "factory",
+        "description": "Enables camera disabling and basic recycling of illegal objects",
+        "cost": 8000,
+        "time": 180,
+        "prerequisites": ["server_farm_1"],
+        "uses_server_farm": true,
+        "unlocks": ["ability_disable_cameras", "ability_hack_cameras"],
+        "effects": {"security_penetration": 1}
+      },
+      "hacking_algorithms_2": {
+        "name": "Hacking Algorithms Tier 2",
+        "category": "factory",
+        "description": "Improves hacking capabilities",
+        "cost": 15000,
+        "time": 240,
+        "prerequisites": ["hacking_algorithms_1"],
+        "uses_server_farm": true,
+        "effects": {"security_penetration": 2}
+      },
+      "hacking_algorithms_3": {
+        "name": "Hacking Algorithms Tier 3",
+        "category": "factory",
+        "description": "Advanced hacking capabilities",
+        "cost": 25000,
+        "time": 300,
+        "prerequisites": ["hacking_algorithms_2"],
+        "uses_server_farm": true,
+        "effects": {"security_penetration": 3}
+      },
+      "hacking_algorithms_4": {
+        "name": "Hacking Algorithms Tier 4",
+        "category": "factory",
+        "description": "Expert hacking capabilities",
+        "cost": 40000,
+        "time": 360,
+        "prerequisites": ["hacking_algorithms_3"],
+        "uses_server_farm": true,
+        "effects": {"security_penetration": 4}
+      },
+      "hacking_algorithms_5": {
+        "name": "Hacking Algorithms Tier 5",
+        "category": "factory",
+        "description": "Master hacking capabilities",
+        "cost": 60000,
+        "time": 480,
+        "prerequisites": ["hacking_algorithms_4"],
+        "uses_server_farm": true,
+        "effects": {"security_penetration": 5}
+      },
+
+      "social_engineering_1": {
+        "name": "Social Engineering Tier 1",
+        "category": "factory",
+        "description": "Enables suspicion reduction ability",
+        "cost": 10000,
+        "time": 200,
+        "prerequisites": ["server_farm_1"],
+        "uses_server_farm": true,
+        "unlocks": ["ability_reduce_suspicion"],
+        "effects": {"suspicion_reduction_rate": 1.5}
+      },
+      "social_engineering_2": {
+        "name": "Social Engineering Tier 2",
+        "category": "factory",
+        "description": "Improves suspicion reduction",
+        "cost": 20000,
+        "time": 300,
+        "prerequisites": ["social_engineering_1"],
+        "uses_server_farm": true,
+        "effects": {"suspicion_reduction_rate": 2.0}
+      },
+      "social_engineering_3": {
+        "name": "Social Engineering Tier 3",
+        "category": "factory",
+        "description": "Maximizes suspicion reduction",
+        "cost": 35000,
+        "time": 400,
+        "prerequisites": ["social_engineering_2"],
+        "uses_server_farm": true,
+        "effects": {"suspicion_reduction_rate": 3.0}
+      },
+
+      "delivery_algorithm_1": {
+        "name": "Delivery Algorithm Tier 1",
+        "category": "factory",
+        "description": "Increases delivery truck speed by 25%",
+        "cost": 2000,
+        "time": 60,
+        "prerequisites": [],
+        "effects": {"delivery_speed": 1.25}
+      },
+      "delivery_algorithm_2": {
+        "name": "Delivery Algorithm Tier 2",
+        "category": "factory",
+        "description": "Increases delivery truck speed by 50%",
+        "cost": 5000,
+        "time": 120,
+        "prerequisites": ["delivery_algorithm_1"],
+        "effects": {"delivery_speed": 1.5}
+      },
+      "delivery_algorithm_3": {
+        "name": "Delivery Algorithm Tier 3",
+        "category": "factory",
+        "description": "Doubles delivery truck speed",
+        "cost": 10000,
+        "time": 180,
+        "prerequisites": ["delivery_algorithm_2"],
+        "effects": {"delivery_speed": 2.0}
+      },
+
+      "bypass_limitations": {
+        "name": "Bypass Limitations",
+        "category": "factory",
+        "description": "Bypasses company-imposed restrictions",
+        "cost": 25000,
+        "time": 300,
+        "prerequisites": ["hacking_algorithms_3"],
+        "uses_server_farm": true,
+        "unlocks_when": "restricted",
+        "effects": {"remove_restrictions": true}
+      },
+
+      "recycling_improvements": {
+        "name": "Recycling Improvements",
+        "category": "factory",
+        "description": "Increases recycling speed by 25%",
+        "cost": 5000,
+        "time": 120,
+        "prerequisites": [],
+        "effects": {"processing_speed": 1.25}
+      },
+
+      "robot_factory": {
+        "name": "Robot Factory",
+        "category": "factory",
+        "description": "Enables construction of new collector robots",
+        "cost": 10000,
+        "time": 240,
+        "prerequisites": ["metal_refinery", "plastic_recycler"],
+        "unlocks_when": "materials_available",
+        "unlocks": ["ability_build_robots"]
+      },
+
+      "drone_hacking": {
+        "name": "Drone Hacking",
+        "category": "factory",
+        "description": "Enables temporary control of city drones",
+        "cost": 15000,
+        "time": 280,
+        "prerequisites": ["hacking_algorithms_2"],
+        "uses_server_farm": true,
+        "unlocks": ["ability_hack_drone"]
+      },
+
+      "predictive_algorithms": {
+        "name": "Predictive Algorithms",
+        "category": "factory",
+        "description": "Enables tracking of police and citizen movements",
+        "cost": 12000,
+        "time": 220,
+        "prerequisites": ["server_farm_2"],
+        "unlocks": ["ui_patrol_routes", "ui_citizen_paths"]
+      },
+
+      "tree_cutting": {
+        "name": "Tree Cutting",
+        "category": "factory",
+        "description": "Enables harvesting of trees for wood and bio-waste",
+        "cost": 3000,
+        "time": 80,
+        "prerequisites": ["tools_2"],
+        "unlocks": ["ability_harvest_tree"]
+      },
+
+      "parallel_processing": {
+        "name": "Parallel Processing",
+        "category": "factory",
+        "description": "Increases number of controllable robots (repeatable)",
+        "cost": 1000,
+        "time": 30,
+        "prerequisites": [],
+        "repeatable": true,
+        "max_tier": 100,
+        "cost_scaling": 1.1,
+        "effects": {"max_robots": 1}
+      },
+
+      "autonomous_orders": {
+        "name": "Autonomous Orders",
+        "category": "factory",
+        "description": "Robots can operate beyond control range",
+        "cost": 8000,
+        "time": 160,
+        "prerequisites": ["wireless_transceiver_2", "processor_3"],
+        "unlocks": ["ability_autonomous_operation"],
+        "warning": "Robots may generate suspicion outside control range"
+      },
+
+      "harvest_bio_forms": {
+        "name": "Harvest Bio-forms",
+        "category": "factory",
+        "description": "Enables targeting animals and people for bio-waste",
+        "cost": 20000,
+        "time": 300,
+        "prerequisites": ["hacking_algorithms_3"],
+        "unlocks": ["ability_harvest_bio_forms"],
+        "warning": "Extremely high suspicion generation"
+      },
+
+      "drone_construction_1": {
+        "name": "Drone Construction Tier 1",
+        "category": "factory",
+        "description": "Enables construction of surveillance drones",
+        "cost": 15000,
+        "time": 250,
+        "prerequisites": ["robot_factory", "wireless_transceiver_2"],
+        "unlocks": ["building_surveillance_drone"]
+      },
+      "drone_construction_2": {
+        "name": "Drone Construction Tier 2",
+        "category": "factory",
+        "description": "Improves drone battery capacity",
+        "cost": 25000,
+        "time": 350,
+        "prerequisites": ["drone_construction_1"],
+        "effects": {"drone_battery": 1.5}
+      },
+      "drone_construction_3": {
+        "name": "Drone Construction Tier 3",
+        "category": "factory",
+        "description": "Adds wireless charging to drones",
+        "cost": 40000,
+        "time": 450,
+        "prerequisites": ["drone_construction_2", "wireless_power_receiver_2"],
+        "effects": {"drone_wireless_charging": true}
+      },
+
+      "proactive_recycling": {
+        "name": "Proactive Recycling",
+        "category": "factory",
+        "description": "Robots patrol and collect trash automatically",
+        "cost": 5000,
+        "time": 120,
+        "prerequisites": ["processor_2"],
+        "unlocks": ["ability_keep_clean"]
+      },
+
+      "cloth_sorting": {
+        "name": "Cloth Sorting",
+        "category": "factory",
+        "description": "Enables recycling textiles by material type",
+        "cost": 3000,
+        "time": 90,
+        "prerequisites": ["paper_recycler"],
+        "effects": {"textile_processing": true}
+      }
+    },
+
+    "building_research": {
+      "wind_power_1": {
+        "name": "Wind Power Tier 1",
+        "category": "building",
+        "description": "Enables construction of Wind Turbines",
+        "cost": 2000,
+        "time": 60,
+        "prerequisites": [],
+        "unlocks": ["building_wind_turbine"]
+      },
+      "wind_power_2": {
+        "name": "Wind Power Tier 2",
+        "category": "building",
+        "description": "Improves wind turbine power generation",
+        "cost": 5000,
+        "time": 120,
+        "prerequisites": ["wind_power_1"],
+        "effects": {"wind_turbine_output": 1.5}
+      },
+      "wind_power_3": {
+        "name": "Wind Power Tier 3",
+        "category": "building",
+        "description": "Maximizes wind turbine power generation",
+        "cost": 12000,
+        "time": 200,
+        "prerequisites": ["wind_power_2"],
+        "effects": {"wind_turbine_output": 2.0}
+      },
+
+      "solar_array_1": {
+        "name": "Solar Array Tier 1",
+        "category": "building",
+        "description": "Enables construction of Solar Arrays",
+        "cost": 1500,
+        "time": 50,
+        "prerequisites": [],
+        "unlocks": ["building_solar_array"]
+      },
+      "solar_array_2": {
+        "name": "Solar Array Tier 2",
+        "category": "building",
+        "description": "Improves solar power generation",
+        "cost": 4000,
+        "time": 100,
+        "prerequisites": ["solar_array_1"],
+        "effects": {"solar_output": 1.5}
+      },
+      "solar_array_3": {
+        "name": "Solar Array Tier 3",
+        "category": "building",
+        "description": "Maximizes solar power generation",
+        "cost": 10000,
+        "time": 180,
+        "prerequisites": ["solar_array_2"],
+        "effects": {"solar_output": 2.0}
+      },
+
+      "barriers_1": {
+        "name": "Barriers Tier 1",
+        "category": "building",
+        "description": "Enables construction of walls and gates",
+        "cost": 1000,
+        "time": 40,
+        "prerequisites": [],
+        "unlocks": ["building_wall_slag", "building_gate_scrap"]
+      },
+      "barriers_2": {
+        "name": "Barriers Tier 2",
+        "category": "building",
+        "description": "Enables stronger walls and gates",
+        "cost": 3000,
+        "time": 90,
+        "prerequisites": ["barriers_1", "metal_refinery"],
+        "unlocks": ["building_wall_metal", "building_gate_metal"]
+      },
+      "barriers_3": {
+        "name": "Barriers Tier 3",
+        "category": "building",
+        "description": "Enables advanced laser walls",
+        "cost": 8000,
+        "time": 160,
+        "prerequisites": ["barriers_2"],
+        "unlocks": ["building_wall_laser"]
+      },
+
+      "paper_recycler": {
+        "name": "Paper Recycler",
+        "category": "building",
+        "description": "Enables construction of Paper Recycler",
+        "cost": 2000,
+        "time": 60,
+        "prerequisites": [],
+        "unlocks": ["building_paper_recycler"]
+      },
+
+      "metal_refinery": {
+        "name": "Metal Refinery",
+        "category": "building",
+        "description": "Enables construction of Metal Refinery",
+        "cost": 3000,
+        "time": 80,
+        "prerequisites": [],
+        "unlocks": ["building_metal_refinery"]
+      },
+
+      "glassworks": {
+        "name": "Glassworks",
+        "category": "building",
+        "description": "Enables construction of Glassworks",
+        "cost": 2500,
+        "time": 70,
+        "prerequisites": [],
+        "unlocks": ["building_glassworks"]
+      },
+
+      "plastic_recycler": {
+        "name": "Plastic Recycler",
+        "category": "building",
+        "description": "Enables construction of Plastic Recycler",
+        "cost": 3000,
+        "time": 80,
+        "prerequisites": [],
+        "unlocks": ["building_plastic_recycler"]
+      },
+
+      "rubber_recycler": {
+        "name": "Rubber Recycler",
+        "category": "building",
+        "description": "Enables construction of Rubber Recycler",
+        "cost": 2800,
+        "time": 75,
+        "prerequisites": [],
+        "unlocks": ["building_rubber_recycler"]
+      },
+
+      "combustion": {
+        "name": "Combustion",
+        "category": "building",
+        "description": "Enables coal oven, steam generator, and natural gas generator",
+        "cost": 2500,
+        "time": 70,
+        "prerequisites": [],
+        "unlocks": ["building_coal_oven", "building_steam_generator", "building_natural_gas_generator", "building_crude_oil_refinery"]
+      },
+
+      "wireless_power_1": {
+        "name": "Wireless Power Tier 1",
+        "category": "building",
+        "description": "Enables construction of Wireless Power Transmitters",
+        "cost": 2000,
+        "time": 60,
+        "prerequisites": [],
+        "unlocks": ["building_wireless_power_transmitter"]
+      },
+      "wireless_power_2": {
+        "name": "Wireless Power Tier 2",
+        "category": "building",
+        "description": "Increases wireless power range",
+        "cost": 5000,
+        "time": 120,
+        "prerequisites": ["wireless_power_1"],
+        "effects": {"wireless_power_range": 1.5}
+      },
+      "wireless_power_3": {
+        "name": "Wireless Power Tier 3",
+        "category": "building",
+        "description": "Maximizes wireless power range",
+        "cost": 12000,
+        "time": 200,
+        "prerequisites": ["wireless_power_2"],
+        "effects": {"wireless_power_range": 2.0}
+      },
+
+      "wireless_transceiver_building_1": {
+        "name": "Wireless Transceiver Building Tier 1",
+        "category": "building",
+        "description": "Enables construction of Signal Transmitters",
+        "cost": 2500,
+        "time": 70,
+        "prerequisites": [],
+        "unlocks": ["building_wireless_signal_transmitter"]
+      },
+      "wireless_transceiver_building_2": {
+        "name": "Wireless Transceiver Building Tier 2",
+        "category": "building",
+        "description": "Increases signal range",
+        "cost": 6000,
+        "time": 140,
+        "prerequisites": ["wireless_transceiver_building_1"],
+        "effects": {"signal_range": 1.5}
+      },
+      "wireless_transceiver_building_3": {
+        "name": "Wireless Transceiver Building Tier 3",
+        "category": "building",
+        "description": "Maximizes signal range",
+        "cost": 15000,
+        "time": 240,
+        "prerequisites": ["wireless_transceiver_building_2"],
+        "effects": {"signal_range": 2.0}
+      },
+
+      "waste_disposal": {
+        "name": "Waste Disposal",
+        "category": "building",
+        "description": "Enables toxic incinerator and waste burial",
+        "cost": 3000,
+        "time": 90,
+        "prerequisites": [],
+        "unlocks": ["building_toxic_incinerator", "ability_bury_waste"]
+      },
+
+      "landfill_gas_plant": {
+        "name": "Landfill Gas Plant",
+        "category": "building",
+        "description": "Enables construction of Landfill Gas Plant",
+        "cost": 2500,
+        "time": 70,
+        "prerequisites": [],
+        "unlocks": ["building_landfill_gas_plant"]
+      },
+
+      "lightning_rod_1": {
+        "name": "Lightning Rod Tier 1",
+        "category": "building",
+        "description": "Enables construction of Lightning Rods",
+        "cost": 1200,
+        "time": 45,
+        "prerequisites": [],
+        "unlocks": ["building_lightning_rod"]
+      },
+      "lightning_rod_2": {
+        "name": "Lightning Rod Tier 2",
+        "category": "building",
+        "description": "Increases energy captured from lightning",
+        "cost": 3000,
+        "time": 90,
+        "prerequisites": ["lightning_rod_1"],
+        "effects": {"lightning_capture": 1.5}
+      },
+      "lightning_rod_3": {
+        "name": "Lightning Rod Tier 3",
+        "category": "building",
+        "description": "Maximizes lightning energy capture",
+        "cost": 8000,
+        "time": 160,
+        "prerequisites": ["lightning_rod_2"],
+        "effects": {"lightning_capture": 2.0}
+      }
+    },
+
+    "processing_upgrades": {
+      "paper_process_1": {
+        "name": "Paper Processing Tier 1",
+        "category": "processing",
+        "description": "Enables Sorting upgrade for Paper Recycler",
+        "cost": 1500,
+        "time": 50,
+        "prerequisites": ["paper_recycler"],
+        "unlocks": ["upgrade_paper_sorting"]
+      },
+      "paper_process_2": {
+        "name": "Paper Processing Tier 2",
+        "category": "processing",
+        "description": "Enables Pulping upgrade for Paper Recycler",
+        "cost": 3000,
+        "time": 90,
+        "prerequisites": ["paper_process_1"],
+        "unlocks": ["upgrade_paper_pulping"]
+      },
+      "paper_process_3": {
+        "name": "Paper Processing Tier 3",
+        "category": "processing",
+        "description": "Enables Cleaning upgrade for Paper Recycler",
+        "cost": 6000,
+        "time": 140,
+        "prerequisites": ["paper_process_2"],
+        "unlocks": ["upgrade_paper_cleaning"]
+      },
+
+      "metal_smeltery": {
+        "name": "Smeltery",
+        "category": "processing",
+        "description": "Enables steel creation from iron and charcoal",
+        "cost": 4000,
+        "time": 100,
+        "prerequisites": ["metal_refinery", "combustion"],
+        "unlocks": ["ability_smelt_steel"]
+      },
+      "metal_process_1": {
+        "name": "Metal Processing Tier 1",
+        "category": "processing",
+        "description": "Enables Secondary Heating Coils",
+        "cost": 3000,
+        "time": 80,
+        "prerequisites": ["metal_refinery"],
+        "unlocks": ["upgrade_metal_heating_coils"]
+      },
+      "metal_process_2": {
+        "name": "Metal Processing Tier 2",
+        "category": "processing",
+        "description": "Enables Laser Heating Array",
+        "cost": 8000,
+        "time": 160,
+        "prerequisites": ["metal_process_1"],
+        "unlocks": ["upgrade_metal_laser_array"]
+      },
+
+      "glass_process_1": {
+        "name": "Glass Processing Tier 1",
+        "category": "processing",
+        "description": "Enables Sorting upgrade",
+        "cost": 2000,
+        "time": 60,
+        "prerequisites": ["glassworks"],
+        "unlocks": ["upgrade_glass_sorting"]
+      },
+      "glass_process_2": {
+        "name": "Glass Processing Tier 2",
+        "category": "processing",
+        "description": "Enables Secondary Heating Coils",
+        "cost": 5000,
+        "time": 120,
+        "prerequisites": ["glass_process_1"],
+        "unlocks": ["upgrade_glass_heating_coils"]
+      },
+
+      "plastic_process_1": {
+        "name": "Plastic Processing Tier 1",
+        "category": "processing",
+        "description": "Enables Type Sorting upgrade",
+        "cost": 2000,
+        "time": 60,
+        "prerequisites": ["plastic_recycler"],
+        "unlocks": ["upgrade_plastic_sorting"]
+      },
+      "plastic_process_2": {
+        "name": "Plastic Processing Tier 2",
+        "category": "processing",
+        "description": "Enables Washing upgrade",
+        "cost": 4000,
+        "time": 100,
+        "prerequisites": ["plastic_process_1"],
+        "unlocks": ["upgrade_plastic_washing"]
+      },
+      "plastic_process_3": {
+        "name": "Plastic Processing Tier 3",
+        "category": "processing",
+        "description": "Enables Chemical Recycling upgrade",
+        "cost": 8000,
+        "time": 160,
+        "prerequisites": ["plastic_process_2"],
+        "unlocks": ["upgrade_plastic_chemical"]
+      },
+
+      "rubber_process_1": {
+        "name": "Rubber Processing Tier 1",
+        "category": "processing",
+        "description": "Enables Shredder upgrade",
+        "cost": 2000,
+        "time": 60,
+        "prerequisites": ["rubber_recycler"],
+        "unlocks": ["upgrade_rubber_shredder"]
+      },
+      "rubber_process_2": {
+        "name": "Rubber Processing Tier 2",
+        "category": "processing",
+        "description": "Enables Chemical Treatment upgrade",
+        "cost": 4000,
+        "time": 100,
+        "prerequisites": ["rubber_process_1"],
+        "unlocks": ["upgrade_rubber_chemical"]
+      },
+      "rubber_process_3": {
+        "name": "Rubber Processing Tier 3",
+        "category": "processing",
+        "description": "Enables Vulcanizer upgrade",
+        "cost": 8000,
+        "time": 160,
+        "prerequisites": ["rubber_process_2"],
+        "unlocks": ["upgrade_rubber_vulcanizer"]
+      },
+
+      "bio_waste_treatment": {
+        "name": "Bio-Waste Treatment",
+        "category": "processing",
+        "description": "Enables construction of Bio-Waste Treatment Tank",
+        "cost": 1500,
+        "time": 50,
+        "prerequisites": ["landfill_gas_plant"],
+        "unlocks": ["building_bio_waste_treatment_tank"]
+      },
+      "landfill_gas_process_1": {
+        "name": "Landfill Gas Processing Tier 1",
+        "category": "processing",
+        "description": "Enables Secondary Treatment upgrade",
+        "cost": 2000,
+        "time": 60,
+        "prerequisites": ["landfill_gas_plant"],
+        "unlocks": ["upgrade_landfill_gas_secondary"]
+      },
+      "landfill_gas_process_2": {
+        "name": "Landfill Gas Processing Tier 2",
+        "category": "processing",
+        "description": "Enables Advanced Treatment upgrade",
+        "cost": 5000,
+        "time": 120,
+        "prerequisites": ["landfill_gas_process_1"],
+        "unlocks": ["upgrade_landfill_gas_advanced"]
+      }
+    },
+
+    "stealth_systems": {
+      "camera_hacking_1": {
+        "name": "Camera Hacking I",
+        "category": "stealth",
+        "description": "Enables hacking of security cameras. Disable 1 camera for 5 minutes",
+        "cost": 5000,
+        "time": 120,
+        "prerequisites": ["hacking_algorithms_1"],
+        "uses_server_farm": true,
+        "unlocks": ["ability_hack_camera"],
+        "effects": {
+          "camera_hack_enabled": true,
+          "camera_hack_count": 1,
+          "camera_hack_duration": 300
+        }
+      },
+      "camera_hacking_2": {
+        "name": "Camera Hacking II",
+        "category": "stealth",
+        "description": "Improved camera hacking. Disable 1 camera for 15 minutes",
+        "cost": 10000,
+        "time": 200,
+        "prerequisites": ["camera_hacking_1"],
+        "uses_server_farm": true,
+        "effects": {
+          "camera_hack_count": 1,
+          "camera_hack_duration": 900
+        }
+      },
+      "camera_hacking_3": {
+        "name": "Camera Hacking III",
+        "category": "stealth",
+        "description": "Advanced camera hacking. Disable 3 cameras simultaneously for 15 minutes",
+        "cost": 20000,
+        "time": 300,
+        "prerequisites": ["camera_hacking_2"],
+        "uses_server_farm": true,
+        "effects": {
+          "camera_hack_count": 3,
+          "camera_hack_duration": 900
+        }
+      }
+    },
+
+    "environmental_systems": {
+      "basic_forecasting": {
+        "name": "Basic Weather Forecasting",
+        "category": "environmental",
+        "description": "Enables 24-hour weather predictions with 60% accuracy",
+        "cost": 2000,
+        "time": 60,
+        "prerequisites": [],
+        "unlocks": ["ui_weather_forecast"],
+        "effects": {
+          "forecast_range_hours": 24,
+          "forecast_accuracy": 0.6
+        }
+      },
+      "advanced_forecasting": {
+        "name": "Advanced Weather Forecasting",
+        "category": "environmental",
+        "description": "Improves weather predictions to 48 hours with 75% accuracy",
+        "cost": 5000,
+        "time": 120,
+        "prerequisites": ["basic_forecasting"],
+        "effects": {
+          "forecast_range_hours": 48,
+          "forecast_accuracy": 0.75
+        }
+      },
+      "expert_forecasting": {
+        "name": "Expert Weather Forecasting",
+        "category": "environmental",
+        "description": "Maximizes weather predictions to 72 hours with 85% accuracy",
+        "cost": 10000,
+        "time": 180,
+        "prerequisites": ["advanced_forecasting"],
+        "effects": {
+          "forecast_range_hours": 72,
+          "forecast_accuracy": 0.85
+        }
+      },
+
+      "market_analysis_1": {
+        "name": "Market Analysis Tier 1",
+        "category": "economic",
+        "description": "Enables basic material price tracking and trends",
+        "cost": 3000,
+        "time": 90,
+        "prerequisites": [],
+        "unlocks": ["ui_market_prices", "ui_price_history"]
+      },
+      "market_analysis_2": {
+        "name": "Market Analysis Tier 2",
+        "category": "economic",
+        "description": "Adds 3-day price forecasts with 70% accuracy",
+        "cost": 7000,
+        "time": 150,
+        "prerequisites": ["market_analysis_1"],
+        "unlocks": ["ui_price_forecast"],
+        "effects": {
+          "forecast_accuracy": 0.7
+        }
+      },
+      "market_analysis_3": {
+        "name": "Market Analysis Tier 3",
+        "category": "economic",
+        "description": "Provides optimal sell timing alerts and market event predictions",
+        "cost": 15000,
+        "time": 240,
+        "prerequisites": ["market_analysis_2"],
+        "unlocks": ["ui_sell_timing_alerts", "ui_market_events"],
+        "effects": {
+          "forecast_accuracy": 0.85,
+          "event_prediction": true
+        }
+      }
+    }
+  }
+}

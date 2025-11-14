@@ -1,0 +1,343 @@
+{
+  "material_types": {
+    "organic": {
+      "name": "Organic Material",
+      "category": "landfill",
+      "processing_building": "bio_waste_treatment_tank",
+      "base_value": 0.1,
+      "processing_time": 2.0,
+      "power_cost": 0.5,
+      "outputs": {
+        "bio_slop": 0.9
+      }
+    },
+    "paper": {
+      "name": "Paper/Cardboard",
+      "category": "recyclable",
+      "processing_building": "paper_recycler",
+      "base_value": 0.5,
+      "processing_time": 3.0,
+      "power_cost": 1.0,
+      "outputs": {
+        "waste_paper": 0.6,
+        "low_quality_paper": 0.3,
+        "medium_quality_paper": 0.1
+      }
+    },
+    "plastic": {
+      "name": "Plastic",
+      "category": "recyclable",
+      "processing_building": "plastic_recycler",
+      "base_value": 1.0,
+      "processing_time": 4.0,
+      "power_cost": 2.0,
+      "outputs": {
+        "waste_plastic": 0.5,
+        "low_quality_plastic": 0.3,
+        "medium_quality_plastic": 0.15,
+        "high_quality_plastic": 0.05
+      }
+    },
+    "metal": {
+      "name": "Metal",
+      "category": "recyclable",
+      "processing_building": "metal_refinery",
+      "base_value": 3.0,
+      "processing_time": 5.0,
+      "power_cost": 3.0,
+      "outputs": {
+        "refined_metal": 0.85,
+        "rich_slag": 0.1,
+        "poor_slag": 0.05
+      }
+    },
+    "glass": {
+      "name": "Glass",
+      "category": "recyclable",
+      "processing_building": "glassworks",
+      "base_value": 2.0,
+      "processing_time": 4.0,
+      "power_cost": 2.5,
+      "outputs": {
+        "gray_glass_blanks": 0.7,
+        "colored_glass_blanks": 0.25,
+        "bullet_proof_glass": 0.05
+      }
+    },
+    "hazardous": {
+      "name": "Hazardous",
+      "category": "toxic",
+      "processing_building": "toxic_incinerator",
+      "base_value": -5.0,
+      "processing_time": 8.0,
+      "power_cost": 5.0,
+      "outputs": {}
+    },
+    "wood": {
+      "name": "Wood",
+      "category": "organic",
+      "processing_building": "coal_oven",
+      "base_value": 0.8,
+      "processing_time": 3.0,
+      "power_cost": 1.0,
+      "outputs": {
+        "charcoal": 0.3,
+        "tar": 0.1,
+        "bio_slop": 0.5
+      }
+    },
+    "concrete": {
+      "name": "Concrete",
+      "category": "construction",
+      "processing_building": "metal_refinery",
+      "base_value": 0.3,
+      "processing_time": 6.0,
+      "power_cost": 3.0,
+      "outputs": {
+        "poor_slag": 0.9
+      }
+    },
+    "steel": {
+      "name": "Steel",
+      "category": "metal",
+      "processing_building": "metal_refinery",
+      "base_value": 5.0,
+      "processing_time": 6.0,
+      "power_cost": 4.0,
+      "outputs": {
+        "refined_steel": 0.9,
+        "rich_slag": 0.08,
+        "poor_slag": 0.02
+      }
+    },
+    "iron": {
+      "name": "Iron",
+      "category": "metal",
+      "processing_building": "metal_refinery",
+      "base_value": 3.5,
+      "processing_time": 5.0,
+      "power_cost": 3.5,
+      "outputs": {
+        "refined_iron": 0.85,
+        "rich_slag": 0.1,
+        "poor_slag": 0.05
+      }
+    },
+    "copper": {
+      "name": "Copper",
+      "category": "metal",
+      "processing_building": "metal_refinery",
+      "base_value": 8.0,
+      "processing_time": 5.0,
+      "power_cost": 3.5,
+      "outputs": {
+        "refined_copper": 0.9,
+        "rich_slag": 0.08,
+        "poor_slag": 0.02
+      }
+    },
+    "textiles": {
+      "name": "Textiles",
+      "category": "organic",
+      "processing_building": "paper_recycler",
+      "base_value": 0.4,
+      "processing_time": 2.5,
+      "power_cost": 1.0,
+      "outputs": {
+        "bio_waste": 0.6,
+        "waste_plastic": 0.3
+      },
+      "requires_research": "cloth_sorting"
+    },
+    "rubber": {
+      "name": "Rubber",
+      "category": "recyclable",
+      "processing_building": "rubber_recycler",
+      "base_value": 1.5,
+      "processing_time": 4.0,
+      "power_cost": 2.0,
+      "outputs": {
+        "waste_rubber": 0.5,
+        "low_quality_rubber": 0.3,
+        "medium_quality_rubber": 0.15,
+        "high_quality_rubber": 0.05
+      }
+    },
+    "petroleum": {
+      "name": "Petroleum",
+      "category": "liquid",
+      "processing_building": "crude_oil_refinery",
+      "base_value": 6.0,
+      "processing_time": 5.0,
+      "power_cost": 3.0,
+      "outputs": {
+        "refined_oil": 0.8,
+        "bitumen": 0.15
+      }
+    },
+    "toxic": {
+      "name": "Toxic Waste",
+      "category": "toxic",
+      "processing_building": "toxic_incinerator",
+      "base_value": -8.0,
+      "processing_time": 10.0,
+      "power_cost": 6.0,
+      "outputs": {},
+      "pollution_generated": 10.0
+    },
+    "unusable": {
+      "name": "Unusable Waste",
+      "category": "waste",
+      "processing_building": null,
+      "base_value": -0.5,
+      "processing_time": 0,
+      "power_cost": 0,
+      "outputs": {},
+      "disposal_required": true
+    }
+  },
+
+  "source_compositions": {
+    "landfill": {
+      "organic": 0.44,
+      "paper": 0.17,
+      "plastic": 0.17,
+      "metal": 0.09,
+      "glass": 0.05,
+      "hazardous": 0.08
+    },
+    "durable_goods": {
+      "metal": 0.50,
+      "plastic": 0.20,
+      "glass": 0.10,
+      "wood": 0.15,
+      "hazardous": 0.05,
+      "deconstruction_time": 30.0,
+      "collection_speed": 0.5
+    },
+    "nondurable_goods": {
+      "textiles": 0.60,
+      "plastic": 0.25,
+      "paper": 0.10,
+      "organic": 0.05,
+      "deconstruction_time": 5.0,
+      "collection_speed": 2.0
+    },
+    "house_livable": {
+      "wood": 0.40,
+      "concrete": 0.20,
+      "steel": 0.10,
+      "textiles": 0.07,
+      "glass": 0.10,
+      "copper": 0.06,
+      "iron": 0.02,
+      "plastic": 0.05,
+      "deconstruction_time": 120.0,
+      "noise_level": 8.0,
+      "illegal": true
+    },
+    "house_decrepit": {
+      "wood": 0.15,
+      "concrete": 0.18,
+      "steel": 0.05,
+      "textiles": 0.02,
+      "glass": 0.05,
+      "iron": 0.00,
+      "plastic": 0.03,
+      "toxic": 0.08,
+      "unusable": 0.44,
+      "deconstruction_time": 60.0,
+      "noise_level": 6.0,
+      "illegal": false
+    },
+    "vehicle_working": {
+      "steel": 0.25,
+      "iron": 0.40,
+      "plastic": 0.10,
+      "textiles": 0.05,
+      "glass": 0.06,
+      "copper": 0.02,
+      "rubber": 0.08,
+      "petroleum": 0.10,
+      "toxic": 0.04,
+      "deconstruction_time": 45.0,
+      "noise_level": 7.0,
+      "illegal": true
+    },
+    "vehicle_scrap": {
+      "steel": 0.15,
+      "iron": 0.25,
+      "plastic": 0.07,
+      "textiles": 0.02,
+      "glass": 0.03,
+      "copper": 0.01,
+      "rubber": 0.04,
+      "petroleum": 0.00,
+      "toxic": 0.14,
+      "unusable": 0.29,
+      "deconstruction_time": 30.0,
+      "noise_level": 5.0,
+      "illegal": false
+    },
+    "chain_link_fence": {
+      "iron": 1.00,
+      "deconstruction_time": 10.0,
+      "noise_level": 4.0,
+      "illegal": true
+    },
+    "wooden_fence": {
+      "wood": 0.95,
+      "iron": 0.05,
+      "deconstruction_time": 8.0,
+      "noise_level": 3.0,
+      "illegal": true
+    },
+    "brick_wall": {
+      "poor_slag": 1.00,
+      "deconstruction_time": 20.0,
+      "noise_level": 6.0,
+      "illegal": true
+    },
+    "tree": {
+      "wood": 0.85,
+      "organic": 0.15,
+      "deconstruction_time": 15.0,
+      "noise_level": 5.0,
+      "illegal": false,
+      "requires_research": "tree_cutting"
+    }
+  },
+
+  "component_values": {
+    "bio_slop": 0.5,
+    "waste_paper": 0.3,
+    "low_quality_paper": 1.0,
+    "medium_quality_paper": 2.5,
+    "high_quality_paper": 5.0,
+    "waste_plastic": 0.5,
+    "low_quality_plastic": 1.5,
+    "medium_quality_plastic": 3.5,
+    "high_quality_plastic": 8.0,
+    "refined_metal": 4.0,
+    "refined_steel": 6.0,
+    "refined_iron": 4.5,
+    "refined_copper": 10.0,
+    "rich_slag": 0.8,
+    "poor_slag": 0.2,
+    "gray_glass_blanks": 2.5,
+    "colored_glass_blanks": 3.0,
+    "bullet_proof_glass": 8.0,
+    "waste_rubber": 0.8,
+    "low_quality_rubber": 2.0,
+    "medium_quality_rubber": 4.0,
+    "high_quality_rubber": 8.0,
+    "charcoal": 1.5,
+    "tar": 2.0,
+    "refined_oil": 8.0,
+    "bitumen": 3.0,
+    "dirty_methane": 0.5,
+    "impure_methane": 1.5,
+    "pure_methane": 3.0,
+    "ultra_pure_methane": 6.0
+  }
+}
