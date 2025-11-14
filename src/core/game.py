@@ -39,6 +39,7 @@ from src.ui.inspection_ui import InspectionUI
 from src.systems.save_manager import SaveManager
 from src.ui.save_load_menu import SaveLoadMenu
 from src.ui.controls_help import ControlsHelp
+from src.ui.minimap import Minimap
 
 
 class Game:
@@ -160,6 +161,10 @@ class Game:
 
         # Initialize controls/help overlay
         self.controls_help = ControlsHelp(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
+
+        # Initialize minimap
+        self.minimap = Minimap(config.SCREEN_WIDTH, config.SCREEN_HEIGHT,
+                              config.WORLD_WIDTH, config.WORLD_HEIGHT)
 
         # Game statistics tracking
         self.stats = {
@@ -390,6 +395,10 @@ class Game:
                         save_list = self.save_manager.get_save_list()
                         self.save_load_menu.update_save_list(save_list)
                     print(f"Save/Load menu: {'opened' if self.save_load_menu.visible else 'closed'}")
+                # M key to toggle minimap
+                elif event.key == pygame.K_m:
+                    self.minimap.toggle()
+                    print(f"Minimap: {'visible' if self.minimap.visible else 'hidden'}")
 
             # Mouse motion (for hover effects)
             elif event.type == pygame.MOUSEMOTION:
@@ -401,10 +410,16 @@ class Game:
             # Mouse events
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_x, mouse_y = pygame.mouse.get_pos()
+
+                # Try minimap click first (left click)
+                if event.button == 1:  # Left click
+                    if self.minimap.handle_click(mouse_x, mouse_y, self.camera):
+                        continue  # Minimap handled the click
+
                 # Convert screen coordinates to world coordinates
                 world_x, world_y = self.camera.screen_to_world(mouse_x, mouse_y)
 
-                # Try camera hacking first (left click)
+                # Try camera hacking (left click)
                 if event.button == 1:  # Left click
                     hacked = self.camera_hacking.handle_click(world_x, world_y, self.npcs.game_time)
                     if hacked:
@@ -543,6 +558,10 @@ class Game:
             # TODO: Implement game over
             print("⚠️ GAME OVER: Police captured robot!")
 
+        # Update minimap (hover detection)
+        mouse_pos = pygame.mouse.get_pos()
+        self.minimap.update(mouse_pos)
+
     def _handle_robot_input(self):
         """Handle arrow key input for controlling the selected robot."""
         if not self.entities.selected_robot:
@@ -629,6 +648,9 @@ class Game:
 
         # Render controls/help overlay (if visible)
         self.controls_help.render(self.screen)
+
+        # Render minimap (if visible)
+        self.minimap.render(self.screen, self.grid, self.entities, self.camera, self.buildings)
 
         # Show paused indicator
         if self.paused:

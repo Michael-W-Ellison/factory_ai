@@ -92,7 +92,7 @@ class ControlsHelp:
             ("Menus & UI", [
                 ("R", "Open/Close research menu"),
                 ("I", "Open/Close inventory"),
-                ("M", "Open/Close map"),
+                ("M", "Toggle minimap"),
                 ("H or F1", "Show/Hide this help screen"),
                 ("F10", "Open/Close save/load menu"),
             ]),
