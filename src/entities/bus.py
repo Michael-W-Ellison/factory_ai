@@ -11,6 +11,7 @@ Extends TrafficVehicle with bus-specific behavior:
 import pygame
 from typing import List, Optional, Set
 from src.entities.traffic_vehicle import TrafficVehicle
+from src.entities.npc import Activity
 
 
 class Bus(TrafficVehicle):
@@ -29,7 +30,7 @@ class Bus(TrafficVehicle):
     """
 
     def __init__(self, world_x: float, world_y: float, route_id: int = 0,
-                 initial_direction: str = 'east'):
+                 initial_direction: str = 'east', is_express: bool = False):
         """
         Initialize a bus.
 
@@ -38,21 +39,23 @@ class Bus(TrafficVehicle):
             world_y (float): Starting world Y position
             route_id (int): ID of the route this bus follows
             initial_direction (str): Initial lane direction
+            is_express (bool): Whether this is an express bus (skips some stops)
         """
         # Initialize as traffic vehicle (bus type)
         super().__init__(world_x, world_y, vehicle_type='bus', initial_direction=initial_direction)
 
         # Bus-specific properties
         self.route_id = route_id
+        self.is_express = is_express
         self.passengers: Set[int] = set()  # NPC IDs
         self.max_capacity = 20
 
         # Route following
-        self.route_stops: List[tuple] = []  # List of (grid_x, grid_y) stop positions
+        self.route_stops: List[tuple] = []  # List of (grid_x, grid_y) stop positions (all or express only)
         self.current_stop_index = 0
         self.stopped_at_stop = False
         self.stop_timer = 0.0
-        self.stop_duration = 5.0  # Seconds to wait at each stop
+        self.stop_duration = 3.0 if is_express else 5.0  # Express buses wait less
 
         # Override vehicle type configuration for bus
         self.width = 50
@@ -79,18 +82,24 @@ class Bus(TrafficVehicle):
         self.route_stops = stops
         self.current_stop_index = 0
 
-    def update(self, dt: float, road_network):
+    def update(self, dt: float, road_network, npcs=None, bus_stops=None):
         """
         Update bus position and behavior.
 
         Args:
             dt (float): Delta time in seconds
             road_network: RoadNetwork for navigation
+            npcs (list): List of all NPCs for boarding/alighting
+            bus_stops (list): List of BusStop objects
         """
         # If stopped at a stop, handle waiting
         if self.stopped_at_stop:
             self.stop_timer += dt
             self.door_open = True
+
+            # Handle NPC boarding/alighting at first opportunity
+            if npcs and bus_stops and self.stop_timer < 0.1:
+                self._handle_passenger_boarding_alighting(npcs, bus_stops)
 
             # Check if we've waited long enough
             if self.stop_timer >= self.stop_duration:
@@ -103,6 +112,10 @@ class Bus(TrafficVehicle):
 
             # Check if we're approaching next stop
             self._check_for_stop_arrival(road_network)
+
+        # Update passenger positions (if riding)
+        if npcs:
+            self._update_passenger_positions(npcs)
 
     def _check_for_stop_arrival(self, road_network):
         """Check if bus has arrived at the next stop."""
@@ -190,6 +203,101 @@ class Bus(TrafficVehicle):
         """Check if bus is at capacity."""
         return len(self.passengers) >= self.max_capacity
 
+    def get_crowding_level(self) -> str:
+        """
+        Get crowding level for visualization.
+
+        Returns:
+            str: 'empty', 'comfortable', 'crowded', or 'full'
+        """
+        ratio = len(self.passengers) / self.max_capacity
+        if ratio == 0:
+            return 'empty'
+        elif ratio < 0.5:
+            return 'comfortable'
+        elif ratio < 0.9:
+            return 'crowded'
+        else:
+            return 'full'
+
+    def _handle_passenger_boarding_alighting(self, npcs, bus_stops):
+        """
+        Handle NPCs boarding and alighting at current stop.
+
+        Args:
+            npcs (list): List of all NPCs
+            bus_stops (list): List of all BusStop objects
+        """
+        if not self.route_stops or self.current_stop_index >= len(self.route_stops):
+            return
+
+        # Get current stop position
+        current_stop_grid = self.route_stops[self.current_stop_index]
+
+        # Find the BusStop object at this position
+        bus_stop = None
+        for stop in bus_stops:
+            if (stop.grid_x, stop.grid_y) == current_stop_grid:
+                bus_stop = stop
+                break
+
+        # First: Handle alighting (NPCs getting off)
+        passengers_to_remove = []
+        for npc_id in self.passengers:
+            # Find the NPC
+            npc = self._find_npc_by_id(npcs, npc_id)
+            if npc and npc.is_at_destination_stop(*current_stop_grid):
+                # NPC wants to get off here
+                npc.alight_from_bus()
+                passengers_to_remove.append(npc_id)
+
+                # Remove from bus stop waiting list (if somehow still there)
+                if bus_stop:
+                    bus_stop.remove_waiting_npc(npc_id)
+
+        for npc_id in passengers_to_remove:
+            self.remove_passenger(npc_id)
+
+        # Second: Handle boarding (NPCs getting on)
+        if not self.is_full() and bus_stop:
+            # Get waiting NPCs at this stop
+            waiting_npc_ids = list(bus_stop.waiting_npcs)
+
+            for npc_id in waiting_npc_ids:
+                if self.is_full():
+                    break
+
+                # Find the NPC
+                npc = self._find_npc_by_id(npcs, npc_id)
+                if npc and npc.current_activity == Activity.WAITING_FOR_BUS:
+                    # Check if this bus serves their route
+                    # (For now, board any bus - can enhance later)
+                    success = self.add_passenger(npc_id)
+                    if success:
+                        npc.board_bus(self.id)
+                        bus_stop.remove_waiting_npc(npc_id)
+
+    def _update_passenger_positions(self, npcs):
+        """
+        Update positions of NPCs riding this bus.
+
+        Args:
+            npcs (list): List of all NPCs
+        """
+        for npc_id in self.passengers:
+            npc = self._find_npc_by_id(npcs, npc_id)
+            if npc and npc.current_bus_id == self.id:
+                # Position NPC at bus location (they're inside)
+                npc.world_x = self.world_x
+                npc.world_y = self.world_y
+
+    def _find_npc_by_id(self, npcs, npc_id: int):
+        """Find an NPC by ID from list."""
+        for npc in npcs:
+            if npc.id == npc_id:
+                return npc
+        return None
+
     def render(self, screen: pygame.Surface, camera):
         """
         Render the bus with passenger count and route number.
@@ -217,19 +325,32 @@ class Bus(TrafficVehicle):
         # Render route number on top of bus
         if camera.zoom >= 0.8:  # Only show when zoomed in enough
             font = pygame.font.Font(None, max(16, int(20 * camera.zoom)))
-            route_text = font.render(f"#{self.route_id}", True, (255, 255, 255))
+            route_label = f"#{self.route_id} EXP" if self.is_express else f"#{self.route_id}"
+            route_text = font.render(route_label, True, (255, 255, 255))
             text_rect = route_text.get_rect(center=(screen_x, screen_y - height_px // 2 - 8))
 
-            # Draw background for route number
+            # Draw background for route number (orange for express, black for regular)
+            bg_color = (200, 100, 0) if self.is_express else (0, 0, 0)
             bg_rect = text_rect.inflate(4, 2)
-            pygame.draw.rect(screen, (0, 0, 0), bg_rect)
+            pygame.draw.rect(screen, bg_color, bg_rect)
             screen.blit(route_text, text_rect)
 
-        # Render passenger count indicator (if carrying passengers)
-        if self.passengers and camera.zoom >= 0.6:
+        # Render passenger count indicator with crowding color
+        if camera.zoom >= 0.6:
             passenger_count = len(self.passengers)
             font_small = pygame.font.Font(None, max(14, int(16 * camera.zoom)))
-            passenger_text = font_small.render(f"{passenger_count}/{self.max_capacity}", True, (255, 255, 0))
+
+            # Color-code based on crowding level
+            crowding = self.get_crowding_level()
+            crowding_colors = {
+                'empty': (150, 150, 150),      # Gray
+                'comfortable': (100, 255, 100),  # Green
+                'crowded': (255, 200, 0),        # Yellow-orange
+                'full': (255, 50, 50)            # Red
+            }
+            text_color = crowding_colors.get(crowding, (255, 255, 255))
+
+            passenger_text = font_small.render(f"{passenger_count}/{self.max_capacity}", True, text_color)
             passenger_rect = passenger_text.get_rect(center=(screen_x, screen_y + height_px // 2 + 8))
 
             # Draw background

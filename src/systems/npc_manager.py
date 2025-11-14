@@ -40,6 +40,10 @@ class NPCManager:
         self.npcs_per_house = 2  # Average NPCs per house
         self.employment_rate = 0.7  # 70% of NPCs have jobs
 
+        # Bus system integration
+        self.bus_manager = None  # Set externally after bus system is initialized
+        self.bus_usage_rate = 0.4  # 40% of NPCs prefer buses for commuting
+
     def spawn_npcs_in_city(self, seed: int = 42):
         """
         Spawn NPCs in houses throughout the city.
@@ -119,6 +123,10 @@ class NPCManager:
         # Update all NPCs
         for npc in self.npcs:
             npc.update(dt, self.game_time)
+
+        # Handle bus commuting decisions
+        if self.bus_manager:
+            self._update_bus_commuting()
 
     def check_detections(self, robots: List, dt: float) -> List[dict]:
         """
@@ -249,3 +257,77 @@ class NPCManager:
             display_hours = 12
 
         return f"{display_hours:02d}:{minutes:02d} {am_pm}"
+
+    def _update_bus_commuting(self):
+        """
+        Update NPCs who are commuting and might use buses.
+
+        Checks NPCs who are commuting and decides if they should use the bus system.
+        """
+        if not self.bus_manager or not self.bus_manager.bus_stops:
+            return
+
+        for npc in self.npcs:
+            # Check if NPC is starting a commute and prefers buses
+            if (npc.current_activity in [Activity.COMMUTING_TO_WORK, Activity.COMMUTING_HOME] and
+                not npc.using_bus and npc.bus_preference > (1.0 - self.bus_usage_rate)):
+
+                # Check if NPC just started commuting (not already en route)
+                import math
+                distance_to_target = math.sqrt(
+                    (npc.target_x - npc.world_x)**2 + (npc.target_y - npc.world_y)**2
+                )
+
+                # Only consider bus if destination is far enough (> 200 pixels)
+                if distance_to_target > 200:
+                    self._assign_bus_journey(npc)
+
+            # Handle NPCs waiting at bus stops - add them to stop's waiting list
+            elif npc.current_activity == Activity.WAITING_FOR_BUS and npc.target_bus_stop:
+                stop_grid_x, stop_grid_y = npc.target_bus_stop
+                bus_stop = self._find_bus_stop_at(stop_grid_x, stop_grid_y)
+
+                if bus_stop and npc.id not in bus_stop.waiting_npcs:
+                    bus_stop.add_waiting_npc(npc.id)
+
+    def _assign_bus_journey(self, npc):
+        """
+        Assign a bus journey to an NPC.
+
+        Args:
+            npc: NPC to assign journey to
+        """
+        # Find nearest bus stop to current position
+        current_grid_x = int(npc.world_x // self.grid.tile_size)
+        current_grid_y = int(npc.world_y // self.grid.tile_size)
+
+        nearest_start_stop = self.bus_manager.get_nearest_bus_stop(current_grid_x, current_grid_y)
+
+        if not nearest_start_stop:
+            return
+
+        # Find nearest bus stop to destination
+        dest_grid_x = int(npc.target_x // self.grid.tile_size)
+        dest_grid_y = int(npc.target_y // self.grid.tile_size)
+
+        nearest_dest_stop = self.bus_manager.get_nearest_bus_stop(dest_grid_x, dest_grid_y)
+
+        if not nearest_dest_stop or nearest_dest_stop == nearest_start_stop:
+            return
+
+        # Start bus journey
+        npc.start_bus_journey(
+            bus_stop_pos=(nearest_start_stop.grid_x, nearest_start_stop.grid_y),
+            destination_stop=(nearest_dest_stop.grid_x, nearest_dest_stop.grid_y),
+            final_dest=(npc.target_x, npc.target_y)
+        )
+
+    def _find_bus_stop_at(self, grid_x: int, grid_y: int):
+        """Find bus stop at a grid position."""
+        if not self.bus_manager:
+            return None
+
+        for stop in self.bus_manager.bus_stops:
+            if stop.grid_x == grid_x and stop.grid_y == grid_y:
+                return stop
+        return None

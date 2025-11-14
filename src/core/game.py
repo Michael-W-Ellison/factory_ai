@@ -203,6 +203,9 @@ class Game:
         # Spawn NPCs in the city
         self.npcs.spawn_npcs_in_city(seed=42)
 
+        # Connect NPC manager to bus manager for bus passenger behavior
+        self.npcs.bus_manager = self.bus_manager
+
         # Spawn initial police patrols
         self.police.spawn_initial_patrols(seed=42)
 
@@ -495,7 +498,8 @@ class Game:
         self.traffic_manager.update(adjusted_dt, npcs=npc_list, time_of_day=time_of_day)
 
         # Update bus system (public transportation)
-        self.bus_manager.update(adjusted_dt)
+        # Pass NPCs for boarding/alighting and game_time for scheduling
+        self.bus_manager.update(adjusted_dt, npcs=npc_list, game_time=time_of_day)
 
         # Update prop system (turn lights on/off based on time - placeholder for now)
         # TODO: Integrate with day/night cycle when implemented
