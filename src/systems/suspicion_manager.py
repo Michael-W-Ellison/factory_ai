@@ -93,24 +93,24 @@ class SuspicionManager:
 
     def add_suspicion(self, amount: float, source: str, description: str = "") -> bool:
         """
-        Add suspicion from a source.
+        Add or subtract suspicion from a source.
 
         Args:
-            amount (float): Amount of suspicion to add
+            amount (float): Amount of suspicion to add (positive) or subtract (negative)
             source (str): Source of suspicion (e.g., 'npc_report', 'police_report')
             description (str): Optional description of the event
 
         Returns:
             bool: True if tier changed
         """
-        if amount <= 0:
+        if amount == 0:
             return False
 
         old_level = self.suspicion_level
         old_tier = self.current_tier
 
-        # Add suspicion (capped at 100)
-        self.suspicion_level = min(100.0, self.suspicion_level + amount)
+        # Add or subtract suspicion (capped at 0-100)
+        self.suspicion_level = max(0.0, min(100.0, self.suspicion_level + amount))
 
         # Record event
         event = {
