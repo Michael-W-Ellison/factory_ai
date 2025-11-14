@@ -106,6 +106,9 @@ class Game:
         self.bus_manager.generate_routes()
         self.bus_manager.spawn_buses()
 
+        # Generate parked vehicles along roads (static decoration)
+        self.traffic_manager.generate_parked_vehicles(count=30)
+
         # Initialize prop system (benches, light poles, trash cans, bicycles)
         self.prop_manager = PropManager(self.grid, self.road_network)
         self.prop_manager.target_prop_count = 100  # Target number of props
@@ -486,7 +489,10 @@ class Game:
         self.vehicles.update(adjusted_dt)
 
         # Update traffic system (moving vehicles on roads)
-        self.traffic_manager.update(adjusted_dt)
+        # Pass NPCs for pedestrian detection and time for headlights
+        npc_list = self.npcs.npcs if hasattr(self.npcs, 'npcs') else []
+        time_of_day = self.npcs.game_time if hasattr(self.npcs, 'game_time') else 12.0
+        self.traffic_manager.update(adjusted_dt, npcs=npc_list, time_of_day=time_of_day)
 
         # Update bus system (public transportation)
         self.bus_manager.update(adjusted_dt)
