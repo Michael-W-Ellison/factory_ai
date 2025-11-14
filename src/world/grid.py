@@ -4,8 +4,9 @@ Grid class - manages the tile-based game world.
 
 import pygame
 import random
-from src.world.tile import Tile, TileType
+from src.world.tile import Tile, TileType, TerrainType
 from src.world.city_generator import CityGenerator
+from src.world.river_generator import RiverGenerator
 from src.entities.city_building import (
     CityBuilding, House, Store, Office, CityFactory, PoliceStation
 )
@@ -48,6 +49,10 @@ class Grid:
         self.city_generator = None
         self.city_buildings = []  # List of CityBuilding instances
         self.city_generated = False
+
+        # Geographic features (rivers, ocean, bridges)
+        self.river_generator = None
+        self.has_geographic_features = False
 
         print(f"Grid created: {width_tiles}x{height_tiles} tiles ({self.world_width}x{self.world_height} pixels)")
 
@@ -177,6 +182,93 @@ class Grid:
                         self.tiles[y][x].set_type(TileType.GRASS)
 
         print("Test world created with factory, landfill, and city areas")
+
+    def generate_geographic_features(self, seed=None, num_rivers=1, ocean_edges=None):
+        """
+        Generate geographic features (rivers, ocean, bridges).
+
+        Args:
+            seed (int, optional): Random seed for reproducible generation
+            num_rivers (int): Number of rivers to generate
+            ocean_edges (list, optional): List of edges to add ocean ('north', 'south', 'east', 'west')
+        """
+        if self.has_geographic_features:
+            print("Geographic features already generated")
+            return
+
+        print("Generating geographic features...")
+
+        # Create river generator
+        self.river_generator = RiverGenerator(
+            self.width_tiles,
+            self.height_tiles,
+            seed=seed
+        )
+
+        # Generate rivers
+        river_data = self.river_generator.generate(
+            num_rivers=num_rivers,
+            flow_direction='south'  # Rivers flow from north to south
+        )
+
+        # Apply river tiles to grid
+        for (river_x, river_y) in river_data['river_tiles']:
+            tile = self.get_tile(river_x, river_y)
+            if tile:
+                tile.set_terrain_type(TerrainType.WATER)
+
+        # Generate ocean edges if specified
+        ocean_tiles = set()
+        if ocean_edges:
+            for edge in ocean_edges:
+                edge_tiles = self.river_generator.add_ocean_edge(edge, depth=8)
+                ocean_tiles.update(edge_tiles)
+
+            # Apply ocean tiles to grid
+            for (ocean_x, ocean_y) in ocean_tiles:
+                tile = self.get_tile(ocean_x, ocean_y)
+                if tile:
+                    tile.set_terrain_type(TerrainType.OCEAN)
+
+        self.has_geographic_features = True
+
+        stats = self.river_generator.get_statistics()
+        print(f"Geographic features generated:")
+        print(f"  Rivers: {stats['num_rivers']}")
+        print(f"  River tiles: {stats['river_tiles']}")
+        print(f"  Ocean tiles: {len(ocean_tiles)}")
+
+    def place_bridges_on_roads(self):
+        """
+        Place bridges where roads cross rivers.
+        Must be called after both generate_geographic_features() and generate_city().
+        """
+        if not self.has_geographic_features:
+            print("Cannot place bridges: no geographic features generated")
+            return
+
+        if not self.city_generated:
+            print("Cannot place bridges: no city generated")
+            return
+
+        if not self.river_generator:
+            return
+
+        # Get road tiles from city generator
+        if self.city_generator:
+            road_tiles = self.city_generator.road_tiles
+
+            # Place bridges
+            self.river_generator.place_bridges(road_tiles, min_spacing=10)
+
+            # Apply bridge tiles to grid
+            for (bridge_x, bridge_y) in self.river_generator.bridge_tiles:
+                tile = self.get_tile(bridge_x, bridge_y)
+                if tile:
+                    tile.set_terrain_type(TerrainType.BRIDGE)
+
+            stats = self.river_generator.get_statistics()
+            print(f"Bridges placed: {stats['num_bridges']} ({stats['bridge_tiles']} tiles)")
 
     def generate_city(self, seed=None):
         """
