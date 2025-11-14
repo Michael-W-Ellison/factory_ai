@@ -122,15 +122,24 @@ class Game:
         self.detection = DetectionManager(self.grid, self.npcs)
         self.suspicion = SuspicionManager()
         self.police = PoliceManager(self.grid, self.suspicion)
-        self.entities = EntityManager(grid=self.grid, resource_manager=self.resources, research_manager=self.research)
+
+        # Initialize material inventory system (tracks materials by source for inspections)
+        # Must be created before EntityManager so robots can track material sources
+        self.material_inventory = MaterialInventory()
+
+        # Initialize entity manager with material inventory for source tracking
+        self.entities = EntityManager(
+            grid=self.grid,
+            resource_manager=self.resources,
+            research_manager=self.research,
+            material_inventory=self.material_inventory
+        )
+
         self.ui = HUD(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
         self.research_ui = ResearchUI(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
 
         # Initialize camera hacking system (requires camera_manager, research, and suspicion)
         self.camera_hacking = CameraHackingManager(self.camera_manager, self.research, self.suspicion)
-
-        # Initialize material inventory system (tracks materials by source for inspections)
-        self.material_inventory = MaterialInventory()
 
         # Initialize inspection system (requires resources, suspicion, and material inventory)
         self.inspection = InspectionManager(self.resources, self.suspicion, self.material_inventory)

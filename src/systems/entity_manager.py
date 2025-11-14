@@ -13,13 +13,14 @@ class EntityManager:
     Handles creation, updating, rendering, and removal of entities.
     """
 
-    def __init__(self, grid=None, resource_manager=None, research_manager=None):
+    def __init__(self, grid=None, resource_manager=None, research_manager=None, material_inventory=None):
         """Initialize the entity manager.
 
         Args:
             grid: Grid object (for pathfinding)
             resource_manager: ResourceManager (for depositing materials)
             research_manager: ResearchManager (for applying bonuses to new entities)
+            material_inventory: MaterialInventory (for tracking material sources)
         """
         # All entities by ID
         self.entities = {}
@@ -36,6 +37,7 @@ class EntityManager:
         self.grid = grid
         self.resource_manager = resource_manager
         self.research_manager = research_manager
+        self.material_inventory = material_inventory
 
         # Factory position (for robots to return to)
         self.factory_pos = None
@@ -71,7 +73,7 @@ class EntityManager:
         print(f"Created {robot}")
         return robot
 
-    def create_collectible(self, x, y, material_type, quantity):
+    def create_collectible(self, x, y, material_type, quantity, source=None):
         """
         Create a new collectible object.
 
@@ -80,11 +82,16 @@ class EntityManager:
             y (float): World Y position
             material_type (str): Type of material
             quantity (float): Amount in kg
+            source (MaterialSource): Source of material (default: LANDFILL)
 
         Returns:
             CollectibleObject: The created collectible
         """
-        collectible = CollectibleObject(x, y, material_type, quantity)
+        from src.systems.material_inventory import MaterialSource
+        if source is None:
+            source = MaterialSource.LANDFILL
+
+        collectible = CollectibleObject(x, y, material_type, quantity, source)
         self.entities[collectible.id] = collectible
         self.collectibles.append(collectible)
         return collectible
@@ -223,8 +230,8 @@ class EntityManager:
                     # Collect as much as possible
                     amount_collected = collectible.collect(available_space)
 
-                    # Add to robot's inventory
-                    robot.add_material(collectible.material_type, amount_collected)
+                    # Add to robot's inventory with source tracking
+                    robot.add_material(collectible.material_type, amount_collected, collectible.source)
 
                     # Print feedback
                     if amount_collected > 0:

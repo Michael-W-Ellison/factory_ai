@@ -34,16 +34,20 @@ class ResourceManager:
             'electronic': 2.50,
         }
 
-    def deposit_materials(self, materials_dict):
+    def deposit_materials(self, materials_dict, sources_dict=None, material_inventory=None):
         """
         Deposit materials into storage (e.g., from a robot's inventory).
 
         Args:
             materials_dict (dict): Dictionary of material_type -> quantity
+            sources_dict (dict): Dictionary of material_type -> MaterialSource (optional)
+            material_inventory (MaterialInventory): MaterialInventory to track sources (optional)
 
         Returns:
             float: Total quantity deposited
         """
+        from src.systems.material_inventory import MaterialSource
+
         total_deposited = 0.0
 
         for material_type, quantity in materials_dict.items():
@@ -52,6 +56,14 @@ class ResourceManager:
                 if material_type not in self.stored_materials:
                     self.stored_materials[material_type] = 0.0
                 self.stored_materials[material_type] += quantity
+
+                # Add to material inventory with source tracking (if provided)
+                if material_inventory is not None:
+                    # Get source for this material, default to LANDFILL if not specified
+                    source = MaterialSource.LANDFILL
+                    if sources_dict and material_type in sources_dict:
+                        source = sources_dict[material_type]
+                    material_inventory.add_material(material_type, quantity, source)
 
                 # Update statistics
                 total_deposited += quantity

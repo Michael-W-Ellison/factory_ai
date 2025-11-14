@@ -4,6 +4,7 @@ CollectibleObject - materials that can be collected by robots.
 
 import pygame
 from src.entities.entity import Entity
+from src.systems.material_inventory import MaterialSource
 
 
 class CollectibleObject(Entity):
@@ -13,7 +14,7 @@ class CollectibleObject(Entity):
     These are materials lying in the landfill or debris that robots can collect.
     """
 
-    def __init__(self, x, y, material_type, quantity):
+    def __init__(self, x, y, material_type, quantity, source=MaterialSource.LANDFILL):
         """
         Initialize a collectible object.
 
@@ -22,6 +23,7 @@ class CollectibleObject(Entity):
             y (float): World Y position
             material_type (str): Type of material (plastic, metal, glass, etc.)
             quantity (float): Amount in kg
+            source (MaterialSource): Source of the material (default: LANDFILL for legal materials)
         """
         # Size varies slightly by material type
         size = self._get_size_for_quantity(quantity)
@@ -29,6 +31,7 @@ class CollectibleObject(Entity):
 
         self.material_type = material_type
         self.quantity = quantity
+        self.source = source  # Track material source for inspection system
 
         # Visual
         self.color = self._get_color_for_material(material_type)

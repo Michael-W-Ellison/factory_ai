@@ -38,6 +38,7 @@ class Robot(Entity):
         # Inventory (base values before research)
         self.base_capacity = 100  # kg
         self.inventory = {}  # material_type -> quantity
+        self.material_sources = {}  # material_type -> MaterialSource (for inspection tracking)
         self.max_capacity = 100  # kg
         self.current_load = 0  # kg
 
@@ -73,13 +74,14 @@ class Robot(Entity):
         self.animation_timer = 0.0
         self.animation_speed = 0.25  # Seconds per frame (faster than NPCs)
 
-    def add_material(self, material_type, quantity):
+    def add_material(self, material_type, quantity, source=None):
         """
         Add material to inventory.
 
         Args:
             material_type (str): Type of material
             quantity (float): Amount in kg
+            source (MaterialSource): Source of the material (optional, for inspection tracking)
 
         Returns:
             float: Amount actually added (limited by capacity)
@@ -94,6 +96,10 @@ class Robot(Entity):
             self.inventory[material_type] += amount_to_add
             self.current_load += amount_to_add
 
+            # Track source for inspection system
+            if source is not None:
+                self.material_sources[material_type] = source
+
         return amount_to_add
 
     def empty_inventory(self):
@@ -101,12 +107,14 @@ class Robot(Entity):
         Empty the robot's inventory.
 
         Returns:
-            dict: The materials that were in inventory
+            tuple: (materials_dict, sources_dict) - materials and their sources
         """
         materials = self.inventory.copy()
+        sources = self.material_sources.copy()
         self.inventory.clear()
+        self.material_sources.clear()
         self.current_load = 0
-        return materials
+        return materials, sources
 
     def is_full(self):
         """Check if robot's inventory is full."""
@@ -303,9 +311,14 @@ class Robot(Entity):
     def _state_unloading(self, entity_manager):
         """UNLOADING state: Deposit materials at factory."""
         if self.current_load > 0 and entity_manager:
-            # Deposit all materials to resource manager
+            # Deposit all materials to resource manager with source tracking
             if hasattr(entity_manager, 'resource_manager'):
-                entity_manager.resource_manager.deposit_materials(self.inventory)
+                material_inventory = getattr(entity_manager, 'material_inventory', None)
+                entity_manager.resource_manager.deposit_materials(
+                    self.inventory,
+                    self.material_sources,
+                    material_inventory
+                )
 
             # Empty inventory
             self.empty_inventory()
