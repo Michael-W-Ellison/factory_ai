@@ -312,3 +312,63 @@ class DroneAnimationController(AnimationController):
             self.play_animation(AnimationType.DRONE_HOVER)
 
         return self.update(dt)
+
+
+class AnimalAnimationController(AnimationController):
+    """Base animation controller for animals."""
+
+    def __init__(self):
+        """Initialize animal animation controller."""
+        super().__init__()
+        # Override default animations for animals
+        self.animations[AnimationType.IDLE] = Animation([0], 0.5, loop=True)
+        self.animations[AnimationType.WALK] = Animation([0, 1, 0, 2], 0.2, loop=True)
+        self.animations[AnimationType.RUN] = Animation([0, 1, 0, 2], 0.1, loop=True)
+
+    def update_for_behavior(self, behavior: str, dt: float) -> int:
+        """
+        Update animation based on animal behavior.
+
+        Args:
+            behavior: Current behavior (idle, walking, running, fleeing, chasing, eating)
+            dt: Delta time
+
+        Returns:
+            int: Current frame index
+        """
+        behavior_map = {
+            'idle': AnimationType.IDLE,
+            'walking': AnimationType.WALK,
+            'wander': AnimationType.WALK,
+            'running': AnimationType.RUN,
+            'fleeing': AnimationType.RUN,
+            'chasing': AnimationType.RUN,
+            'eating': AnimationType.IDLE,
+        }
+
+        animation = behavior_map.get(behavior.lower(), AnimationType.IDLE)
+        self.play_animation(animation)
+
+        return self.update(dt)
+
+
+class BirdAnimationController(AnimalAnimationController):
+    """Animation controller for birds."""
+
+    def __init__(self):
+        """Initialize bird animation controller."""
+        super().__init__()
+        # Birds have wing flapping animation
+        self.animations[AnimationType.IDLE] = Animation([0, 1, 2], 0.15, loop=True)  # Gentle flapping
+        self.animations[AnimationType.WALK] = Animation([0, 1, 2], 0.1, loop=True)   # Flying
+
+
+class FishAnimationController(AnimalAnimationController):
+    """Animation controller for fish."""
+
+    def __init__(self):
+        """Initialize fish animation controller."""
+        super().__init__()
+        # Fish have swimming animation with tail wag
+        self.animations[AnimationType.IDLE] = Animation([0, 1, 2], 0.2, loop=True)  # Slow swim
+        self.animations[AnimationType.WALK] = Animation([0, 1, 2], 0.1, loop=True)  # Fast swim
