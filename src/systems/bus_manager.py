@@ -47,6 +47,11 @@ class BusManager:
         self.target_routes = 3  # Number of routes to generate
         self.buses_per_route = 2  # Number of buses per route
         self.stop_spacing = 15  # Tiles between stops
+        self.express_route_chance = 0.3  # 30% chance a route is express
+
+        # Scheduling
+        self.game_time = 0.0  # Current game time (0-24 hours)
+        self.spawn_timers: Dict[int, float] = {}  # route_id -> time until next spawn
 
     def generate_routes(self, num_routes: Optional[int] = None):
         """
@@ -82,7 +87,10 @@ class BusManager:
         Returns:
             BusRoute: Generated route, or None if failed
         """
-        route = BusRoute(route_id)
+        # Randomly decide if this is an express route
+        is_express = random.random() < self.express_route_chance
+
+        route = BusRoute(route_id, is_express=is_express)
 
         # Find suitable stops along roads
         # Try to create a route with 5-10 stops
@@ -109,11 +117,15 @@ class BusManager:
             route.add_stop(*next_stop)
             current_pos = next_stop
 
+        # Calculate express stops if this is an express route
+        if is_express:
+            route.calculate_express_stops(skip_factor=2)
+
         # Calculate path between all stops
         if not route.calculate_path(self.road_network):
             return None
 
-        # Place bus stops at each stop location
+        # Place bus stops at each stop location (all stops, not just express)
         self._place_bus_stops_for_route(route)
 
         return route
@@ -198,13 +210,14 @@ class BusManager:
 
         print(f"Spawned {len(self.buses)} buses total")
 
-    def _spawn_bus_on_route(self, route: BusRoute, bus_index: int) -> Optional[Bus]:
+    def _spawn_bus_on_route(self, route: BusRoute, bus_index: int, is_express: bool = False) -> Optional[Bus]:
         """
         Spawn a bus on a specific route.
 
         Args:
             route (BusRoute): Route to spawn bus on
             bus_index (int): Index of bus on this route (for staggering)
+            is_express (bool): Whether to spawn an express bus
 
         Returns:
             Bus: Spawned bus, or None if failed
@@ -212,9 +225,15 @@ class BusManager:
         if not route.stops:
             return None
 
+        # Determine which stops this bus will use
+        bus_stops = route.express_stops if (is_express and route.is_express) else route.stops
+
+        if not bus_stops:
+            return None
+
         # Start at a stop position (stagger buses along route)
-        start_stop_index = (bus_index * len(route.stops) // self.buses_per_route) % len(route.stops)
-        start_grid_x, start_grid_y = route.stops[start_stop_index]
+        start_stop_index = (bus_index * len(bus_stops) // self.buses_per_route) % len(bus_stops)
+        start_grid_x, start_grid_y = bus_stops[start_stop_index]
 
         # Get lane for starting position
         lanes = self.road_network.get_available_lanes(start_grid_x, start_grid_y)
@@ -229,11 +248,12 @@ class BusManager:
 
         world_x, world_y = lane_center
 
-        # Create bus
-        bus = Bus(world_x, world_y, route_id=route.route_id, initial_direction=direction)
+        # Create bus (express or regular)
+        bus = Bus(world_x, world_y, route_id=route.route_id,
+                  initial_direction=direction, is_express=is_express)
 
-        # Set route stops
-        bus.set_route(route.stops)
+        # Set route stops (express or all)
+        bus.set_route(bus_stops)
         bus.current_stop_index = start_stop_index
 
         # Set full path as waypoints
@@ -244,16 +264,26 @@ class BusManager:
 
         return bus
 
-    def update(self, dt: float):
+    def update(self, dt: float, npcs=None, game_time: float = None):
         """
-        Update all buses.
+        Update all buses and handle scheduled spawning.
 
         Args:
             dt (float): Delta time in seconds
+            npcs (list): List of NPCs for boarding/alighting
+            game_time (float): Current game time in hours (0-24) for scheduling
         """
+        # Update game time for scheduling
+        if game_time is not None:
+            self.game_time = game_time
+
         # Update each bus
         for bus in self.buses:
-            bus.update(dt, self.road_network)
+            bus.update(dt, self.road_network, npcs=npcs, bus_stops=self.bus_stops)
+
+        # Handle scheduled bus spawning (if enabled)
+        # This is disabled by default - call enable_scheduling() to activate
+        # self._update_scheduled_spawning(dt)
 
     def render(self, screen, camera):
         """

@@ -22,26 +22,29 @@ class BusRoute:
         name (str): Route name
     """
 
-    def __init__(self, route_id: int, name: str = None):
+    def __init__(self, route_id: int, name: str = None, is_express: bool = False):
         """
         Initialize a bus route.
 
         Args:
             route_id (int): Unique route ID
             name (str): Optional route name
+            is_express (bool): Whether this is an express route (skips some stops)
         """
         self.route_id = route_id
         self.name = name or f"Route {route_id}"
+        self.is_express = is_express
 
         # Route definition
         self.stops: List[Tuple[int, int]] = []  # List of (grid_x, grid_y) positions
+        self.express_stops: List[Tuple[int, int]] = []  # Subset of stops for express buses
         self.waypoints: List[Tuple[int, int]] = []  # Full path with all waypoints
 
         # Visual properties
         self.color = self._generate_route_color(route_id)
 
         # Schedule
-        self.frequency_minutes = 10  # How often buses run (game time)
+        self.frequency_minutes = 10 if not is_express else 15  # Express buses less frequent
         self.active_hours = (6, 22)  # Buses run 6am-10pm
 
     def add_stop(self, grid_x: int, grid_y: int):
@@ -129,6 +132,29 @@ class BusRoute:
             return self.stops.index((grid_x, grid_y))
         except ValueError:
             return None
+
+    def calculate_express_stops(self, skip_factor: int = 2):
+        """
+        Calculate express stops (every nth stop).
+
+        Args:
+            skip_factor (int): Express buses stop every nth stop (2 = every other stop)
+        """
+        if not self.is_express or len(self.stops) < 3:
+            self.express_stops = self.stops.copy()
+            return
+
+        self.express_stops = []
+        # Always include first and last stops
+        self.express_stops.append(self.stops[0])
+
+        # Add every nth stop in between
+        for i in range(skip_factor, len(self.stops) - 1, skip_factor):
+            self.express_stops.append(self.stops[i])
+
+        # Always include last stop
+        if self.stops[-1] not in self.express_stops:
+            self.express_stops.append(self.stops[-1])
 
     def _generate_route_color(self, route_id: int) -> Tuple[int, int, int]:
         """

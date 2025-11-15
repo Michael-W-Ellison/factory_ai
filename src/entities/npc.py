@@ -20,6 +20,9 @@ class Activity:
     COMMUTING_HOME = 'commuting_home'
     EVENING_ACTIVITIES = 'evening_activities'
     HOME_ROUTINE = 'home_routine'
+    WALKING_TO_BUS_STOP = 'walking_to_bus_stop'
+    WAITING_FOR_BUS = 'waiting_for_bus'
+    RIDING_BUS = 'riding_bus'
 
 
 class NPC:
@@ -84,6 +87,14 @@ class NPC:
 
         # ID for tracking
         self.id = id(self)
+
+        # Bus transportation
+        self.using_bus = False  # Whether NPC is currently using bus system
+        self.target_bus_stop = None  # (grid_x, grid_y) of stop NPC is walking to
+        self.current_bus_id = None  # ID of bus NPC is riding
+        self.bus_destination_stop = None  # (grid_x, grid_y) where NPC wants to alight
+        self.final_destination = None  # (world_x, world_y) ultimate destination after bus
+        self.bus_preference = random.random()  # 0.0-1.0, higher = more likely to use bus
 
     def _generate_visuals(self):
         """Generate visual variation for this NPC."""
@@ -217,6 +228,10 @@ class NPC:
                 self.world_x = self.target_x
                 self.world_y = self.target_y
                 self.moving = False
+
+                # Check if we arrived at bus stop
+                if self.current_activity == Activity.WALKING_TO_BUS_STOP:
+                    self.arrive_at_bus_stop()
             else:
                 # Move towards target
                 move_distance = self.speed * dt
@@ -420,6 +435,9 @@ class NPC:
                 Activity.COMMUTING_HOME: '→H',
                 Activity.EVENING_ACTIVITIES: 'EA',
                 Activity.HOME_ROUTINE: 'HR',
+                Activity.WALKING_TO_BUS_STOP: '→🚏',
+                Activity.WAITING_FOR_BUS: '🚏',
+                Activity.RIDING_BUS: '🚌',
             }
             text = activity_short.get(self.current_activity, '?')
             text_surface = font.render(text, True, (255, 255, 255))
@@ -429,6 +447,87 @@ class NPC:
             pygame.draw.rect(screen, (0, 0, 0), bg_rect)
             screen.blit(text_surface, text_rect)
 
+    def start_bus_journey(self, bus_stop_pos: Tuple[int, int], destination_stop: Tuple[int, int],
+                          final_dest: Tuple[float, float]):
+        """
+        Start a journey using the bus system.
+
+        Args:
+            bus_stop_pos (tuple): (grid_x, grid_y) of nearby bus stop
+            destination_stop (tuple): (grid_x, grid_y) where to alight
+            final_dest (tuple): (world_x, world_y) final destination after bus
+        """
+        self.using_bus = True
+        self.target_bus_stop = bus_stop_pos
+        self.bus_destination_stop = destination_stop
+        self.final_destination = final_dest
+        self.current_activity = Activity.WALKING_TO_BUS_STOP
+
+        # Set movement target to bus stop
+        stop_x, stop_y = bus_stop_pos
+        self.target_x = stop_x * 32 + 16  # Center of tile
+        self.target_y = stop_y * 32 + 16
+        self.moving = True
+
+    def arrive_at_bus_stop(self):
+        """NPC has arrived at bus stop and is now waiting."""
+        self.current_activity = Activity.WAITING_FOR_BUS
+        self.moving = False
+
+    def board_bus(self, bus_id: int):
+        """
+        Board a bus.
+
+        Args:
+            bus_id (int): ID of bus being boarded
+        """
+        self.current_bus_id = bus_id
+        self.current_activity = Activity.RIDING_BUS
+        self.moving = False
+
+    def alight_from_bus(self):
+        """Alight from bus at destination stop."""
+        self.current_bus_id = None
+        self.current_activity = Activity.COMMUTING_TO_WORK  # Or whatever activity was interrupted
+        self.using_bus = False
+
+        # Set target to final destination
+        if self.final_destination:
+            self.target_x, self.target_y = self.final_destination
+            self.moving = True
+            self.final_destination = None
+
+        self.target_bus_stop = None
+        self.bus_destination_stop = None
+
+    def cancel_bus_journey(self):
+        """Cancel bus journey (e.g., bus didn't arrive in time)."""
+        self.using_bus = False
+        self.target_bus_stop = None
+        self.bus_destination_stop = None
+        self.current_bus_id = None
+        self.final_destination = None
+        # Revert to walking to destination
+        self.current_activity = Activity.COMMUTING_TO_WORK
+
+    def is_at_destination_stop(self, bus_grid_x: int, bus_grid_y: int) -> bool:
+        """
+        Check if bus is at NPC's destination stop.
+
+        Args:
+            bus_grid_x (int): Bus current grid X
+            bus_grid_y (int): Bus current grid Y
+
+        Returns:
+            bool: True if this is the destination stop
+        """
+        if not self.bus_destination_stop:
+            return False
+
+        dest_x, dest_y = self.bus_destination_stop
+        return bus_grid_x == dest_x and bus_grid_y == dest_y
+
     def __repr__(self):
         """String representation for debugging."""
-        return f"NPC(pos=({self.world_x:.0f}, {self.world_y:.0f}), activity={self.current_activity})"
+        bus_info = f", on_bus={self.current_bus_id}" if self.current_bus_id else ""
+        return f"NPC(pos=({self.world_x:.0f}, {self.world_y:.0f}), activity={self.current_activity}{bus_info})"

@@ -129,6 +129,29 @@ class TrafficVehicle:
         self.stopping_for_intersection = False
         self.wait_timer = 0.0  # Time waiting at intersection
 
+        # Following distance and collision avoidance
+        self.safe_following_distance = 40.0  # pixels
+        self.vehicle_ahead = None  # Reference to vehicle ahead in same lane
+        self.stopping_for_vehicle = False
+
+        # Pedestrian detection
+        self.stopping_for_pedestrian = False
+        self.pedestrian_wait_timer = 0.0
+
+        # Turn signals
+        self.turn_signal = None  # 'left', 'right', or None
+        self.turn_signal_timer = 0.0
+        self.turn_signal_blink_timer = 0.0
+
+        # Visual states
+        self.braking = False  # Show brake lights when true
+        self.headlights_on = False  # Show headlights at night
+
+        # Emergency vehicle behavior
+        self.is_emergency = (vehicle_type == 'police')
+        self.emergency_active = False  # Lights/sirens active
+        self.emergency_timer = 0.0
+
         # Rotation (for rendering)
         self.facing_angle = 0  # Degrees: 0=East, 90=South, 180=West, 270=North
 
@@ -175,19 +198,66 @@ class TrafficVehicle:
         """
         self.destination = (grid_x, grid_y)
 
-    def update(self, dt: float, road_network):
+    def update(self, dt: float, road_network, other_vehicles=None, npcs=None, time_of_day=None):
         """
         Update vehicle position and behavior.
 
         Args:
             dt (float): Delta time in seconds
             road_network: RoadNetwork for navigation
+            other_vehicles (list, optional): List of other vehicles for collision avoidance
+            npcs (list, optional): List of NPCs for pedestrian detection
+            time_of_day (float, optional): Current time of day (0-24) for headlights
         """
+        # Update headlights based on time of day
+        if time_of_day is not None:
+            self.headlights_on = (time_of_day < 6.0 or time_of_day >= 20.0)
+
+        # Emergency vehicle behavior
+        if self.is_emergency:
+            self._update_emergency_behavior(dt)
+
+        # Detect vehicle ahead (for following distance)
+        self.vehicle_ahead = None
+        self.stopping_for_vehicle = False
+        if other_vehicles:
+            self.vehicle_ahead = self._detect_vehicle_ahead(other_vehicles)
+            if self.vehicle_ahead:
+                distance = self._distance_to(self.vehicle_ahead.world_x, self.vehicle_ahead.world_y)
+                if distance < self.safe_following_distance:
+                    self.stopping_for_vehicle = True
+                    # Match speed of vehicle ahead or slow down
+                    self.target_speed = min(self.vehicle_ahead.speed * 0.9, self.target_speed)
+
+        # Detect pedestrians crossing
+        self.stopping_for_pedestrian = False
+        if npcs and not self.is_emergency:  # Emergency vehicles don't stop for pedestrians
+            if self._detect_pedestrian_crossing(npcs):
+                self.stopping_for_pedestrian = True
+                self.target_speed = 0.0
+                self.pedestrian_wait_timer += dt
+            else:
+                self.pedestrian_wait_timer = max(0.0, self.pedestrian_wait_timer - dt)
+
+        # Update turn signals
+        self._update_turn_signals(dt, road_network)
+
+        # Determine if braking (slowing down)
+        old_speed = self.speed
+
         # Accelerate/decelerate to target speed
         if self.speed < self.target_speed:
             self.speed = min(self.speed + self.acceleration * dt, self.target_speed)
+            self.braking = False
         elif self.speed > self.target_speed:
-            self.speed = max(self.speed - self.acceleration * 2 * dt, self.target_speed)
+            # Braking
+            decel_rate = self.acceleration * 2  # Brake faster than accelerate
+            if self.stopping_for_pedestrian or self.stopping_for_vehicle:
+                decel_rate *= 2  # Emergency braking
+            self.speed = max(self.speed - decel_rate * dt, self.target_speed)
+            self.braking = True
+        else:
+            self.braking = False
 
         # Update velocity from speed
         self._update_velocity_from_direction()
@@ -279,6 +349,190 @@ class TrafficVehicle:
 
         self._update_velocity_from_direction()
 
+    def _update_emergency_behavior(self, dt: float):
+        """Update emergency vehicle behavior (police)."""
+        # Randomly activate emergency mode
+        self.emergency_timer += dt
+        if self.emergency_timer > 10.0:  # Change state every 10 seconds
+            self.emergency_active = random.random() < 0.3  # 30% chance to activate
+            self.emergency_timer = 0.0
+
+        # When emergency mode active, can exceed speed limits
+        if self.emergency_active:
+            self.target_speed = self.max_speed * 1.3  # 30% faster
+        else:
+            self.target_speed = self.max_speed
+
+    def _detect_vehicle_ahead(self, other_vehicles: List) -> Optional['TrafficVehicle']:
+        """
+        Detect if there's a vehicle ahead in the same lane.
+
+        Args:
+            other_vehicles (list): List of other traffic vehicles
+
+        Returns:
+            TrafficVehicle: Vehicle ahead, or None
+        """
+        closest_vehicle = None
+        closest_distance = float('inf')
+
+        for other in other_vehicles:
+            if other.id == self.id:
+                continue  # Skip self
+
+            # Check if in same lane direction
+            if other.current_lane != self.current_lane:
+                continue
+
+            # Calculate distance
+            distance = self._distance_to(other.world_x, other.world_y)
+
+            # Check if ahead (in direction of movement)
+            if self._is_ahead(other.world_x, other.world_y):
+                if distance < closest_distance and distance < self.safe_following_distance * 3:
+                    closest_vehicle = other
+                    closest_distance = distance
+
+        return closest_vehicle
+
+    def _distance_to(self, x: float, y: float) -> float:
+        """Calculate distance to a point."""
+        return math.sqrt((self.world_x - x)**2 + (self.world_y - y)**2)
+
+    def _is_ahead(self, x: float, y: float) -> bool:
+        """Check if a point is ahead in direction of travel."""
+        dx = x - self.world_x
+        dy = y - self.world_y
+
+        # Check based on direction
+        if self.current_lane == 'east':
+            return dx > 0
+        elif self.current_lane == 'west':
+            return dx < 0
+        elif self.current_lane == 'south':
+            return dy > 0
+        elif self.current_lane == 'north':
+            return dy < 0
+
+        return False
+
+    def _detect_pedestrian_crossing(self, npcs: List) -> bool:
+        """
+        Detect if pedestrians are crossing in front of vehicle.
+
+        Args:
+            npcs (list): List of NPCs (and robots)
+
+        Returns:
+            bool: True if pedestrian detected in path
+        """
+        # Check area ahead of vehicle
+        check_distance = 30.0  # pixels ahead to check
+
+        for npc in npcs:
+            # Get NPC position
+            if hasattr(npc, 'world_x') and hasattr(npc, 'world_y'):
+                npc_x = npc.world_x
+                npc_y = npc.world_y
+            else:
+                continue
+
+            # Calculate distance
+            distance = self._distance_to(npc_x, npc_y)
+
+            # Check if close and ahead
+            if distance < check_distance and self._is_ahead(npc_x, npc_y):
+                # Check if in our lane (perpendicular check)
+                lane_width = 16.0  # Half lane width
+
+                if self.current_lane in ['east', 'west']:
+                    # Check Y distance (perpendicular to direction)
+                    perp_distance = abs(npc_y - self.world_y)
+                else:
+                    # Check X distance (perpendicular to direction)
+                    perp_distance = abs(npc_x - self.world_x)
+
+                if perp_distance < lane_width:
+                    return True
+
+        return False
+
+    def _update_turn_signals(self, dt: float, road_network):
+        """Update turn signal state."""
+        # Update blink timer
+        self.turn_signal_blink_timer += dt
+        if self.turn_signal_blink_timer > 1.0:
+            self.turn_signal_blink_timer = 0.0
+
+        # Check if approaching intersection
+        tile_size = road_network.grid.tile_size
+        grid_x = int(self.world_x // tile_size)
+        grid_y = int(self.world_y // tile_size)
+
+        # Look ahead for intersections
+        look_ahead = 3  # tiles
+        approaching_intersection = False
+
+        for i in range(1, look_ahead + 1):
+            check_x = grid_x
+            check_y = grid_y
+
+            if self.current_lane == 'east':
+                check_x += i
+            elif self.current_lane == 'west':
+                check_x -= i
+            elif self.current_lane == 'south':
+                check_y += i
+            elif self.current_lane == 'north':
+                check_y -= i
+
+            if road_network.is_intersection(check_x, check_y):
+                approaching_intersection = True
+                break
+
+        # Activate turn signal if approaching intersection and planning to turn
+        if approaching_intersection and self.waypoints:
+            # Determine if next waypoint requires a turn
+            if self.current_waypoint_index < len(self.waypoints):
+                next_waypoint = self.waypoints[self.current_waypoint_index]
+                next_x, next_y = next_waypoint
+
+                # Calculate turn direction
+                dx = next_x - grid_x
+                dy = next_y - grid_y
+
+                # Determine if turning left or right based on current direction
+                if self.current_lane == 'east':
+                    if dy < 0:
+                        self.turn_signal = 'left'
+                    elif dy > 0:
+                        self.turn_signal = 'right'
+                    else:
+                        self.turn_signal = None
+                elif self.current_lane == 'west':
+                    if dy > 0:
+                        self.turn_signal = 'left'
+                    elif dy < 0:
+                        self.turn_signal = 'right'
+                    else:
+                        self.turn_signal = None
+                elif self.current_lane == 'south':
+                    if dx > 0:
+                        self.turn_signal = 'left'
+                    elif dx < 0:
+                        self.turn_signal = 'right'
+                    else:
+                        self.turn_signal = None
+                elif self.current_lane == 'north':
+                    if dx < 0:
+                        self.turn_signal = 'left'
+                    elif dx > 0:
+                        self.turn_signal = 'right'
+                    else:
+                        self.turn_signal = None
+        else:
+            self.turn_signal = None
+
     def _update_intersection_state(self, road_network):
         """Update state when at intersections."""
         # Get tile size from grid
@@ -291,13 +545,15 @@ class TrafficVehicle:
         was_at_intersection = self.at_intersection
         self.at_intersection = road_network.is_intersection(grid_x, grid_y)
 
-        # Basic traffic rule: slow down at intersections
+        # Basic traffic rule: slow down at intersections (unless emergency)
         if self.at_intersection and not was_at_intersection:
             # Just entered intersection, slow down
-            self.target_speed = self.max_speed * 0.5
+            if not (self.is_emergency and self.emergency_active):
+                self.target_speed = self.max_speed * 0.5
         elif not self.at_intersection and was_at_intersection:
             # Just left intersection, speed up
-            self.target_speed = self.max_speed
+            if not (self.is_emergency and self.emergency_active):
+                self.target_speed = self.max_speed
 
     def render(self, screen: pygame.Surface, camera):
         """
@@ -344,7 +600,7 @@ class TrafficVehicle:
         screen.blit(rotated_surface, rotated_rect.topleft)
 
     def _render_vehicle_details(self, surface, base_x, base_y, width, height):
-        """Render vehicle details (windows, wheels)."""
+        """Render vehicle details (windows, wheels, lights)."""
         # Windows
         window_width = int(width * 0.3)
         window_height = int(height * 0.5)
@@ -373,6 +629,61 @@ class TrafficVehicle:
             # Rear wheel
             rear_wheel_x = base_x + int(width * 0.2)
             pygame.draw.circle(surface, (40, 40, 40), (rear_wheel_x, wheel_y), wheel_radius)
+
+        # Headlights (front of vehicle)
+        if self.headlights_on and width > 10:
+            light_size = max(2, int(height * 0.15))
+            light_x = base_x + width - 2
+            light_y1 = base_y + int(height * 0.25)
+            light_y2 = base_y + int(height * 0.75) - light_size
+
+            # Two headlights
+            pygame.draw.circle(surface, (255, 255, 200), (light_x, light_y1), light_size)
+            pygame.draw.circle(surface, (255, 255, 200), (light_x, light_y2), light_size)
+
+        # Brake lights (rear of vehicle)
+        if self.braking and width > 10:
+            light_size = max(2, int(height * 0.15))
+            light_x = base_x + 2
+            light_y1 = base_y + int(height * 0.25)
+            light_y2 = base_y + int(height * 0.75) - light_size
+
+            # Two brake lights (red)
+            pygame.draw.circle(surface, (255, 50, 50), (light_x, light_y1), light_size)
+            pygame.draw.circle(surface, (255, 50, 50), (light_x, light_y2), light_size)
+
+        # Turn signals (blink on/off)
+        if self.turn_signal and width > 10:
+            # Blink every 0.5 seconds
+            if self.turn_signal_blink_timer < 0.5:
+                light_size = max(3, int(height * 0.2))
+                light_color = (255, 180, 0)  # Orange/amber
+
+                if self.turn_signal == 'left':
+                    # Left side light
+                    light_x = base_x + width - 4
+                    light_y = base_y + 2
+                    pygame.draw.circle(surface, light_color, (light_x, light_y), light_size)
+                elif self.turn_signal == 'right':
+                    # Right side light
+                    light_x = base_x + width - 4
+                    light_y = base_y + height - 2
+                    pygame.draw.circle(surface, light_color, (light_x, light_y), light_size)
+
+        # Emergency lights (police) - flash red and blue
+        if self.is_emergency and self.emergency_active and width > 10:
+            light_size = max(3, int(height * 0.25))
+            # Flash at different rates
+            if int(self.emergency_timer * 4) % 2 == 0:
+                # Red light (left)
+                light_x = base_x + width // 2 - light_size
+                light_y = base_y + 2
+                pygame.draw.circle(surface, (255, 0, 0), (light_x, light_y), light_size)
+            else:
+                # Blue light (right)
+                light_x = base_x + width // 2 + light_size
+                light_y = base_y + 2
+                pygame.draw.circle(surface, (0, 100, 255), (light_x, light_y), light_size)
 
     def is_off_map(self, grid) -> bool:
         """

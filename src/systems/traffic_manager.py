@@ -6,11 +6,115 @@ Handles:
 - Vehicle pathfinding and routing
 - Vehicle density management
 - Vehicle cleanup when off-map
+- Parked vehicles near buildings
 """
 
 import random
 from typing import List, Optional, Tuple
 from src.entities.traffic_vehicle import TrafficVehicle
+
+
+class ParkedVehicle:
+    """
+    A static parked vehicle near a building.
+
+    Different from TrafficVehicle - these don't move and are decorative.
+    """
+
+    def __init__(self, world_x: float, world_y: float, vehicle_type: str = 'car',
+                 facing_direction: str = 'east'):
+        """
+        Initialize a parked vehicle.
+
+        Args:
+            world_x (float): World X position
+            world_y (float): World Y position
+            vehicle_type (str): Type of vehicle
+            facing_direction (str): Direction vehicle is facing
+        """
+        self.world_x = world_x
+        self.world_y = world_y
+        self.vehicle_type = vehicle_type
+        self.facing_direction = facing_direction
+
+        # Get vehicle config from TrafficVehicle
+        config = TrafficVehicle.VEHICLE_TYPES.get(vehicle_type, TrafficVehicle.VEHICLE_TYPES['car'])
+        self.width = config['width']
+        self.height = config['height']
+        self.body_color = random.choice(config['color_choices'])
+        self.window_color = (100, 150, 200)
+        self.outline_color = tuple(max(0, c - 40) for c in self.body_color)
+
+        # Determine facing angle
+        direction_angles = {'east': 0, 'south': 90, 'west': 180, 'north': 270}
+        self.facing_angle = direction_angles.get(facing_direction, 0)
+
+    def render(self, screen, camera):
+        """
+        Render the parked vehicle.
+
+        Args:
+            screen: Pygame surface
+            camera: Camera for world-to-screen transformation
+        """
+        import pygame
+
+        # Calculate screen position
+        screen_x, screen_y = camera.world_to_screen(self.world_x, self.world_y)
+
+        # Apply camera zoom
+        width_px = int(self.width * camera.zoom)
+        height_px = int(self.height * camera.zoom)
+
+        # Don't render if off screen
+        margin = max(width_px, height_px)
+        if (screen_x + margin < 0 or screen_x - margin > screen.get_width() or
+            screen_y + margin < 0 or screen_y - margin > screen.get_height()):
+            return
+
+        # Create temporary surface for rotation
+        temp_size = int(max(width_px, height_px) * 1.5)
+        temp_surface = pygame.Surface((temp_size, temp_size), pygame.SRCALPHA)
+
+        # Center position on temp surface
+        temp_x = temp_size // 2 - width_px // 2
+        temp_y = temp_size // 2 - height_px // 2
+
+        # Draw vehicle body
+        body_rect = pygame.Rect(temp_x, temp_y, width_px, height_px)
+        pygame.draw.rect(temp_surface, self.body_color, body_rect)
+        pygame.draw.rect(temp_surface, self.outline_color, body_rect, 2)
+
+        # Draw windows
+        window_width = int(width_px * 0.3)
+        window_height = int(height_px * 0.5)
+        window_y = temp_y + int(height_px * 0.15)
+
+        if window_width > 4 and window_height > 4:
+            # Front window
+            front_window_x = temp_x + width_px - window_width - 2
+            pygame.draw.rect(temp_surface, self.window_color,
+                           (front_window_x, window_y, window_width, window_height))
+
+        # Draw wheels
+        wheel_radius = max(2, int(height_px * 0.25))
+        wheel_y = temp_y + height_px - wheel_radius
+
+        if wheel_radius > 1:
+            # Front wheel
+            front_wheel_x = temp_x + width_px - int(width_px * 0.2)
+            pygame.draw.circle(temp_surface, (40, 40, 40), (front_wheel_x, wheel_y), wheel_radius)
+
+            # Rear wheel
+            rear_wheel_x = temp_x + int(width_px * 0.2)
+            pygame.draw.circle(temp_surface, (40, 40, 40), (rear_wheel_x, wheel_y), wheel_radius)
+
+        # Rotate based on facing angle
+        rotated_surface = pygame.transform.rotate(temp_surface, -self.facing_angle)
+        rotated_rect = rotated_surface.get_rect(center=(screen_x, screen_y))
+
+        # Blit to screen
+        screen.blit(rotated_surface, rotated_rect.topleft)
 
 
 class TrafficManager:
@@ -35,6 +139,9 @@ class TrafficManager:
         # Active traffic vehicles
         self.vehicles: List[TrafficVehicle] = []
 
+        # Parked vehicles (static decorative vehicles)
+        self.parked_vehicles: List[ParkedVehicle] = []
+
         # Spawn configuration
         self.target_vehicle_count = 15  # Target number of active vehicles
         self.max_vehicle_count = 25     # Maximum vehicles allowed
@@ -50,12 +157,14 @@ class TrafficManager:
             'police': 0.03   # 3% police
         }
 
-    def update(self, dt: float):
+    def update(self, dt: float, npcs=None, time_of_day=None):
         """
         Update all traffic vehicles.
 
         Args:
             dt (float): Delta time in seconds
+            npcs (list, optional): List of NPCs for pedestrian detection
+            time_of_day (float, optional): Current time of day (0-24) for headlights
         """
         # Update spawn timer
         self.spawn_timer += dt
@@ -70,7 +179,11 @@ class TrafficManager:
         vehicles_to_remove = []
 
         for vehicle in self.vehicles:
-            vehicle.update(dt, self.road_network)
+            # Pass other vehicles for collision avoidance
+            vehicle.update(dt, self.road_network,
+                          other_vehicles=self.vehicles,
+                          npcs=npcs,
+                          time_of_day=time_of_day)
 
             # Check if vehicle is off map (despawn)
             if vehicle.is_off_map(self.grid):
@@ -312,14 +425,88 @@ class TrafficManager:
 
         return vehicle
 
+    def generate_parked_vehicles(self, count: int = 30):
+        """
+        Generate parked vehicles near buildings and along roads.
+
+        Args:
+            count (int): Number of parked vehicles to generate
+        """
+        self.parked_vehicles.clear()
+
+        tile_size = self.grid.tile_size
+
+        for _ in range(count):
+            # Find a random road tile
+            road_pos = self.road_network.get_random_road_tile()
+
+            if road_pos is None:
+                continue
+
+            grid_x, grid_y = road_pos
+
+            # Get available lanes
+            lanes = self.road_network.get_available_lanes(grid_x, grid_y)
+
+            if not lanes:
+                continue
+
+            # Pick a random lane
+            direction = random.choice(lanes)
+
+            # Get lane center and offset to side (parking)
+            lane_center = self.road_network.get_lane_center(grid_x, grid_y, direction)
+
+            if lane_center is None:
+                continue
+
+            world_x, world_y = lane_center
+
+            # Offset to parking position (to the side of the road)
+            parking_offset = 20  # pixels to the side
+
+            if direction in ['east', 'west']:
+                # Park to the side (north or south)
+                world_y += random.choice([-parking_offset, parking_offset])
+            else:
+                # Park to the side (east or west)
+                world_x += random.choice([-parking_offset, parking_offset])
+
+            # Choose vehicle type (mostly cars for parked vehicles)
+            vehicle_type_weights = {
+                'car': 0.8,
+                'truck': 0.1,
+                'van': 0.1
+            }
+            types = list(vehicle_type_weights.keys())
+            weights = list(vehicle_type_weights.values())
+            vehicle_type = random.choices(types, weights=weights, k=1)[0]
+
+            # Create parked vehicle
+            parked = ParkedVehicle(
+                world_x=world_x,
+                world_y=world_y,
+                vehicle_type=vehicle_type,
+                facing_direction=direction
+            )
+
+            self.parked_vehicles.append(parked)
+
+        print(f"Generated {len(self.parked_vehicles)} parked vehicles")
+
     def render(self, screen, camera):
         """
-        Render all traffic vehicles.
+        Render all traffic vehicles and parked vehicles.
 
         Args:
             screen: Pygame surface
             camera: Camera for rendering
         """
+        # Render parked vehicles first (behind moving traffic)
+        for parked in self.parked_vehicles:
+            parked.render(screen, camera)
+
+        # Render moving vehicles
         for vehicle in self.vehicles:
             vehicle.render(screen, camera)
 

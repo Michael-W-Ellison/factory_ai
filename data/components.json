@@ -1,0 +1,692 @@
+{
+  "version": "1.0",
+  "description": "Component types manufactured from processed materials. Used for upgrades, research, and robot construction.",
+  "components": {
+    "circuit_board": {
+      "name": "Circuit Board",
+      "category": "electronics",
+      "base_value": 100,
+      "recipe": {
+        "copper": 2.0,
+        "plastic": 1.0,
+        "chemicals": 0.5
+      },
+      "processing_time": 8.0,
+      "description": "Basic PCB for electronics",
+      "quality_tiers": ["low", "medium", "high"],
+      "uses": ["robot_upgrades", "research", "advanced_components"]
+    },
+    "advanced_circuit_board": {
+      "name": "Advanced Circuit Board",
+      "category": "electronics",
+      "base_value": 250,
+      "recipe": {
+        "circuit_board": 1.0,
+        "silver": 0.2,
+        "chemicals": 0.3
+      },
+      "processing_time": 12.0,
+      "description": "Multi-layer PCB with advanced features",
+      "requires_research": "Advanced Electronics I",
+      "quality_tiers": ["medium", "high"],
+      "uses": ["advanced_robots", "research", "high_tech_components"]
+    },
+    "electric_motor": {
+      "name": "Electric Motor",
+      "category": "mechanical",
+      "base_value": 150,
+      "recipe": {
+        "iron": 3.0,
+        "copper": 2.0,
+        "magnets": 0.5
+      },
+      "processing_time": 10.0,
+      "description": "Electric motor for robots and machinery",
+      "quality_tiers": ["low", "medium", "high"],
+      "uses": ["robot_construction", "building_upgrades", "vehicles"]
+    },
+    "servo_motor": {
+      "name": "Servo Motor",
+      "category": "mechanical",
+      "base_value": 200,
+      "recipe": {
+        "electric_motor": 1.0,
+        "circuit_board": 0.5,
+        "gears": 1.0
+      },
+      "processing_time": 8.0,
+      "description": "Precise servo motor with electronic control",
+      "quality_tiers": ["medium", "high"],
+      "uses": ["advanced_robots", "precision_equipment"]
+    },
+    "battery_cell": {
+      "name": "Battery Cell",
+      "category": "power",
+      "base_value": 120,
+      "recipe": {
+        "lithium": 1.0,
+        "chemicals": 2.0,
+        "plastic": 0.5
+      },
+      "processing_time": 10.0,
+      "description": "Rechargeable battery cell",
+      "quality_tiers": ["low", "medium", "high"],
+      "uses": ["robot_power", "power_storage", "portable_devices"]
+    },
+    "battery_pack": {
+      "name": "Battery Pack",
+      "category": "power",
+      "base_value": 300,
+      "recipe": {
+        "battery_cell": 4.0,
+        "circuit_board": 0.5,
+        "plastic": 1.0
+      },
+      "processing_time": 6.0,
+      "description": "Battery pack with management system",
+      "quality_tiers": ["medium", "high"],
+      "uses": ["robot_power_upgrades", "energy_storage"]
+    },
+    "solar_panel": {
+      "name": "Solar Panel",
+      "category": "power",
+      "base_value": 200,
+      "recipe": {
+        "silicon": 2.0,
+        "glass": 1.0,
+        "aluminum": 1.0,
+        "silver": 0.1
+      },
+      "processing_time": 12.0,
+      "description": "Photovoltaic solar panel",
+      "requires_research": "Solar Array I",
+      "quality_tiers": ["low", "medium", "high"],
+      "uses": ["power_generation", "portable_solar"]
+    },
+    "sensor_array": {
+      "name": "Sensor Array",
+      "category": "electronics",
+      "base_value": 180,
+      "recipe": {
+        "circuit_board": 1.0,
+        "plastic": 0.5,
+        "glass": 0.5
+      },
+      "processing_time": 7.0,
+      "description": "Multi-sensor detection system",
+      "quality_tiers": ["medium", "high"],
+      "uses": ["robot_sensors", "detection_systems", "security"]
+    },
+    "camera_module": {
+      "name": "Camera Module",
+      "category": "electronics",
+      "base_value": 100,
+      "recipe": {
+        "circuit_board": 0.5,
+        "glass": 0.3,
+        "plastic": 0.2
+      },
+      "processing_time": 5.0,
+      "description": "Digital camera module",
+      "quality_tiers": ["low", "medium", "high"],
+      "uses": ["robot_vision", "surveillance", "security_cameras"]
+    },
+    "hydraulic_actuator": {
+      "name": "Hydraulic Actuator",
+      "category": "mechanical",
+      "base_value": 220,
+      "recipe": {
+        "steel": 3.0,
+        "rubber": 1.0,
+        "petroleum": 0.5
+      },
+      "processing_time": 9.0,
+      "description": "High-force hydraulic actuator",
+      "quality_tiers": ["medium", "high"],
+      "uses": ["heavy_robots", "industrial_equipment", "construction"]
+    },
+    "steel_frame": {
+      "name": "Steel Frame",
+      "category": "structural",
+      "base_value": 80,
+      "recipe": {
+        "steel": 5.0
+      },
+      "processing_time": 6.0,
+      "description": "Structural steel frame",
+      "quality_tiers": ["low", "medium", "high"],
+      "uses": ["robot_chassis", "building_frames", "vehicles"]
+    },
+    "reinforced_frame": {
+      "name": "Reinforced Frame",
+      "category": "structural",
+      "base_value": 180,
+      "recipe": {
+        "steel_frame": 2.0,
+        "concrete": 1.0
+      },
+      "processing_time": 8.0,
+      "description": "Heavy-duty reinforced frame",
+      "quality_tiers": ["medium", "high"],
+      "uses": ["heavy_buildings", "fortifications", "large_robots"]
+    },
+    "gears": {
+      "name": "Gear Set",
+      "category": "mechanical",
+      "base_value": 60,
+      "recipe": {
+        "steel": 2.0
+      },
+      "processing_time": 5.0,
+      "description": "Precision gear set",
+      "quality_tiers": ["low", "medium", "high"],
+      "uses": ["motors", "transmissions", "mechanical_systems"]
+    },
+    "bearings": {
+      "name": "Bearings",
+      "category": "mechanical",
+      "base_value": 50,
+      "recipe": {
+        "steel": 1.0
+      },
+      "processing_time": 4.0,
+      "description": "Ball bearings and roller bearings",
+      "quality_tiers": ["low", "medium", "high"],
+      "uses": ["motors", "wheels", "rotating_equipment"]
+    },
+    "wiring_harness": {
+      "name": "Wiring Harness",
+      "category": "electrical",
+      "base_value": 70,
+      "recipe": {
+        "copper": 1.5,
+        "plastic": 0.5,
+        "rubber": 0.3
+      },
+      "processing_time": 4.0,
+      "description": "Bundled electrical wiring",
+      "quality_tiers": ["low", "medium", "high"],
+      "uses": ["robots", "buildings", "vehicles"]
+    },
+    "power_converter": {
+      "name": "Power Converter",
+      "category": "electrical",
+      "base_value": 150,
+      "recipe": {
+        "circuit_board": 1.0,
+        "copper": 1.0,
+        "iron": 0.5
+      },
+      "processing_time": 6.0,
+      "description": "AC/DC power conversion module",
+      "quality_tiers": ["medium", "high"],
+      "uses": ["power_systems", "charging_stations", "grid_equipment"]
+    },
+    "computer_module": {
+      "name": "Computer Module",
+      "category": "electronics",
+      "base_value": 300,
+      "recipe": {
+        "advanced_circuit_board": 1.0,
+        "memory_chip": 2.0,
+        "plastic": 0.5
+      },
+      "processing_time": 10.0,
+      "description": "Microcomputer control module",
+      "requires_research": "Computer Systems I",
+      "quality_tiers": ["medium", "high"],
+      "uses": ["ai_robots", "automation", "control_systems"]
+    },
+    "memory_chip": {
+      "name": "Memory Chip",
+      "category": "electronics",
+      "base_value": 120,
+      "recipe": {
+        "silicon": 0.5,
+        "plastic": 0.2,
+        "chemicals": 0.3
+      },
+      "processing_time": 8.0,
+      "description": "Digital memory storage chip",
+      "quality_tiers": ["low", "medium", "high"],
+      "uses": ["computers", "robots", "data_storage"]
+    },
+    "antenna": {
+      "name": "Antenna",
+      "category": "communications",
+      "base_value": 90,
+      "recipe": {
+        "copper": 1.0,
+        "aluminum": 0.5,
+        "plastic": 0.3
+      },
+      "processing_time": 4.0,
+      "description": "Radio antenna for wireless communication",
+      "quality_tiers": ["low", "medium", "high"],
+      "uses": ["wireless_systems", "robots", "transmitters"]
+    },
+    "transmitter": {
+      "name": "Transmitter Module",
+      "category": "communications",
+      "base_value": 200,
+      "recipe": {
+        "circuit_board": 1.0,
+        "antenna": 1.0,
+        "battery_cell": 0.5
+      },
+      "processing_time": 7.0,
+      "description": "Wireless transmitter/receiver",
+      "quality_tiers": ["medium", "high"],
+      "uses": ["wireless_control", "remote_robots", "communications"]
+    },
+    "filter_system": {
+      "name": "Filter System",
+      "category": "environmental",
+      "base_value": 130,
+      "recipe": {
+        "steel": 2.0,
+        "fabric": 1.0,
+        "plastic": 0.5
+      },
+      "processing_time": 5.0,
+      "description": "Air or liquid filtration system",
+      "quality_tiers": ["medium", "high"],
+      "uses": ["pollution_control", "processing_buildings", "clean_rooms"]
+    },
+    "cooling_unit": {
+      "name": "Cooling Unit",
+      "category": "mechanical",
+      "base_value": 160,
+      "recipe": {
+        "aluminum": 2.0,
+        "copper": 1.0,
+        "refrigerant": 0.5
+      },
+      "processing_time": 6.0,
+      "description": "Active cooling system",
+      "quality_tiers": ["medium", "high"],
+      "uses": ["processors", "generators", "industrial_equipment"]
+    },
+    "heat_sink": {
+      "name": "Heat Sink",
+      "category": "mechanical",
+      "base_value": 60,
+      "recipe": {
+        "aluminum": 1.5
+      },
+      "processing_time": 3.0,
+      "description": "Passive heat dissipation",
+      "quality_tiers": ["low", "medium", "high"],
+      "uses": ["electronics", "power_systems", "processors"]
+    },
+    "insulation": {
+      "name": "Insulation Material",
+      "category": "construction",
+      "base_value": 40,
+      "recipe": {
+        "fiber": 2.0,
+        "plastic": 0.5
+      },
+      "processing_time": 3.0,
+      "description": "Thermal and electrical insulation",
+      "quality_tiers": ["low", "medium", "high"],
+      "uses": ["buildings", "wiring", "thermal_systems"]
+    },
+    "armor_plate": {
+      "name": "Armor Plate",
+      "category": "defense",
+      "base_value": 140,
+      "recipe": {
+        "steel": 4.0,
+        "composite": 1.0
+      },
+      "processing_time": 8.0,
+      "description": "Protective armor plating",
+      "quality_tiers": ["medium", "high"],
+      "uses": ["robot_armor", "fortifications", "security"]
+    },
+    "ballistic_glass": {
+      "name": "Ballistic Glass",
+      "category": "defense",
+      "base_value": 180,
+      "recipe": {
+        "glass": 3.0,
+        "plastic": 1.0
+      },
+      "processing_time": 9.0,
+      "description": "Bulletproof laminated glass",
+      "requires_research": "Advanced Glass",
+      "quality_tiers": ["high"],
+      "uses": ["security_windows", "robot_protection", "buildings"]
+    },
+    "composite_material": {
+      "name": "Composite Material",
+      "category": "advanced",
+      "base_value": 200,
+      "recipe": {
+        "plastic": 2.0,
+        "fiber": 1.0,
+        "chemicals": 0.5
+      },
+      "processing_time": 10.0,
+      "description": "Advanced composite material",
+      "requires_research": "Advanced Materials",
+      "quality_tiers": ["high"],
+      "uses": ["lightweight_structures", "aerospace", "high_performance"]
+    },
+    "magnet": {
+      "name": "Magnet",
+      "category": "mechanical",
+      "base_value": 80,
+      "recipe": {
+        "iron": 1.0,
+        "rare_earth": 0.2
+      },
+      "processing_time": 6.0,
+      "description": "Permanent magnet",
+      "quality_tiers": ["medium", "high"],
+      "uses": ["motors", "generators", "sensors"]
+    },
+    "pneumatic_cylinder": {
+      "name": "Pneumatic Cylinder",
+      "category": "mechanical",
+      "base_value": 110,
+      "recipe": {
+        "steel": 2.0,
+        "rubber": 0.5
+      },
+      "processing_time": 5.0,
+      "description": "Compressed air actuator",
+      "quality_tiers": ["low", "medium", "high"],
+      "uses": ["robots", "automation", "industrial_equipment"]
+    },
+    "pressure_vessel": {
+      "name": "Pressure Vessel",
+      "category": "storage",
+      "base_value": 150,
+      "recipe": {
+        "steel": 4.0,
+        "sealant": 0.5
+      },
+      "processing_time": 7.0,
+      "description": "High-pressure storage tank",
+      "quality_tiers": ["medium", "high"],
+      "uses": ["gas_storage", "hydraulics", "industrial"]
+    },
+    "valve_assembly": {
+      "name": "Valve Assembly",
+      "category": "mechanical",
+      "base_value": 90,
+      "recipe": {
+        "steel": 1.5,
+        "rubber": 0.3
+      },
+      "processing_time": 4.0,
+      "description": "Flow control valve",
+      "quality_tiers": ["low", "medium", "high"],
+      "uses": ["fluid_systems", "gas_systems", "industrial"]
+    },
+    "pump_unit": {
+      "name": "Pump Unit",
+      "category": "mechanical",
+      "base_value": 180,
+      "recipe": {
+        "electric_motor": 1.0,
+        "steel": 2.0,
+        "rubber": 0.5
+      },
+      "processing_time": 7.0,
+      "description": "Electric pump for fluids or gases",
+      "quality_tiers": ["medium", "high"],
+      "uses": ["liquid_transfer", "gas_compression", "industrial"]
+    },
+    "display_screen": {
+      "name": "Display Screen",
+      "category": "electronics",
+      "base_value": 140,
+      "recipe": {
+        "glass": 1.0,
+        "circuit_board": 0.5,
+        "plastic": 0.5
+      },
+      "processing_time": 6.0,
+      "description": "LCD/LED display screen",
+      "quality_tiers": ["low", "medium", "high"],
+      "uses": ["interfaces", "monitoring", "robots"]
+    },
+    "control_panel": {
+      "name": "Control Panel",
+      "category": "electronics",
+      "base_value": 200,
+      "recipe": {
+        "display_screen": 1.0,
+        "circuit_board": 1.0,
+        "buttons": 0.5
+      },
+      "processing_time": 5.0,
+      "description": "User interface control panel",
+      "quality_tiers": ["medium", "high"],
+      "uses": ["machines", "buildings", "robots"]
+    },
+    "laser_emitter": {
+      "name": "Laser Emitter",
+      "category": "advanced",
+      "base_value": 300,
+      "recipe": {
+        "circuit_board": 1.0,
+        "glass": 0.5,
+        "ruby": 0.1
+      },
+      "processing_time": 12.0,
+      "description": "Laser emission module",
+      "requires_research": "Laser Technology",
+      "quality_tiers": ["high"],
+      "uses": ["cutting", "welding", "defense", "sensors"]
+    },
+    "drone_chassis": {
+      "name": "Drone Chassis",
+      "category": "robotics",
+      "base_value": 250,
+      "recipe": {
+        "aluminum": 2.0,
+        "composite_material": 1.0,
+        "electric_motor": 4.0
+      },
+      "processing_time": 10.0,
+      "description": "Lightweight flying drone frame",
+      "requires_research": "Drones I",
+      "quality_tiers": ["medium", "high"],
+      "uses": ["drone_construction", "aerial_robots"]
+    },
+    "robot_arm": {
+      "name": "Robot Arm",
+      "category": "robotics",
+      "base_value": 280,
+      "recipe": {
+        "servo_motor": 3.0,
+        "steel_frame": 1.0,
+        "gears": 2.0
+      },
+      "processing_time": 11.0,
+      "description": "Articulated robot arm assembly",
+      "quality_tiers": ["medium", "high"],
+      "uses": ["assembly_robots", "manipulation", "industrial"]
+    },
+    "gripper": {
+      "name": "Gripper Assembly",
+      "category": "robotics",
+      "base_value": 120,
+      "recipe": {
+        "servo_motor": 1.0,
+        "steel": 1.0,
+        "rubber": 0.5
+      },
+      "processing_time": 5.0,
+      "description": "Robot gripper/claw mechanism",
+      "quality_tiers": ["low", "medium", "high"],
+      "uses": ["robots", "manipulation", "assembly"]
+    },
+    "wheel_assembly": {
+      "name": "Wheel Assembly",
+      "category": "mechanical",
+      "base_value": 100,
+      "recipe": {
+        "rubber": 2.0,
+        "steel": 1.0,
+        "bearings": 1.0
+      },
+      "processing_time": 5.0,
+      "description": "Complete wheel with tire and hub",
+      "quality_tiers": ["low", "medium", "high"],
+      "uses": ["robots", "vehicles", "machinery"]
+    },
+    "track_assembly": {
+      "name": "Track Assembly",
+      "category": "mechanical",
+      "base_value": 200,
+      "recipe": {
+        "rubber": 3.0,
+        "steel": 2.0
+      },
+      "processing_time": 8.0,
+      "description": "Continuous track for heavy vehicles",
+      "quality_tiers": ["medium", "high"],
+      "uses": ["heavy_robots", "construction_equipment", "tanks"]
+    },
+    "ai_chip": {
+      "name": "AI Processing Chip",
+      "category": "advanced",
+      "base_value": 500,
+      "recipe": {
+        "advanced_circuit_board": 1.0,
+        "memory_chip": 4.0,
+        "cooling_unit": 0.5
+      },
+      "processing_time": 15.0,
+      "description": "Artificial intelligence processor",
+      "requires_research": "AI Systems",
+      "quality_tiers": ["high"],
+      "uses": ["autonomous_robots", "advanced_automation", "research"]
+    },
+    "quantum_processor": {
+      "name": "Quantum Processor",
+      "category": "advanced",
+      "base_value": 1000,
+      "recipe": {
+        "ai_chip": 1.0,
+        "rare_earth": 0.5,
+        "cryogenic_system": 1.0
+      },
+      "processing_time": 20.0,
+      "description": "Quantum computing processor",
+      "requires_research": "Quantum Computing",
+      "quality_tiers": ["high"],
+      "uses": ["research", "advanced_systems", "future_tech"]
+    },
+    "fusion_cell": {
+      "name": "Fusion Power Cell",
+      "category": "advanced",
+      "base_value": 2000,
+      "recipe": {
+        "rare_earth": 2.0,
+        "pressure_vessel": 1.0,
+        "superconductor": 0.5
+      },
+      "processing_time": 30.0,
+      "description": "Compact fusion power source",
+      "requires_research": "Fusion Power",
+      "quality_tiers": ["high"],
+      "uses": ["advanced_power", "research", "future_robots"]
+    },
+    "nano_material": {
+      "name": "Nanomaterial",
+      "category": "advanced",
+      "base_value": 800,
+      "recipe": {
+        "composite_material": 1.0,
+        "rare_earth": 0.3,
+        "chemicals": 1.0
+      },
+      "processing_time": 18.0,
+      "description": "Engineered nanomaterial",
+      "requires_research": "Nanotechnology",
+      "quality_tiers": ["high"],
+      "uses": ["future_tech", "advanced_materials", "research"]
+    },
+    "cryogenic_system": {
+      "name": "Cryogenic System",
+      "category": "advanced",
+      "base_value": 400,
+      "recipe": {
+        "cooling_unit": 2.0,
+        "insulation": 2.0,
+        "pressure_vessel": 1.0
+      },
+      "processing_time": 12.0,
+      "description": "Ultra-low temperature cooling system",
+      "requires_research": "Cryogenics",
+      "quality_tiers": ["high"],
+      "uses": ["quantum_computing", "superconductors", "research"]
+    },
+    "superconductor": {
+      "name": "Superconductor",
+      "category": "advanced",
+      "base_value": 600,
+      "recipe": {
+        "rare_earth": 1.0,
+        "silver": 0.5,
+        "chemicals": 1.0
+      },
+      "processing_time": 15.0,
+      "description": "Zero-resistance electrical conductor",
+      "requires_research": "Superconductivity",
+      "quality_tiers": ["high"],
+      "uses": ["power_transmission", "magnets", "advanced_tech"]
+    },
+    "stealth_coating": {
+      "name": "Stealth Coating",
+      "category": "special",
+      "base_value": 350,
+      "recipe": {
+        "nano_material": 1.0,
+        "composite_material": 0.5,
+        "chemicals": 1.0
+      },
+      "processing_time": 10.0,
+      "description": "Radar-absorbing stealth coating",
+      "requires_research": "Stealth Technology",
+      "quality_tiers": ["high"],
+      "uses": ["robot_upgrades", "vehicles", "buildings"]
+    },
+    "emp_shielding": {
+      "name": "EMP Shielding",
+      "category": "defense",
+      "base_value": 280,
+      "recipe": {
+        "copper": 2.0,
+        "steel": 1.0,
+        "composite_material": 0.5
+      },
+      "processing_time": 8.0,
+      "description": "Electromagnetic pulse protection",
+      "requires_research": "EMP Protection",
+      "quality_tiers": ["medium", "high"],
+      "uses": ["electronics_protection", "robots", "critical_systems"]
+    },
+    "hologram_projector": {
+      "name": "Hologram Projector",
+      "category": "advanced",
+      "base_value": 450,
+      "recipe": {
+        "laser_emitter": 2.0,
+        "circuit_board": 1.0,
+        "glass": 0.5
+      },
+      "processing_time": 12.0,
+      "description": "3D holographic projection system",
+      "requires_research": "Holographic Display",
+      "quality_tiers": ["high"],
+      "uses": ["interfaces", "deception", "research"]
+    }
+  }
+}

@@ -9,7 +9,9 @@ Handles:
 
 import random
 from typing import List, Optional
-from src.entities.prop import Prop, Bench, LightPole, TrashCan, Bicycle, PropType
+from src.entities.prop import (Prop, Bench, LightPole, TrashCan, Bicycle, Tree,
+                                FlowerBed, FireHydrant, Mailbox, ParkingMeter,
+                                NewspaperStand, PropType)
 from src.world.tile import TileType
 
 
@@ -49,16 +51,28 @@ class PropManager:
         self.props.clear()
 
         # Place different types of props
+        self._place_trees()
+        self._place_flower_beds()
         self._place_light_poles()
         self._place_benches()
         self._place_trash_cans()
         self._place_bicycles()
+        self._place_fire_hydrants()
+        self._place_mailboxes()
+        self._place_parking_meters()
+        self._place_newspaper_stands()
 
         print(f"Generated {len(self.props)} props total:")
+        print(f"  {self._count_props(PropType.TREE)} trees")
+        print(f"  {self._count_props(PropType.FLOWER_BED)} flower beds")
         print(f"  {self._count_props(PropType.LIGHT_POLE)} light poles")
         print(f"  {self._count_props(PropType.BENCH)} benches")
         print(f"  {self._count_props(PropType.TRASH_CAN)} trash cans")
         print(f"  {self._count_props(PropType.BICYCLE)} bicycles")
+        print(f"  {self._count_props(PropType.FIRE_HYDRANT)} fire hydrants")
+        print(f"  {self._count_props(PropType.MAILBOX)} mailboxes")
+        print(f"  {self._count_props(PropType.PARKING_METER)} parking meters")
+        print(f"  {self._count_props(PropType.NEWSPAPER_STAND)} newspaper stands")
 
     def _place_light_poles(self):
         """Place light poles along roads."""
@@ -193,22 +207,192 @@ class PropManager:
                 return False
         return True
 
+    def _place_trees(self):
+        """Place trees in parks and along roads."""
+        tile_size = self.grid.tile_size
+        placed_count = 0
+
+        # Scan grid for grass tiles (parks)
+        for y in range(self.grid.height_tiles):
+            for x in range(self.grid.width_tiles):
+                tile = self.grid.get_tile(x, y)
+
+                if tile and tile.tile_type == TileType.GRASS:
+                    # Higher chance for trees in parks
+                    if random.random() < 0.25:  # 25% chance
+                        world_x = x * tile_size + tile_size / 2 + random.randint(-10, 10)
+                        world_y = y * tile_size + tile_size / 2 + random.randint(-10, 10)
+
+                        if self._is_position_clear(world_x, world_y, min_distance=25):
+                            # Random size variation
+                            size_var = random.uniform(0.8, 1.2)
+                            tree = Tree(world_x, world_y, size_variation=size_var)
+                            self.props.append(tree)
+                            placed_count += 1
+
+    def _place_flower_beds(self):
+        """Place flower beds in parks and near buildings."""
+        tile_size = self.grid.tile_size
+        placed_count = 0
+
+        # Scan grid for grass tiles
+        for y in range(self.grid.height_tiles):
+            for x in range(self.grid.width_tiles):
+                tile = self.grid.get_tile(x, y)
+
+                if tile and tile.tile_type == TileType.GRASS:
+                    if random.random() < 0.15:  # 15% chance
+                        world_x = x * tile_size + tile_size / 2 + random.randint(-8, 8)
+                        world_y = y * tile_size + tile_size / 2 + random.randint(-8, 8)
+
+                        if self._is_position_clear(world_x, world_y, min_distance=18):
+                            flower_bed = FlowerBed(world_x, world_y)
+                            self.props.append(flower_bed)
+                            placed_count += 1
+
+    def _place_fire_hydrants(self):
+        """Place fire hydrants near roads and buildings."""
+        if self.road_network is None:
+            return
+
+        tile_size = self.grid.tile_size
+        placed_count = 0
+
+        # Place along roads at intersections and regular intervals
+        road_tiles = list(self.road_network.road_tiles)
+
+        for i, (grid_x, grid_y) in enumerate(road_tiles):
+            # Place at intersections or every 15th road tile
+            is_intersection = self.road_network.is_intersection(grid_x, grid_y)
+
+            if is_intersection or (i % 15 == 0):
+                # Calculate world position (offset to corner)
+                world_x = grid_x * tile_size + tile_size / 2
+                world_y = grid_y * tile_size + tile_size / 2
+
+                # Offset to corner of road
+                world_x += random.choice([-12, 12])
+                world_y += random.choice([-12, 12])
+
+                if self._is_position_clear(world_x, world_y, min_distance=25):
+                    fire_hydrant = FireHydrant(world_x, world_y)
+                    self.props.append(fire_hydrant)
+                    placed_count += 1
+
+                    if placed_count >= 40:  # Limit fire hydrants
+                        break
+
+    def _place_mailboxes(self):
+        """Place mailboxes near residential buildings."""
+        tile_size = self.grid.tile_size
+        placed_count = 0
+
+        # Scan grid for building tiles
+        for y in range(self.grid.height_tiles):
+            for x in range(self.grid.width_tiles):
+                tile = self.grid.get_tile(x, y)
+
+                if tile and tile.tile_type == TileType.BUILDING:
+                    # 25% chance for mailbox near building
+                    if random.random() < 0.25:
+                        # Place near building entrance
+                        world_x = x * tile_size + tile_size / 2 + random.choice([-14, 14])
+                        world_y = y * tile_size + tile_size / 2 + random.choice([-14, 14])
+
+                        if self._is_position_clear(world_x, world_y, min_distance=20):
+                            mailbox = Mailbox(world_x, world_y)
+                            self.props.append(mailbox)
+                            placed_count += 1
+
+    def _place_parking_meters(self):
+        """Place parking meters along commercial roads."""
+        if self.road_network is None:
+            return
+
+        tile_size = self.grid.tile_size
+        placed_count = 0
+
+        # Place along roads at regular intervals
+        road_tiles = list(self.road_network.road_tiles)
+
+        for i, (grid_x, grid_y) in enumerate(road_tiles):
+            # Skip intersections
+            if self.road_network.is_intersection(grid_x, grid_y):
+                continue
+
+            # Place every 12th road tile
+            if i % 12 == 0:
+                world_x = grid_x * tile_size + tile_size / 2
+                world_y = grid_y * tile_size + tile_size / 2
+
+                # Offset to side of road
+                neighbors = self.road_network._get_road_neighbors(grid_x, grid_y)
+
+                if 'north' in neighbors or 'south' in neighbors:
+                    # Vertical road, offset to side
+                    world_x += random.choice([-16, 16])
+                else:
+                    # Horizontal road, offset to side
+                    world_y += random.choice([-16, 16])
+
+                if self._is_position_clear(world_x, world_y, min_distance=18):
+                    parking_meter = ParkingMeter(world_x, world_y)
+                    self.props.append(parking_meter)
+                    placed_count += 1
+
+                    if placed_count >= 50:  # Limit parking meters
+                        break
+
+    def _place_newspaper_stands(self):
+        """Place newspaper stands near commercial areas and intersections."""
+        if self.road_network is None:
+            return
+
+        tile_size = self.grid.tile_size
+        placed_count = 0
+
+        # Place at intersections
+        road_tiles = list(self.road_network.road_tiles)
+
+        for grid_x, grid_y in road_tiles:
+            if self.road_network.is_intersection(grid_x, grid_y):
+                # Random chance at intersections
+                if random.random() < 0.15:  # 15% chance
+                    world_x = grid_x * tile_size + tile_size / 2
+                    world_y = grid_y * tile_size + tile_size / 2
+
+                    # Offset to corner
+                    world_x += random.choice([-18, 18])
+                    world_y += random.choice([-18, 18])
+
+                    if self._is_position_clear(world_x, world_y, min_distance=30):
+                        newspaper_stand = NewspaperStand(world_x, world_y)
+                        self.props.append(newspaper_stand)
+                        placed_count += 1
+
+                        if placed_count >= 15:  # Limit newspaper stands
+                            break
+
     def _count_props(self, prop_type: int) -> int:
         """Count props of a specific type."""
         return sum(1 for prop in self.props if prop.prop_type == prop_type)
 
-    def update(self, dt: float, is_night: bool = False):
+    def update(self, dt: float, is_night: bool = False, season: str = 'summer'):
         """
-        Update props (e.g., turn lights on/off at night).
+        Update props (e.g., turn lights on/off at night, change tree seasons).
 
         Args:
             dt (float): Delta time in seconds
             is_night (bool): Whether it's currently night time
+            season (str): Current season ('spring', 'summer', 'autumn', 'winter')
         """
         # Update light poles (turn on at night)
         for prop in self.props:
             if prop.prop_type == PropType.LIGHT_POLE:
                 prop.is_on = is_night
+            elif prop.prop_type == PropType.TREE:
+                # Update tree seasons
+                prop.season = season
 
     def render(self, screen, camera):
         """

@@ -1,0 +1,763 @@
+{
+  "version": "1.0",
+  "description": "Research technology tree with 130+ technologies across 5 categories",
+  "technologies": {
+    "robot_speed_1": {
+      "name": "Speed Enhancement I",
+      "category": "robot",
+      "cost": 1000,
+      "time": 1.0,
+      "prerequisites": [],
+      "effects": {
+        "robot_speed": 1.2
+      },
+      "description": "Increase robot movement speed by 20%"
+    },
+    "robot_speed_2": {
+      "name": "Speed Enhancement II",
+      "category": "robot",
+      "cost": 2500,
+      "time": 2.0,
+      "prerequisites": ["robot_speed_1"],
+      "effects": {
+        "robot_speed": 1.4
+      },
+      "description": "Increase robot movement speed by 40%"
+    },
+    "robot_speed_3": {
+      "name": "Speed Enhancement III",
+      "category": "robot",
+      "cost": 5000,
+      "time": 4.0,
+      "prerequisites": ["robot_speed_2"],
+      "effects": {
+        "robot_speed": 1.6
+      },
+      "description": "Increase robot movement speed by 60%"
+    },
+    "robot_capacity_1": {
+      "name": "Capacity Upgrade I",
+      "category": "robot",
+      "cost": 1200,
+      "time": 1.5,
+      "prerequisites": [],
+      "effects": {
+        "robot_capacity": 150.0
+      },
+      "description": "Increase robot carry capacity to 150kg"
+    },
+    "robot_capacity_2": {
+      "name": "Capacity Upgrade II",
+      "category": "robot",
+      "cost": 2800,
+      "time": 2.5,
+      "prerequisites": ["robot_capacity_1"],
+      "effects": {
+        "robot_capacity": 200.0
+      },
+      "description": "Increase robot carry capacity to 200kg"
+    },
+    "robot_capacity_3": {
+      "name": "Capacity Upgrade III",
+      "category": "robot",
+      "cost": 6000,
+      "time": 4.5,
+      "prerequisites": ["robot_capacity_2"],
+      "effects": {
+        "robot_capacity": 250.0
+      },
+      "description": "Increase robot carry capacity to 250kg"
+    },
+    "robot_power_efficiency_1": {
+      "name": "Power Efficiency I",
+      "category": "robot",
+      "cost": 1500,
+      "time": 2.0,
+      "prerequisites": [],
+      "effects": {
+        "robot_power_efficiency": 0.8
+      },
+      "description": "Reduce robot power consumption by 20%"
+    },
+    "robot_power_efficiency_2": {
+      "name": "Power Efficiency II",
+      "category": "robot",
+      "cost": 3500,
+      "time": 3.0,
+      "prerequisites": ["robot_power_efficiency_1"],
+      "effects": {
+        "robot_power_efficiency": 0.6
+      },
+      "description": "Reduce robot power consumption by 40%"
+    },
+    "robot_power_efficiency_3": {
+      "name": "Power Efficiency III",
+      "category": "robot",
+      "cost": 7000,
+      "time": 5.0,
+      "prerequisites": ["robot_power_efficiency_2"],
+      "effects": {
+        "robot_power_efficiency": 0.4
+      },
+      "description": "Reduce robot power consumption by 60%"
+    },
+    "robot_durability_1": {
+      "name": "Durability I",
+      "category": "robot",
+      "cost": 1800,
+      "time": 1.5,
+      "prerequisites": [],
+      "effects": {
+        "robot_durability": 1.2
+      },
+      "description": "Increase robot durability by 20%"
+    },
+    "robot_durability_2": {
+      "name": "Durability II",
+      "category": "robot",
+      "cost": 4000,
+      "time": 3.0,
+      "prerequisites": ["robot_durability_1"],
+      "effects": {
+        "robot_durability": 1.5
+      },
+      "description": "Increase robot durability by 50%"
+    },
+    "robot_durability_3": {
+      "name": "Durability III",
+      "category": "robot",
+      "cost": 8000,
+      "time": 5.0,
+      "prerequisites": ["robot_durability_2"],
+      "effects": {
+        "robot_durability": 2.0
+      },
+      "description": "Double robot durability"
+    },
+    "advanced_sensors": {
+      "name": "Advanced Sensors",
+      "category": "robot",
+      "cost": 2500,
+      "time": 2.5,
+      "prerequisites": [],
+      "effects": {
+        "robot_detection_range": 1.3,
+        "threat_awareness": 1.5
+      },
+      "description": "Robots detect threats 50% earlier with 30% increased range"
+    },
+    "stealth_mode": {
+      "name": "Stealth Mode",
+      "category": "robot",
+      "cost": 4500,
+      "time": 3.5,
+      "prerequisites": ["advanced_sensors"],
+      "effects": {
+        "robot_stealth": 0.7
+      },
+      "description": "Reduce detection chance by 30%"
+    },
+    "night_vision": {
+      "name": "Night Vision",
+      "category": "robot",
+      "cost": 3000,
+      "time": 2.0,
+      "prerequisites": ["advanced_sensors"],
+      "effects": {
+        "robot_night_efficiency": 1.0
+      },
+      "description": "Robots work at full efficiency during nighttime"
+    },
+    "autonomous_coordination": {
+      "name": "Autonomous Coordination",
+      "category": "robot",
+      "cost": 5000,
+      "time": 4.0,
+      "prerequisites": ["advanced_sensors"],
+      "effects": {
+        "robot_coordination": true,
+        "task_efficiency": 1.15
+      },
+      "description": "Robots share task info and avoid duplicate work, 15% efficiency boost"
+    },
+    "processing_speed_plastic_1": {
+      "name": "Plastic Processing Speed I",
+      "category": "processing",
+      "cost": 1000,
+      "time": 1.0,
+      "prerequisites": [],
+      "effects": {
+        "processing_speed_plastic": 0.8
+      },
+      "description": "Reduce plastic processing time by 20%"
+    },
+    "processing_speed_plastic_2": {
+      "name": "Plastic Processing Speed II",
+      "category": "processing",
+      "cost": 2500,
+      "time": 2.0,
+      "prerequisites": ["processing_speed_plastic_1"],
+      "effects": {
+        "processing_speed_plastic": 0.6
+      },
+      "description": "Reduce plastic processing time by 40%"
+    },
+    "processing_speed_plastic_3": {
+      "name": "Plastic Processing Speed III",
+      "category": "processing",
+      "cost": 5000,
+      "time": 3.5,
+      "prerequisites": ["processing_speed_plastic_2"],
+      "effects": {
+        "processing_speed_plastic": 0.4
+      },
+      "description": "Reduce plastic processing time by 60%"
+    },
+    "processing_quality_plastic_1": {
+      "name": "Plastic Quality Enhancement I",
+      "category": "processing",
+      "cost": 1500,
+      "time": 1.5,
+      "prerequisites": [],
+      "effects": {
+        "processing_quality_plastic": 1.2
+      },
+      "description": "Improve plastic quality distribution by 20%"
+    },
+    "processing_quality_plastic_2": {
+      "name": "Plastic Quality Enhancement II",
+      "category": "processing",
+      "cost": 3500,
+      "time": 3.0,
+      "prerequisites": ["processing_quality_plastic_1"],
+      "effects": {
+        "processing_quality_plastic": 1.4
+      },
+      "description": "Improve plastic quality distribution by 40%"
+    },
+    "processing_efficiency_plastic": {
+      "name": "Plastic Processing Efficiency",
+      "category": "processing",
+      "cost": 2000,
+      "time": 2.0,
+      "prerequisites": [],
+      "effects": {
+        "processing_efficiency_plastic": 1.1
+      },
+      "description": "Reduce plastic waste by 10%"
+    },
+    "advanced_plastics": {
+      "name": "Advanced Plastics",
+      "category": "processing",
+      "cost": 5000,
+      "time": 4.0,
+      "prerequisites": ["processing_quality_plastic_2", "processing_efficiency_plastic"],
+      "effects": {
+        "unlock_ultra_plastic": true,
+        "processing_quality_plastic": 1.5
+      },
+      "description": "Unlock ultra-quality plastic production"
+    },
+    "processing_speed_metal_1": {
+      "name": "Metal Processing Speed I",
+      "category": "processing",
+      "cost": 1200,
+      "time": 1.0,
+      "prerequisites": [],
+      "effects": {
+        "processing_speed_metal": 0.8
+      },
+      "description": "Reduce metal refining time by 20%"
+    },
+    "processing_speed_metal_2": {
+      "name": "Metal Processing Speed II",
+      "category": "processing",
+      "cost": 2800,
+      "time": 2.0,
+      "prerequisites": ["processing_speed_metal_1"],
+      "effects": {
+        "processing_speed_metal": 0.6
+      },
+      "description": "Reduce metal refining time by 40%"
+    },
+    "metallurgy_1": {
+      "name": "Metallurgy I",
+      "category": "processing",
+      "cost": 3000,
+      "time": 2.5,
+      "prerequisites": [],
+      "effects": {
+        "metallurgy_efficiency": 1.15,
+        "metal_quality": 1.2
+      },
+      "description": "Better metal refining, 15% efficiency and 20% quality boost"
+    },
+    "metallurgy_2": {
+      "name": "Metallurgy II",
+      "category": "processing",
+      "cost": 6000,
+      "time": 4.0,
+      "prerequisites": ["metallurgy_1"],
+      "effects": {
+        "metallurgy_efficiency": 1.25,
+        "metal_quality": 1.4,
+        "unlock_rare_metals": true
+      },
+      "description": "Advanced metallurgy, can process rare metals"
+    },
+    "metallurgy_3": {
+      "name": "Metallurgy III",
+      "category": "processing",
+      "cost": 10000,
+      "time": 6.0,
+      "prerequisites": ["metallurgy_2"],
+      "effects": {
+        "metallurgy_efficiency": 1.4,
+        "metal_quality": 1.6,
+        "unlock_alloys": true
+      },
+      "description": "Master metallurgy, can create custom alloys"
+    },
+    "chemical_processing": {
+      "name": "Chemical Processing",
+      "category": "processing",
+      "cost": 7000,
+      "time": 4.5,
+      "prerequisites": [],
+      "effects": {
+        "unlock_chemical_synthesis": true,
+        "unlock_petroleum_refinery": true
+      },
+      "description": "Unlock petroleum refinery and chemical synthesis"
+    },
+    "solar_array_1": {
+      "name": "Solar Array I",
+      "category": "power",
+      "cost": 2000,
+      "time": 2.0,
+      "prerequisites": [],
+      "effects": {
+        "unlock_solar_array": true,
+        "solar_efficiency": 1.0
+      },
+      "description": "Unlock solar power generation"
+    },
+    "solar_array_2": {
+      "name": "Solar Array II",
+      "category": "power",
+      "cost": 4500,
+      "time": 3.5,
+      "prerequisites": ["solar_array_1"],
+      "effects": {
+        "solar_efficiency": 1.3
+      },
+      "description": "30% more efficient solar panels"
+    },
+    "solar_array_3": {
+      "name": "Solar Array III",
+      "category": "power",
+      "cost": 8000,
+      "time": 5.0,
+      "prerequisites": ["solar_array_2"],
+      "effects": {
+        "solar_efficiency": 1.6
+      },
+      "description": "60% more efficient solar panels"
+    },
+    "battery_tech_1": {
+      "name": "Battery Technology I",
+      "category": "power",
+      "cost": 2500,
+      "time": 2.0,
+      "prerequisites": [],
+      "effects": {
+        "battery_capacity": 1.2,
+        "battery_charge_rate": 1.2
+      },
+      "description": "20% better battery capacity and charge rate"
+    },
+    "battery_tech_2": {
+      "name": "Battery Technology II",
+      "category": "power",
+      "cost": 5500,
+      "time": 3.5,
+      "prerequisites": ["battery_tech_1"],
+      "effects": {
+        "battery_capacity": 1.5,
+        "battery_charge_rate": 1.5
+      },
+      "description": "50% better battery capacity and charge rate"
+    },
+    "battery_tech_3": {
+      "name": "Battery Technology III",
+      "category": "power",
+      "cost": 10000,
+      "time": 5.5,
+      "prerequisites": ["battery_tech_2"],
+      "effects": {
+        "battery_capacity": 2.0,
+        "battery_charge_rate": 2.0
+      },
+      "description": "Double battery capacity and charge rate"
+    },
+    "methane_purification_1": {
+      "name": "Methane Purification I",
+      "category": "power",
+      "cost": 3000,
+      "time": 2.5,
+      "prerequisites": [],
+      "effects": {
+        "methane_purity": 1.0,
+        "unlock_pure_methane": true
+      },
+      "description": "Unlock pure methane production"
+    },
+    "methane_purification_2": {
+      "name": "Methane Purification II",
+      "category": "power",
+      "cost": 6000,
+      "time": 4.0,
+      "prerequisites": ["methane_purification_1"],
+      "effects": {
+        "methane_purity": 1.3,
+        "unlock_ultra_pure_methane": true
+      },
+      "description": "Unlock ultra-pure methane, 30% more power per unit"
+    },
+    "power_distribution_1": {
+      "name": "Power Distribution I",
+      "category": "power",
+      "cost": 2500,
+      "time": 2.0,
+      "prerequisites": [],
+      "effects": {
+        "power_grid_efficiency": 1.1,
+        "brownout_threshold": 1.1
+      },
+      "description": "10% better power grid efficiency, higher brownout threshold"
+    },
+    "power_distribution_2": {
+      "name": "Power Distribution II",
+      "category": "power",
+      "cost": 5000,
+      "time": 3.5,
+      "prerequisites": ["power_distribution_1"],
+      "effects": {
+        "power_grid_efficiency": 1.2,
+        "brownout_threshold": 1.2
+      },
+      "description": "20% better power grid efficiency"
+    },
+    "generators_1": {
+      "name": "Generator Efficiency I",
+      "category": "power",
+      "cost": 2800,
+      "time": 2.0,
+      "prerequisites": [],
+      "effects": {
+        "generator_efficiency": 1.15
+      },
+      "description": "Generators use 15% less fuel"
+    },
+    "generators_2": {
+      "name": "Generator Efficiency II",
+      "category": "power",
+      "cost": 6000,
+      "time": 3.5,
+      "prerequisites": ["generators_1"],
+      "effects": {
+        "generator_efficiency": 1.3
+      },
+      "description": "Generators use 30% less fuel"
+    },
+    "generators_3": {
+      "name": "Generator Efficiency III",
+      "category": "power",
+      "cost": 11000,
+      "time": 5.0,
+      "prerequisites": ["generators_2"],
+      "effects": {
+        "generator_efficiency": 1.5
+      },
+      "description": "Generators use 50% less fuel"
+    },
+    "camera_hacking_1": {
+      "name": "Camera Hacking I",
+      "category": "stealth",
+      "cost": 3000,
+      "time": 2.5,
+      "prerequisites": [],
+      "effects": {
+        "unlock_camera_hacking": true,
+        "camera_hack_duration": 300.0,
+        "camera_hack_count": 1
+      },
+      "description": "Disable 1 camera for 5 minutes"
+    },
+    "camera_hacking_2": {
+      "name": "Camera Hacking II",
+      "category": "stealth",
+      "cost": 6500,
+      "time": 4.0,
+      "prerequisites": ["camera_hacking_1"],
+      "effects": {
+        "camera_hack_duration": 900.0,
+        "camera_hack_count": 1
+      },
+      "description": "Disable 1 camera for 15 minutes"
+    },
+    "camera_hacking_3": {
+      "name": "Camera Hacking III",
+      "category": "stealth",
+      "cost": 12000,
+      "time": 6.0,
+      "prerequisites": ["camera_hacking_2"],
+      "effects": {
+        "camera_hack_duration": 900.0,
+        "camera_hack_count": 3
+      },
+      "description": "Disable 3 cameras for 15 minutes"
+    },
+    "police_distraction": {
+      "name": "Police Distraction",
+      "category": "stealth",
+      "cost": 4000,
+      "time": 3.0,
+      "prerequisites": [],
+      "effects": {
+        "unlock_police_distraction": true,
+        "police_patrol_reduction": 0.8
+      },
+      "description": "Create false leads, reduce police patrols by 20%"
+    },
+    "rumor_suppression": {
+      "name": "Rumor Suppression",
+      "category": "stealth",
+      "cost": 3500,
+      "time": 2.5,
+      "prerequisites": [],
+      "effects": {
+        "suspicion_growth_rate": 0.7
+      },
+      "description": "Slower suspicion growth (30% reduction)"
+    },
+    "inspection_preparation": {
+      "name": "Inspection Preparation",
+      "category": "stealth",
+      "cost": 5000,
+      "time": 3.5,
+      "prerequisites": [],
+      "effects": {
+        "inspection_warning_time": 1.5,
+        "inspection_hide_time": 1.5
+      },
+      "description": "50% more warning before inspections, 50% more time to hide materials"
+    },
+    "legal_material_disguise": {
+      "name": "Legal Material Disguise",
+      "category": "stealth",
+      "cost": 8000,
+      "time": 5.0,
+      "prerequisites": ["inspection_preparation"],
+      "effects": {
+        "unlock_material_disguise": true,
+        "disguise_success_rate": 0.8
+      },
+      "description": "Illegal materials appear legal during inspection (80% success, risky if caught)"
+    },
+    "fbi_countermeasures": {
+      "name": "FBI Countermeasures",
+      "category": "stealth",
+      "cost": 15000,
+      "time": 8.0,
+      "prerequisites": ["rumor_suppression", "police_distraction"],
+      "effects": {
+        "fbi_delay": 7.0,
+        "fbi_threshold": 1.2
+      },
+      "description": "Delay FBI investigation by 7 days, 20% higher trigger threshold"
+    },
+    "drones_1": {
+      "name": "Drones I",
+      "category": "advanced",
+      "cost": 5000,
+      "time": 4.0,
+      "prerequisites": [],
+      "effects": {
+        "unlock_drones": true,
+        "drone_speed": 1.0,
+        "drone_battery": 1.0
+      },
+      "description": "Unlock drone construction for scouting"
+    },
+    "drones_2": {
+      "name": "Drones II",
+      "category": "advanced",
+      "cost": 10000,
+      "time": 6.0,
+      "prerequisites": ["drones_1"],
+      "effects": {
+        "drone_speed": 1.3,
+        "drone_battery": 1.5
+      },
+      "description": "Faster drones with 50% longer battery life"
+    },
+    "drones_3": {
+      "name": "Drones III",
+      "category": "advanced",
+      "cost": 18000,
+      "time": 8.0,
+      "prerequisites": ["drones_2"],
+      "effects": {
+        "drone_speed": 1.6,
+        "drone_battery": 2.0,
+        "drone_carry_capacity": 20.0
+      },
+      "description": "Advanced drones, double battery, can carry 20kg"
+    },
+    "wireless_transmitter_1": {
+      "name": "Wireless Transmitters I",
+      "category": "advanced",
+      "cost": 3000,
+      "time": 2.5,
+      "prerequisites": [],
+      "effects": {
+        "unlock_wireless_transmitter": true,
+        "control_range": 300.0
+      },
+      "description": "Extend control range to 300 tiles"
+    },
+    "wireless_transmitter_2": {
+      "name": "Wireless Transmitters II",
+      "category": "advanced",
+      "cost": 6000,
+      "time": 4.0,
+      "prerequisites": ["wireless_transmitter_1"],
+      "effects": {
+        "control_range": 450.0
+      },
+      "description": "Extend control range to 450 tiles"
+    },
+    "wireless_transmitter_3": {
+      "name": "Wireless Transmitters III",
+      "category": "advanced",
+      "cost": 10000,
+      "time": 6.0,
+      "prerequisites": ["wireless_transmitter_2"],
+      "effects": {
+        "control_range": 600.0
+      },
+      "description": "Extend control range to 600 tiles"
+    },
+    "weather_forecasting": {
+      "name": "Weather Forecasting",
+      "category": "advanced",
+      "cost": 4000,
+      "time": 3.0,
+      "prerequisites": [],
+      "effects": {
+        "unlock_weather_forecast": true,
+        "forecast_days": 3
+      },
+      "description": "See 3-day weather forecast, plan operations accordingly"
+    },
+    "market_analysis_1": {
+      "name": "Market Analysis I",
+      "category": "advanced",
+      "cost": 3500,
+      "time": 2.5,
+      "prerequisites": [],
+      "effects": {
+        "unlock_price_trends": true,
+        "price_forecast_accuracy": 0.6
+      },
+      "description": "See current price trends (60% accurate)"
+    },
+    "market_analysis_2": {
+      "name": "Market Analysis II",
+      "category": "advanced",
+      "cost": 7000,
+      "time": 4.0,
+      "prerequisites": ["market_analysis_1"],
+      "effects": {
+        "price_forecast_accuracy": 0.8,
+        "forecast_days": 3
+      },
+      "description": "3-day price forecast (80% accurate)"
+    },
+    "market_analysis_3": {
+      "name": "Market Analysis III",
+      "category": "advanced",
+      "cost": 12000,
+      "time": 6.0,
+      "prerequisites": ["market_analysis_2"],
+      "effects": {
+        "price_forecast_accuracy": 0.9,
+        "forecast_days": 5,
+        "unlock_event_prediction": true
+      },
+      "description": "5-day forecast, predict market events (90% accurate)"
+    },
+    "automated_trading": {
+      "name": "Automated Trading",
+      "category": "advanced",
+      "cost": 8000,
+      "time": 5.0,
+      "prerequisites": ["market_analysis_2"],
+      "effects": {
+        "unlock_auto_trading": true,
+        "trading_efficiency": 1.15
+      },
+      "description": "Auto-sell at favorable prices, 15% better deals"
+    },
+    "advanced_manufacturing": {
+      "name": "Advanced Manufacturing",
+      "category": "advanced",
+      "cost": 10000,
+      "time": 6.0,
+      "prerequisites": [],
+      "effects": {
+        "unlock_advanced_components": true,
+        "manufacturing_speed": 1.2
+      },
+      "description": "Unlock specialized components, 20% faster manufacturing"
+    },
+    "deconstruction_1": {
+      "name": "Deconstruction I",
+      "category": "advanced",
+      "cost": 5000,
+      "time": 3.5,
+      "prerequisites": [],
+      "effects": {
+        "unlock_building_deconstruction": true,
+        "deconstruction_speed": 1.0
+      },
+      "description": "Disassemble buildings (legal conditions only)"
+    },
+    "deconstruction_2": {
+      "name": "Deconstruction II",
+      "category": "advanced",
+      "cost": 10000,
+      "time": 5.5,
+      "prerequisites": ["deconstruction_1"],
+      "effects": {
+        "unlock_vehicle_deconstruction": true,
+        "deconstruction_speed": 1.3
+      },
+      "description": "Disassemble vehicles, 30% faster deconstruction"
+    },
+    "deconstruction_3": {
+      "name": "Deconstruction III",
+      "category": "advanced",
+      "cost": 18000,
+      "time": 8.0,
+      "prerequisites": ["deconstruction_2"],
+      "effects": {
+        "unlock_house_deconstruction": true,
+        "deconstruction_speed": 1.6,
+        "deconstruction_noise": 0.7
+      },
+      "description": "Disassemble livable houses (ILLEGAL), 60% faster, 30% quieter"
+    }
+  }
+}

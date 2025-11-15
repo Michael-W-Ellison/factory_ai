@@ -36,6 +36,10 @@ from src.systems.camera_hacking_manager import CameraHackingManager
 from src.systems.inspection_manager import InspectionManager
 from src.systems.material_inventory import MaterialInventory
 from src.ui.inspection_ui import InspectionUI
+from src.systems.save_manager import SaveManager
+from src.ui.save_load_menu import SaveLoadMenu
+from src.ui.controls_help import ControlsHelp
+from src.ui.minimap import Minimap
 
 
 class Game:
@@ -59,6 +63,12 @@ class Game:
         self.running = True
         self.paused = False
         self.game_speed = 1.0
+
+        # Game time tracking
+        self.day = 1
+        self.hour = 6
+        self.minute = 0
+        self.time_elapsed = 0.0  # Seconds elapsed for time progression
 
         # Initialize camera
         self.camera = Camera(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
@@ -95,6 +105,9 @@ class Game:
         self.bus_manager.buses_per_route = 2  # 2 buses per route
         self.bus_manager.generate_routes()
         self.bus_manager.spawn_buses()
+
+        # Generate parked vehicles along roads (static decoration)
+        self.traffic_manager.generate_parked_vehicles(count=30)
 
         # Initialize prop system (benches, light poles, trash cans, bicycles)
         self.prop_manager = PropManager(self.grid, self.road_network)
@@ -145,6 +158,24 @@ class Game:
         self.inspection = InspectionManager(self.resources, self.suspicion, self.material_inventory)
         self.inspection_ui = InspectionUI(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
 
+        # Initialize save/load system
+        self.save_manager = SaveManager()
+        self.save_load_menu = SaveLoadMenu(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
+
+        # Initialize controls/help overlay
+        self.controls_help = ControlsHelp(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
+
+        # Initialize minimap
+        self.minimap = Minimap(config.SCREEN_WIDTH, config.SCREEN_HEIGHT,
+                              config.WORLD_WIDTH, config.WORLD_HEIGHT)
+
+        # Game statistics tracking
+        self.stats = {
+            "materials_collected": 0,
+            "money_earned": 0,
+            "buildings_built": 0
+        }
+
         # Factory reference (for visual upgrades)
         self.factory = None
 
@@ -171,6 +202,9 @@ class Game:
 
         # Spawn NPCs in the city
         self.npcs.spawn_npcs_in_city(seed=42)
+
+        # Connect NPC manager to bus manager for bus passenger behavior
+        self.npcs.bus_manager = self.bus_manager
 
         # Spawn initial police patrols
         self.police.spawn_initial_patrols(seed=42)
@@ -313,6 +347,14 @@ class Game:
     def handle_events(self):
         """Process user input and system events."""
         for event in pygame.event.get():
+            # Let controls help handle events first if visible
+            if self.controls_help.handle_event(event):
+                continue  # Event was handled by controls help
+
+            # Let save/load menu handle events first if visible
+            if self.save_load_menu.handle_event(event):
+                continue  # Event was handled by save/load menu
+
             # Let research UI handle events first if visible
             if self.research_ui.handle_event(event, self.research, self.resources.money):
                 continue  # Event was handled by research UI
@@ -341,6 +383,28 @@ class Game:
                 # P key to toggle pollution overlay
                 elif event.key == pygame.K_p:
                     self.pollution.toggle_overlay()
+                # F5 key to quick save
+                elif event.key == pygame.K_F5:
+                    self._quick_save()
+                # F9 key to quick load
+                elif event.key == pygame.K_F9:
+                    self._quick_load()
+                # H or F1 key to toggle help overlay
+                elif event.key in (pygame.K_h, pygame.K_F1):
+                    self.controls_help.toggle()
+                    print(f"Controls help: {'opened' if self.controls_help.visible else 'closed'}")
+                # F10 key to open save/load menu
+                elif event.key == pygame.K_F10:
+                    self.save_load_menu.toggle()
+                    # Update save list when opening menu
+                    if self.save_load_menu.visible:
+                        save_list = self.save_manager.get_save_list()
+                        self.save_load_menu.update_save_list(save_list)
+                    print(f"Save/Load menu: {'opened' if self.save_load_menu.visible else 'closed'}")
+                # M key to toggle minimap
+                elif event.key == pygame.K_m:
+                    self.minimap.toggle()
+                    print(f"Minimap: {'visible' if self.minimap.visible else 'hidden'}")
 
             # Mouse motion (for hover effects)
             elif event.type == pygame.MOUSEMOTION:
@@ -352,10 +416,16 @@ class Game:
             # Mouse events
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_x, mouse_y = pygame.mouse.get_pos()
+
+                # Try minimap click first (left click)
+                if event.button == 1:  # Left click
+                    if self.minimap.handle_click(mouse_x, mouse_y, self.camera):
+                        continue  # Minimap handled the click
+
                 # Convert screen coordinates to world coordinates
                 world_x, world_y = self.camera.screen_to_world(mouse_x, mouse_y)
 
-                # Try camera hacking first (left click)
+                # Try camera hacking (left click)
                 if event.button == 1:  # Left click
                     hacked = self.camera_hacking.handle_click(world_x, world_y, self.npcs.game_time)
                     if hacked:
@@ -374,6 +444,9 @@ class Game:
 
     def update(self, dt):
         """Update game logic."""
+        # Handle save/load menu requests
+        self._process_save_load_requests()
+
         # Adjust delta time by game speed
         adjusted_dt = dt * self.game_speed
 
@@ -419,10 +492,14 @@ class Game:
         self.vehicles.update(adjusted_dt)
 
         # Update traffic system (moving vehicles on roads)
-        self.traffic_manager.update(adjusted_dt)
+        # Pass NPCs for pedestrian detection and time for headlights
+        npc_list = self.npcs.npcs if hasattr(self.npcs, 'npcs') else []
+        time_of_day = self.npcs.game_time if hasattr(self.npcs, 'game_time') else 12.0
+        self.traffic_manager.update(adjusted_dt, npcs=npc_list, time_of_day=time_of_day)
 
         # Update bus system (public transportation)
-        self.bus_manager.update(adjusted_dt)
+        # Pass NPCs for boarding/alighting and game_time for scheduling
+        self.bus_manager.update(adjusted_dt, npcs=npc_list, game_time=time_of_day)
 
         # Update prop system (turn lights on/off based on time - placeholder for now)
         # TODO: Integrate with day/night cycle when implemented
@@ -466,11 +543,34 @@ class Game:
         # Update inspection system
         self.inspection.update(adjusted_dt, self.npcs.game_time)
 
+        # Update game time (1 game minute = 1 real second by default)
+        self.time_elapsed += adjusted_dt
+        if self.time_elapsed >= 1.0:  # Every second
+            self.minute += 1
+            self.time_elapsed -= 1.0
+
+            if self.minute >= 60:
+                self.hour += 1
+                self.minute = 0
+
+                if self.hour >= 24:
+                    self.day += 1
+                    self.hour = 0
+                    print(f"\n=== Day {self.day} ===")
+
+                    # Auto-save check (every N days)
+                    game_state = SaveManager.serialize_game_state(self)
+                    self.save_manager.auto_save(game_state, self.day)
+
         # Check if police captured any robots (game over condition)
         captured = self.police.check_captures(self.entities.robots)
         if captured:
             # TODO: Implement game over
             print("⚠️ GAME OVER: Police captured robot!")
+
+        # Update minimap (hover detection)
+        mouse_pos = pygame.mouse.get_pos()
+        self.minimap.update(mouse_pos)
 
     def _handle_robot_input(self):
         """Handle arrow key input for controlling the selected robot."""
@@ -543,7 +643,8 @@ class Game:
 
         # Render HUD (overlays everything)
         self.ui.render(self.screen, self.resources, self.entities, self.clock,
-                      self.power, self.buildings, self.research, self.suspicion)
+                      self.power, self.buildings, self.research, self.suspicion,
+                      day=self.day, hour=self.hour, minute=self.minute)
 
         # Render research UI (if visible)
         self.research_ui.render(self.screen, self.research, self.resources.money)
@@ -551,6 +652,15 @@ class Game:
         # Render inspection UI (warnings, progress, results)
         adjusted_dt = self.clock.get_time() / 1000.0
         self.inspection_ui.render(self.screen, self.inspection, adjusted_dt)
+
+        # Render save/load menu (if visible)
+        self.save_load_menu.render(self.screen)
+
+        # Render controls/help overlay (if visible)
+        self.controls_help.render(self.screen)
+
+        # Render minimap (if visible)
+        self.minimap.render(self.screen, self.grid, self.entities, self.camera, self.buildings)
 
         # Show paused indicator
         if self.paused:
@@ -566,3 +676,91 @@ class Game:
 
         # Update display
         pygame.display.flip()
+
+    def _quick_save(self):
+        """Quick save the game to the quicksave slot."""
+        print("\n=== QUICK SAVE ===")
+        game_state = SaveManager.serialize_game_state(self)
+        success = self.save_manager.quick_save(game_state)
+        if success:
+            print("✓ Quick save successful! (Press F9 to load)")
+        else:
+            print("✗ Quick save failed!")
+
+    def _quick_load(self):
+        """Quick load the game from the quicksave slot."""
+        print("\n=== QUICK LOAD ===")
+        game_state = self.save_manager.quick_load()
+        if game_state:
+            success = SaveManager.deserialize_game_state(self, game_state)
+            if success:
+                print("✓ Quick load successful!")
+            else:
+                print("✗ Failed to restore game state!")
+        else:
+            print("✗ No quicksave found!")
+
+    def save_game(self, save_name: str = None):
+        """
+        Save the game with an optional save name.
+
+        Args:
+            save_name: Name for the save file. If None, uses auto-save.
+        """
+        game_state = SaveManager.serialize_game_state(self)
+        success = self.save_manager.save_game(game_state, save_name)
+        return success
+
+    def load_game(self, save_name: str):
+        """
+        Load a game from a save file.
+
+        Args:
+            save_name: Name of the save file to load.
+
+        Returns:
+            True if load successful, False otherwise
+        """
+        game_state = self.save_manager.load_game(save_name)
+        if game_state:
+            return SaveManager.deserialize_game_state(self, game_state)
+        return False
+
+    def _process_save_load_requests(self):
+        """Process any pending save/load/delete requests from the menu."""
+        # Check for load request
+        load_save_name = self.save_load_menu.get_and_clear_load_request()
+        if load_save_name:
+            print(f"\n=== LOADING GAME: {load_save_name} ===")
+            success = self.load_game(load_save_name)
+            if success:
+                print(f"✓ Game loaded successfully from '{load_save_name}'")
+                self.save_load_menu.hide()
+            else:
+                print(f"✗ Failed to load game from '{load_save_name}'")
+
+        # Check for save request
+        save_name = self.save_load_menu.get_and_clear_save_request()
+        if save_name:
+            print(f"\n=== SAVING GAME: {save_name} ===")
+            success = self.save_game(save_name)
+            if success:
+                print(f"✓ Game saved successfully as '{save_name}'")
+                # Refresh save list
+                save_list = self.save_manager.get_save_list()
+                self.save_load_menu.update_save_list(save_list)
+            else:
+                print(f"✗ Failed to save game as '{save_name}'")
+
+        # Check for delete request
+        delete_save_name = self.save_load_menu.get_and_clear_delete_request()
+        if delete_save_name:
+            print(f"\n=== DELETING SAVE: {delete_save_name} ===")
+            success = self.save_manager.delete_save(delete_save_name)
+            if success:
+                print(f"✓ Save '{delete_save_name}' deleted successfully")
+                # Refresh save list
+                save_list = self.save_manager.get_save_list()
+                self.save_load_menu.update_save_list(save_list)
+            else:
+                print(f"✗ Failed to delete save '{delete_save_name}'")
