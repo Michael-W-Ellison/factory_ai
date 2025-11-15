@@ -1,7 +1,8 @@
 """
-AI Opponent System Test - Demonstrates competitive gameplay.
+AI Opponent System Test - Demonstrates competitive recycling gameplay.
 
-Run this to see AI factories competing against each other in real-time.
+Run this to see AI recycling factories competing against each other in real-time.
+Watch as they make ethical choices between legal and illegal recycling!
 """
 
 import pygame
@@ -23,7 +24,7 @@ def test_ai_opponents():
 
     # Create display
     screen = pygame.display.set_mode((1400, 900))
-    pygame.display.set_caption("Factory AI - Competitive Mode Demo")
+    pygame.display.set_caption("Factory AI - Recycling Competition Demo")
     clock = pygame.time.Clock()
 
     # Create AI opponent manager
@@ -65,10 +66,11 @@ def test_ai_opponents():
     font_small = pygame.font.Font(None, 20)
 
     print("=" * 80)
-    print("AI OPPONENT SYSTEM DEMO")
+    print("AI RECYCLING OPPONENT SYSTEM DEMO")
     print("=" * 80)
     print("\nDemonstrating:")
-    print("  - 4 AI opponents with different personalities")
+    print("  - 4 AI recycling factories with different personalities")
+    print("  - Ethical choices: Legal (green) vs Illegal (profit) recycling")
     print("  - Competitive market with dynamic prices")
     print("  - Real-time decision-making and strategy")
     print("  - Rankings and leaderboard")
@@ -125,7 +127,7 @@ def test_ai_opponents():
         screen.fill((30, 30, 40))
 
         # Draw title
-        title = font_large.render("AI Opponent Competition", True, (255, 255, 255))
+        title = font_large.render("AI Recycling Competition", True, (255, 255, 255))
         screen.blit(title, (screen.get_width()//2 - title.get_width()//2, 20))
 
         # Draw status
@@ -228,7 +230,7 @@ def test_ai_opponents():
         pygame.display.flip()
 
     pygame.quit()
-    print("\nAI opponent demo completed!")
+    print("\nAI recycling competition demo completed!")
     print(f"Final statistics: {ai_manager.get_statistics()}")
 
 

@@ -230,6 +230,9 @@ class OpponentDetailPanel:
         y_offset = 70
 
         # Stats
+        recycling_mode = "ILLEGAL" if opponent_stats.get('recycling_illegal_materials', False) else "Legal"
+        recycling_color = (255, 100, 100) if opponent_stats.get('recycling_illegal_materials', False) else (100, 255, 100)
+
         stats = [
             ("Money", f"${opponent_stats.get('money', 0):,}"),
             ("Net Worth", f"${opponent_stats.get('net_worth', 0):,}"),
@@ -238,6 +241,7 @@ class OpponentDetailPanel:
             ("Workstations", str(opponent_stats.get('workstations', 0))),
             ("Tech Level", str(opponent_stats.get('technology_level', 1))),
             ("Market Share", f"{opponent_stats.get('market_share', 0) * 100:.1f}%"),
+            ("Green Rep.", f"{opponent_stats.get('green_reputation', 100):.0f}%"),
             ("Heat Level", f"{opponent_stats.get('heat_level', 0):.0f}"),
         ]
 
@@ -250,10 +254,14 @@ class OpponentDetailPanel:
 
             y_offset += 25
 
+        # Recycling mode indicator
+        mode_text = self.font_normal.render(f"Mode: {recycling_mode}", True, recycling_color)
+        panel_surface.blit(mode_text, (20, y_offset + 10))
+
         # Current goal
         goal = opponent_stats.get('current_goal', 'unknown')
         goal_text = self.font_small.render(f"Goal: {goal.replace('_', ' ').title()}", True, (100, 200, 255))
-        panel_surface.blit(goal_text, (20, y_offset + 10))
+        panel_surface.blit(goal_text, (20, y_offset + 35))
 
         surface.blit(panel_surface, (self.x, self.y))
 

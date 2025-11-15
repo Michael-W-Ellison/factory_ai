@@ -80,14 +80,14 @@ class AIOpponentManager:
     def _spawn_opponents(self):
         """Spawn AI opponents with varied personalities."""
         company_names = [
-            "TechCorp Industries",
-            "Global Manufacturing Co.",
-            "Precision Products Ltd.",
-            "Mega Factory Systems",
-            "Elite Production Inc.",
-            "Advanced Fabrication Co.",
-            "Superior Goods Corp.",
-            "Premier Manufacturing",
+            "GreenCycle Solutions",
+            "EcoReclaim Industries",
+            "Salvage Masters Inc.",
+            "Planet Renewal Corp.",
+            "ResourceReborn Ltd.",
+            "CleanTech Recyclers",
+            "SecondLife Materials Co.",
+            "Sustainable Recovery Systems",
         ]
 
         random.shuffle(company_names)
@@ -159,7 +159,7 @@ class AIOpponentManager:
         self.demand_level = max(0.5, min(2.0, self.demand_level))
 
         # Price follows supply/demand
-        total_inventory = sum(opp.inventory for opp in self.opponents)
+        total_inventory = sum(opp.materials_inventory for opp in self.opponents)
         supply_pressure = total_inventory / max(1, self.total_market_size)
 
         # High supply = lower prices, low supply = higher prices
