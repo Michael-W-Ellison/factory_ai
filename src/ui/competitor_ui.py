@@ -234,7 +234,7 @@ class OpponentDetailPanel:
             ("Money", f"${opponent_stats.get('money', 0):,}"),
             ("Net Worth", f"${opponent_stats.get('net_worth', 0):,}"),
             ("Profit", f"${opponent_stats.get('profit', 0):,}"),
-            ("Workers", str(opponent_stats.get('workers', 0))),
+            ("Robots", str(opponent_stats.get('robots', 0))),
             ("Workstations", str(opponent_stats.get('workstations', 0))),
             ("Tech Level", str(opponent_stats.get('technology_level', 1))),
             ("Market Share", f"{opponent_stats.get('market_share', 0) * 100:.1f}%"),

@@ -45,7 +45,7 @@ def test_ai_opponents():
         'money': 50000,
         'net_worth': 50000,
         'profit': 0,
-        'workers': 2,
+        'robots': 2,
         'workstations': 1,
         'technology_level': 1,
         'market_share': 0.0,
@@ -167,13 +167,13 @@ def test_ai_opponents():
         # Get max values for scaling
         all_factories = [player_factory] + [opp.get_statistics() for opp in ai_manager.opponents]
         max_money = max(f.get('money', f.get('net_worth', 1)) for f in all_factories)
-        max_workers = max(f.get('workers', 1) for f in all_factories)
+        max_robots = max(f.get('robots', 1) for f in all_factories)
         max_workstations = max(f.get('workstations', 1) for f in all_factories)
 
         for i, factory in enumerate(all_factories):
             name = factory.get('name', 'Unknown')
             money = factory.get('money', factory.get('net_worth', 0))
-            workers = factory.get('workers', 0)
+            robots = factory.get('robots', 0)
             workstations = factory.get('workstations', 0)
 
             is_player = (name == "Player")
@@ -193,7 +193,7 @@ def test_ai_opponents():
             screen.blit(value_text, (viz_x + 220, bar_y + i * bar_spacing + 12))
 
             # Stats
-            stats_text = font_small.render(f"W:{workers} | M:{workstations}", True, (200, 200, 200))
+            stats_text = font_small.render(f"R:{robots} | M:{workstations}", True, (200, 200, 200))
             screen.blit(stats_text, (viz_x + viz_width - 150, bar_y + i * bar_spacing + 12))
 
         # Draw instructions

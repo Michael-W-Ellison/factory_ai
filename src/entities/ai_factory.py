@@ -32,7 +32,7 @@ class AIGoal(Enum):
 class AIDecision(Enum):
     """AI decision types."""
     BUILD_WORKSTATION = "build_workstation"
-    HIRE_WORKER = "hire_worker"
+    HIRE_ROBOT = "hire_robot"
     UPGRADE_MACHINE = "upgrade_machine"
     INCREASE_PRODUCTION = "increase_production"
     DECREASE_PRODUCTION = "decrease_production"
@@ -67,7 +67,7 @@ class AIFactory:
 
         # Resources
         self.money = starting_money
-        self.workers = 2  # Start with 2 workers
+        self.robots = 2  # Start with 2 robots
         self.workstations = 1  # Start with 1 workstation
         self.technology_level = 1  # Tech level for upgrades
 
@@ -188,7 +188,7 @@ class AIFactory:
             'police_threat': police_activity > 0.7,
             'heat_critical': self.heat_level > 70,
             'inventory_high': self.inventory > 50,
-            'workers_needed': self.workstations > self.workers,
+            'robots_needed': self.workstations > self.robots,
             'expansion_viable': self.money > 50000 and self.market_share < 0.4,
         }
 
@@ -212,7 +212,7 @@ class AIFactory:
         # Personality-based decisions
         if self.personality == AIPersonality.AGGRESSIVE:
             if situation['expansion_viable'] and random.random() < 0.7:
-                return random.choice([AIDecision.BUILD_WORKSTATION, AIDecision.HIRE_WORKER])
+                return random.choice([AIDecision.BUILD_WORKSTATION, AIDecision.HIRE_ROBOT])
             elif situation['inventory_high']:
                 return AIDecision.INCREASE_PRODUCTION
             else:
@@ -223,8 +223,8 @@ class AIFactory:
                 return AIDecision.HIDE_OPERATION
             elif self.money < 30000:
                 return AIDecision.SAVE_MONEY
-            elif situation['workers_needed']:
-                return AIDecision.HIRE_WORKER
+            elif situation['robots_needed']:
+                return AIDecision.HIRE_ROBOT
             else:
                 return AIDecision.INCREASE_PRODUCTION if random.random() < 0.5 else AIDecision.SAVE_MONEY
 
@@ -250,8 +250,8 @@ class AIFactory:
             # Weighted random choice based on situation
             if situation['expansion_viable'] and random.random() < 0.5:
                 return AIDecision.BUILD_WORKSTATION
-            elif situation['workers_needed'] and random.random() < 0.6:
-                return AIDecision.HIRE_WORKER
+            elif situation['robots_needed'] and random.random() < 0.6:
+                return AIDecision.HIRE_ROBOT
             elif situation['inventory_high']:
                 return AIDecision.SELL_PRODUCTS
             else:
@@ -273,11 +273,11 @@ class AIFactory:
                 self.total_expenses += cost
                 self.heat_level += 10  # Building attracts attention
 
-        elif decision == AIDecision.HIRE_WORKER:
-            cost = 5000  # Hiring cost
+        elif decision == AIDecision.HIRE_ROBOT:
+            cost = 8000  # Robot purchase cost
             if self.money >= cost:
                 self.money -= cost
-                self.workers += 1
+                self.robots += 1
                 self.total_expenses += cost
 
         elif decision == AIDecision.UPGRADE_MACHINE:
@@ -393,7 +393,7 @@ class AIFactory:
         """Calculate net worth of factory."""
         asset_value = (
             self.workstations * 25000 +
-            self.workers * 3000 +
+            self.robots * 5000 +
             self.technology_level * 30000 +
             self.inventory * 800
         )
@@ -411,7 +411,7 @@ class AIFactory:
             'money': self.money,
             'net_worth': self.get_net_worth(),
             'profit': self.get_profit(),
-            'workers': self.workers,
+            'robots': self.robots,
             'workstations': self.workstations,
             'technology_level': self.technology_level,
             'production_rate': self.production_rate,
