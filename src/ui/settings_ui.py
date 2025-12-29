@@ -500,14 +500,15 @@ class SettingsUI:
         key_bindings = self.settings.get('controls', 'key_bindings', {})
 
         binding_configs = [
-            ('move_up', 'Move Up'),
-            ('move_down', 'Move Down'),
-            ('move_left', 'Move Left'),
-            ('move_right', 'Move Right'),
+            ('camera_up', 'Pan Up'),
+            ('camera_down', 'Pan Down'),
+            ('camera_left', 'Pan Left'),
+            ('camera_right', 'Pan Right'),
             ('pause', 'Pause'),
             ('building_menu', 'Building Menu'),
             ('research_menu', 'Research Menu'),
             ('map_menu', 'Map/Minimap'),
+            ('settings_menu', 'Settings'),
             ('help_menu', 'Help'),
             ('quick_save', 'Quick Save'),
             ('quick_load', 'Quick Load'),
@@ -533,9 +534,9 @@ class SettingsUI:
                    format_func=lambda v: f"{v:.1f}x")
         )
 
-        # Scroll speed slider
+        # Camera/scroll speed slider
         self.widgets[SettingsTab.CONTROLS].append(
-            Slider(content_x, content_y + 370, 250, "Scroll Speed",
+            Slider(content_x, content_y + 370, 250, "Camera Speed",
                    0.1, 3.0, self.settings.get('controls', 'scroll_speed', 1.0),
                    on_change=lambda v: self._on_setting_change('controls', 'scroll_speed', v),
                    format_func=lambda v: f"{v:.1f}x")

@@ -67,11 +67,13 @@ class ControlsHelp:
                 ("Mouse Edge", "Move camera to screen edges"),
             ]),
 
-            ("Robot Controls", [
-                ("Left Click", "Select robot"),
-                ("Arrow Keys", "Move selected robot (manual mode)"),
-                ("R (on robot)", "Toggle autonomous/manual mode"),
+            ("Robot Selection & Orders", [
+                ("Left Click", "Select robot or click to issue move order"),
+                ("Right Click", "Issue move/action order to selected robots"),
+                ("Ctrl + Click", "Add robot to selection"),
+                ("Click + Drag", "Box select multiple robots"),
                 ("1-9", "Quick select robot by number"),
+                ("Tab", "Cycle through robots"),
             ]),
 
             ("Building Controls", [
@@ -112,10 +114,10 @@ class ControlsHelp:
             ]),
 
             ("Advanced", [
-                ("Tab", "Cycle through robots"),
-                ("Ctrl + Click", "Add to selection"),
                 ("Shift + Click", "Queue commands"),
-                ("Alt + Click", "Special action (context-dependent)"),
+                ("Double Click", "Select all robots of same type"),
+                ("Ctrl + 1-9", "Assign control group"),
+                ("A", "Attack move (move and engage threats)"),
             ]),
 
             ("Debug (if enabled)", [

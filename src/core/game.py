@@ -473,11 +473,8 @@ class Game:
         # Adjust delta time by game speed
         adjusted_dt = dt * self.game_speed
 
-        # Handle robot movement input
-        self._handle_robot_input()
-
-        # Update camera
-        self.camera.update(adjusted_dt)
+        # Update camera (handles WASD/arrow key movement)
+        self.camera.update(adjusted_dt, self.settings_manager)
 
         # Update grid
         self.grid.update(adjusted_dt)
@@ -613,35 +610,6 @@ class Game:
         bound_key = key_bindings[action].upper()
         pressed_key = pygame.key.name(event.key).upper()
         return bound_key == pressed_key
-
-    def _handle_robot_input(self):
-        """Handle arrow key input for controlling the selected robot."""
-        if not self.entities.selected_robot:
-            return
-
-        keys = pygame.key.get_pressed()
-        key_bindings = self.settings_manager.get('controls', 'key_bindings', {})
-        dx, dy = 0, 0
-
-        # Check custom WASD bindings and arrow keys
-        move_up_key = getattr(pygame, f"K_{key_bindings.get('move_up', 'W').lower()}", pygame.K_w)
-        move_down_key = getattr(pygame, f"K_{key_bindings.get('move_down', 'S').lower()}", pygame.K_s)
-        move_left_key = getattr(pygame, f"K_{key_bindings.get('move_left', 'A').lower()}", pygame.K_a)
-        move_right_key = getattr(pygame, f"K_{key_bindings.get('move_right', 'D').lower()}", pygame.K_d)
-
-        # Custom bindings and arrow keys for robot movement
-        if keys[pygame.K_UP] or keys[move_up_key]:
-            dy = -1
-        if keys[pygame.K_DOWN] or keys[move_down_key]:
-            dy = 1
-        if keys[pygame.K_LEFT] or keys[move_left_key]:
-            dx = -1
-        if keys[pygame.K_RIGHT] or keys[move_right_key]:
-            dx = 1
-
-        # Set robot velocity
-        if dx != 0 or dy != 0:
-            self.entities.selected_robot.move(dx, dy)
 
     def render(self):
         """Render game to screen."""

@@ -45,28 +45,44 @@ class Camera:
         self.max_x = max(0, world_width - self.width)
         self.max_y = max(0, world_height - self.height)
 
-    def update(self, dt):
+    def update(self, dt, settings_manager=None):
         """
         Update camera position based on input.
 
         Args:
             dt (float): Delta time in seconds
+            settings_manager: Optional SettingsManager for custom key bindings
         """
         # Get keyboard state
         keys = pygame.key.get_pressed()
 
-        # Calculate movement
+        # Get custom key bindings or use defaults
+        if settings_manager:
+            key_bindings = settings_manager.get('controls', 'key_bindings', {})
+            scroll_speed = settings_manager.get('controls', 'scroll_speed', 1.0)
+        else:
+            key_bindings = {}
+            scroll_speed = 1.0
+
+        # Get custom camera keys (with fallbacks to WASD)
+        pan_up_key = self._get_key_code(key_bindings.get('camera_up', 'W'))
+        pan_down_key = self._get_key_code(key_bindings.get('camera_down', 'S'))
+        pan_left_key = self._get_key_code(key_bindings.get('camera_left', 'A'))
+        pan_right_key = self._get_key_code(key_bindings.get('camera_right', 'D'))
+
+        # Calculate movement with speed multiplier
+        effective_speed = self.speed * scroll_speed
         move_x = 0
         move_y = 0
 
-        if keys[pygame.K_w] or keys[pygame.K_UP]:
-            move_y -= self.speed * dt
-        if keys[pygame.K_s] or keys[pygame.K_DOWN]:
-            move_y += self.speed * dt
-        if keys[pygame.K_a] or keys[pygame.K_LEFT]:
-            move_x -= self.speed * dt
-        if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
-            move_x += self.speed * dt
+        if keys[pan_up_key] or keys[pygame.K_UP]:
+            move_y -= effective_speed * dt
+        if keys[pan_down_key] or keys[pygame.K_DOWN]:
+            move_y += effective_speed * dt
+        if keys[pan_left_key] or keys[pygame.K_LEFT]:
+            move_x -= effective_speed * dt
+        if keys[pan_right_key] or keys[pygame.K_RIGHT]:
+            move_x += effective_speed * dt
 
         # Apply movement
         self.x += move_x
@@ -75,6 +91,13 @@ class Camera:
         # Clamp to bounds
         self.x = max(0, min(self.x, self.max_x))
         self.y = max(0, min(self.y, self.max_y))
+
+    def _get_key_code(self, key_name: str) -> int:
+        """Convert key name to pygame key code."""
+        if not key_name:
+            return pygame.K_UNKNOWN
+        key_attr = f"K_{key_name.lower()}"
+        return getattr(pygame, key_attr, pygame.K_UNKNOWN)
 
     def world_to_screen(self, world_x, world_y):
         """
