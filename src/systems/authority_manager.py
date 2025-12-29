@@ -34,12 +34,22 @@ class InvestigationType(Enum):
 class GameEnding(Enum):
     """Possible game ending scenarios."""
     NONE = 0
-    LEGITIMATE_SUCCESS = 1  # Clean business, low suspicion, profitable
-    FBI_RAID = 2           # Caught by FBI raid
-    BANKRUPTCY = 3         # Ran out of money
-    ESCAPE = 4             # Player fled before capture
-    PLEA_DEAL = 5          # Negotiated with authorities
-    INSPECTOR_FAILURE = 6  # Failed critical inspection (already handled)
+    # Positive endings (victory)
+    LEGITIMATE_SUCCESS = 1   # Clean business, low suspicion, profitable
+    PERFECT_CLEANUP = 2      # Environmental Hero - perfect run
+    EFFICIENT_OPERATOR = 3   # Completed efficiently with minor issues
+    ECO_WARRIOR = 4          # Environmental focus, renewable energy
+    CRIMINAL_MASTERMIND = 5  # High illegal profit, evaded all authorities
+    SPEED_DEMON = 6          # Fast completion with high risk
+    SLOW_AND_STEADY = 7      # Safe approach, took time
+    MORALLY_FLEXIBLE = 8     # Maximized profits through "creative" methods
+    URBAN_RECYCLER = 9       # Aggressive city material collection
+    # Negative endings (failure)
+    FBI_RAID = 10            # Caught by FBI raid
+    BANKRUPTCY = 11          # Ran out of money
+    ESCAPE = 12              # Player fled before capture
+    PLEA_DEAL = 13           # Negotiated with authorities
+    INSPECTOR_FAILURE = 14   # Failed critical inspection
 
 
 class AuthorityManager:
@@ -296,6 +306,240 @@ class AuthorityManager:
                 GameEnding.INSPECTOR_FAILURE,
                 self.inspection.game_over_reason
             )
+
+    def check_victory_conditions(self, scoring_manager, game_time: float) -> bool:
+        """
+        Check if player has achieved a victory condition.
+
+        This should be called when the landfill is cleared or other
+        victory triggers occur.
+
+        Args:
+            scoring_manager: ScoringManager instance with game stats
+            game_time: Current game time in seconds
+
+        Returns:
+            bool: True if a victory ending was triggered
+        """
+        if self.game_ending != GameEnding.NONE:
+            return False  # Already ended
+
+        stats = scoring_manager.stats
+
+        # Check if landfill is cleared (primary victory condition)
+        if stats['landfill_cleared_percent'] < 100.0:
+            return False  # Not complete yet
+
+        # Determine which victory ending to award based on playstyle
+        ending = self._evaluate_victory_ending(stats, game_time)
+
+        if ending != GameEnding.NONE:
+            self._trigger_victory_ending(ending, stats, game_time)
+            return True
+
+        return False
+
+    def _evaluate_victory_ending(self, stats: dict, game_time: float) -> GameEnding:
+        """
+        Evaluate which victory ending the player has earned.
+
+        Endings are checked in order of priority (best to worst).
+
+        Args:
+            stats: Player statistics from scoring_manager
+            game_time: Current game time
+
+        Returns:
+            GameEnding: The appropriate ending type
+        """
+        suspicion_level = self.suspicion.suspicion_level
+        max_suspicion = stats['max_suspicion']
+        illegal_processed = stats['illegal_materials_processed']
+        city_materials = stats['city_materials_collected']
+        game_days = game_time / (24 * 3600)  # Convert to days
+        violations = stats['violations_count']
+        fines = stats['fines_paid']
+        renewable_ratio = (stats['renewable_energy_used'] / max(1, stats['total_energy_used']))
+        litter_cleaned = stats['litter_cleaned']
+        high_risk_ops = stats['high_risk_operations']
+        money = self.resources.money
+
+        # PERFECT_CLEANUP - Environmental Hero (hardest to achieve)
+        # No violations, no fines, low suspicion, 100% landfill cleared
+        if (violations == 0 and fines == 0 and
+            max_suspicion == 0 and suspicion_level == 0 and
+            not self.fbi_investigation_active):
+            return GameEnding.PERFECT_CLEANUP
+
+        # CRIMINAL_MASTERMIND - High illegal profits, evaded all authorities
+        # High illegal materials, no FBI raid, high profit
+        if (illegal_processed >= 10000 and
+            not self.fbi_investigation_active and
+            money >= 500000):
+            return GameEnding.CRIMINAL_MASTERMIND
+
+        # ECO_WARRIOR - Environmental focus
+        # High renewable energy usage, lots of litter cleaned, low pollution
+        if (renewable_ratio >= 0.8 and
+            litter_cleaned >= 5000 and
+            stats['air_pollution_total'] < 1000):
+            return GameEnding.ECO_WARRIOR
+
+        # SPEED_DEMON - Fast completion with high risk
+        # Completed in under 15 game days
+        if game_days <= 15 and high_risk_ops >= 10:
+            return GameEnding.SPEED_DEMON
+
+        # MORALLY_FLEXIBLE - Maximized profits through creative methods
+        # High illegal materials but passed all inspections
+        if (illegal_processed >= 1000 and illegal_processed < 10000 and
+            stats['inspections_failed'] == 0 and
+            money >= 200000):
+            return GameEnding.MORALLY_FLEXIBLE
+
+        # URBAN_RECYCLER - Aggressive city material collection
+        # 30-70% of materials from city
+        total_materials = stats['materials_collected']
+        city_ratio = city_materials / max(1, total_materials)
+        if 0.3 <= city_ratio <= 0.7 and money > 0:
+            return GameEnding.URBAN_RECYCLER
+
+        # SLOW_AND_STEADY - Safe approach, took time
+        # Suspicion never above 20, minimal risk
+        if (stats['suspicion_never_above_20'] and
+            high_risk_ops < 5 and
+            game_days >= 60):
+            return GameEnding.SLOW_AND_STEADY
+
+        # EFFICIENT_OPERATOR - Good efficiency with minor issues
+        # Good completion, some violations but recovered
+        if (violations <= 3 and
+            stats['inspections_passed'] > stats['inspections_failed'] and
+            money > 50000):
+            return GameEnding.EFFICIENT_OPERATOR
+
+        # LEGITIMATE_SUCCESS - Default positive ending
+        # Clean business, low suspicion, profitable
+        if (suspicion_level < 50 and
+            money > 0 and
+            not self.fbi_investigation_active):
+            return GameEnding.LEGITIMATE_SUCCESS
+
+        # If somehow none of the above matched but landfill is complete
+        return GameEnding.LEGITIMATE_SUCCESS
+
+    def _trigger_victory_ending(self, ending: GameEnding, stats: dict, game_time: float):
+        """
+        Trigger a victory ending with appropriate messaging.
+
+        Args:
+            ending: The victory ending type
+            stats: Player statistics
+            game_time: Current game time
+        """
+        ending_info = {
+            GameEnding.PERFECT_CLEANUP: {
+                'title': '🌟 ENVIRONMENTAL HERO 🌟',
+                'description': 'Perfect cleanup with no incidents!',
+                'details': 'You completed the landfill cleanup perfectly. '
+                          'No violations, no fines, no suspicion. '
+                          'The city praises your efficiency and ethics.',
+            },
+            GameEnding.CRIMINAL_MASTERMIND: {
+                'title': '🎭 CRIMINAL MASTERMIND 🎭',
+                'description': 'Maximum profit, zero consequences!',
+                'details': 'You processed massive amounts of illegal materials '
+                          'while evading all authorities. '
+                          'The FBI never caught on. Impressive... and concerning.',
+            },
+            GameEnding.ECO_WARRIOR: {
+                'title': '🌱 ECO WARRIOR 🌱',
+                'description': 'Champion of the environment!',
+                'details': 'You cleaned the landfill using renewable energy '
+                          'and even cleaned up city litter. '
+                          'The environment thanks you.',
+            },
+            GameEnding.SPEED_DEMON: {
+                'title': '⚡ SPEED DEMON ⚡',
+                'description': 'Blazing fast completion!',
+                'details': 'You completed the cleanup in record time. '
+                          'High risk, high reward gameplay. '
+                          'The city is impressed by your efficiency.',
+            },
+            GameEnding.MORALLY_FLEXIBLE: {
+                'title': '💼 MORALLY FLEXIBLE ENTREPRENEUR 💼',
+                'description': 'Creative interpretation of regulations!',
+                'details': 'You maximized profits through creative methods '
+                          'while somehow passing every inspection. '
+                          'Clever business practices indeed.',
+            },
+            GameEnding.URBAN_RECYCLER: {
+                'title': '🏙️ URBAN MINING SPECIALIST 🏙️',
+                'description': 'Aggressive but effective!',
+                'details': 'You aggressively recycled city infrastructure '
+                          'while managing the heat from authorities. '
+                          'A bold strategy that paid off.',
+            },
+            GameEnding.SLOW_AND_STEADY: {
+                'title': '🐢 SLOW AND STEADY 🐢',
+                'description': 'Safe approach wins the race!',
+                'details': 'You took your time and played it safe. '
+                          'The landfill is clean, and you avoided all trouble. '
+                          'Patience is a virtue.',
+            },
+            GameEnding.EFFICIENT_OPERATOR: {
+                'title': '⚙️ EFFICIENT OPERATOR ⚙️',
+                'description': 'Job well done!',
+                'details': 'You cleaned the landfill efficiently with minimal issues. '
+                          'Some bumps along the way, but you recovered well. '
+                          'A solid performance.',
+            },
+            GameEnding.LEGITIMATE_SUCCESS: {
+                'title': '🏆 LEGITIMATE SUCCESS 🏆',
+                'description': 'Clean business victory!',
+                'details': 'You completed the cleanup through legitimate means. '
+                          'Low suspicion, positive profit, no FBI involvement. '
+                          'A respectable achievement.',
+            },
+        }
+
+        info = ending_info.get(ending, {
+            'title': '🏆 VICTORY 🏆',
+            'description': 'Landfill cleanup complete!',
+            'details': 'You have successfully completed the landfill cleanup.',
+        })
+
+        game_days = game_time / (24 * 3600)
+
+        print(f"\n{'='*60}")
+        print(f"{info['title']}")
+        print(f"{'='*60}")
+        print(f"\n{info['description']}")
+        print(f"\n{info['details']}")
+        print(f"\n--- Statistics ---")
+        print(f"  Time: {game_days:.1f} game days")
+        print(f"  Money: ${self.resources.money:,.0f}")
+        print(f"  Materials Processed: {stats['materials_processed']:,.0f}")
+        print(f"  Max Suspicion: {stats['max_suspicion']:.0f}")
+        print(f"  Inspections: {stats['inspections_passed']} passed, {stats['inspections_failed']} failed")
+        print(f"\n{'='*60}")
+        print(f"GAME COMPLETE!")
+        print(f"{'='*60}")
+
+        self._trigger_ending(ending, info['description'])
+
+    def trigger_landfill_complete(self, scoring_manager, game_time: float):
+        """
+        Called when the landfill is 100% cleared.
+
+        This is the primary trigger for positive victory endings.
+
+        Args:
+            scoring_manager: ScoringManager instance
+            game_time: Current game time
+        """
+        scoring_manager.update_landfill_progress(100.0)
+        self.check_victory_conditions(scoring_manager, game_time)
 
     def attempt_bribe(self, amount: int = 10000) -> bool:
         """
