@@ -90,6 +90,7 @@ class ControlsHelp:
             ]),
 
             ("Menus & UI", [
+                ("O", "Open/Close settings menu"),
                 ("R", "Open/Close research menu"),
                 ("I", "Open/Close inventory"),
                 ("M", "Toggle minimap"),

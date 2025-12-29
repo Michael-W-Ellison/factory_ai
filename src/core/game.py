@@ -40,6 +40,8 @@ from src.systems.save_manager import SaveManager
 from src.ui.save_load_menu import SaveLoadMenu
 from src.ui.controls_help import ControlsHelp
 from src.ui.minimap import Minimap
+from src.ui.settings_manager import SettingsManager
+from src.ui.settings_ui import SettingsUI
 
 
 class Game:
@@ -168,6 +170,14 @@ class Game:
         # Initialize minimap
         self.minimap = Minimap(config.SCREEN_WIDTH, config.SCREEN_HEIGHT,
                               config.WORLD_WIDTH, config.WORLD_HEIGHT)
+
+        # Initialize settings system
+        self.settings_manager = SettingsManager()
+        self.settings_ui = SettingsUI(config.SCREEN_WIDTH, config.SCREEN_HEIGHT,
+                                       self.settings_manager)
+
+        # Apply initial game speed from settings
+        self.game_speed = self.settings_manager.get('gameplay', 'game_speed', 1.0)
 
         # Game statistics tracking
         self.stats = {
@@ -347,6 +357,12 @@ class Game:
     def handle_events(self):
         """Process user input and system events."""
         for event in pygame.event.get():
+            # Let settings UI handle events first if visible
+            if self.settings_ui.handle_event(event):
+                # Update game speed if changed in settings
+                self.game_speed = self.settings_manager.get('gameplay', 'game_speed', 1.0)
+                continue  # Event was handled by settings UI
+
             # Let controls help handle events first if visible
             if self.controls_help.handle_event(event):
                 continue  # Event was handled by controls help
@@ -365,32 +381,39 @@ class Game:
 
             # Keyboard events
             elif event.type == pygame.KEYDOWN:
-                # ESC to quit
+                # Get key bindings from settings
+                key_bindings = self.settings_manager.get('controls', 'key_bindings', {})
+
+                # ESC to open pause menu / quit (if no menu open)
                 if event.key == pygame.K_ESCAPE:
                     self.running = False
                 # Space to pause
                 elif event.key == pygame.K_SPACE:
                     self.paused = not self.paused
                     print(f"Game {'paused' if self.paused else 'resumed'}")
+                # O key to open settings menu
+                elif event.key == pygame.K_o:
+                    self.settings_ui.toggle()
+                    print(f"Settings menu: {'opened' if self.settings_ui.visible else 'closed'}")
                 # Toggle grid display with G key
                 elif event.key == pygame.K_g:
                     config.SHOW_GRID = not config.SHOW_GRID
                     print(f"Grid display: {'ON' if config.SHOW_GRID else 'OFF'}")
-                # R key to open research menu
-                elif event.key == pygame.K_r:
+                # R key to open research menu (check settings binding)
+                elif event.key == pygame.K_r or self._check_key_binding(event, key_bindings, 'research_menu'):
                     self.research_ui.toggle()
                     print(f"Research menu: {'opened' if self.research_ui.visible else 'closed'}")
                 # P key to toggle pollution overlay
                 elif event.key == pygame.K_p:
                     self.pollution.toggle_overlay()
-                # F5 key to quick save
-                elif event.key == pygame.K_F5:
+                # F5 key to quick save (check settings binding)
+                elif event.key == pygame.K_F5 or self._check_key_binding(event, key_bindings, 'quick_save'):
                     self._quick_save()
-                # F9 key to quick load
-                elif event.key == pygame.K_F9:
+                # F9 key to quick load (check settings binding)
+                elif event.key == pygame.K_F9 or self._check_key_binding(event, key_bindings, 'quick_load'):
                     self._quick_load()
-                # H or F1 key to toggle help overlay
-                elif event.key in (pygame.K_h, pygame.K_F1):
+                # H or F1 key to toggle help overlay (check settings binding)
+                elif event.key in (pygame.K_h, pygame.K_F1) or self._check_key_binding(event, key_bindings, 'help_menu'):
                     self.controls_help.toggle()
                     print(f"Controls help: {'opened' if self.controls_help.visible else 'closed'}")
                 # F10 key to open save/load menu
@@ -401,8 +424,8 @@ class Game:
                         save_list = self.save_manager.get_save_list()
                         self.save_load_menu.update_save_list(save_list)
                     print(f"Save/Load menu: {'opened' if self.save_load_menu.visible else 'closed'}")
-                # M key to toggle minimap
-                elif event.key == pygame.K_m:
+                # M key to toggle minimap (check settings binding)
+                elif event.key == pygame.K_m or self._check_key_binding(event, key_bindings, 'map_menu'):
                     self.minimap.toggle()
                     print(f"Minimap: {'visible' if self.minimap.visible else 'hidden'}")
 
@@ -572,22 +595,48 @@ class Game:
         mouse_pos = pygame.mouse.get_pos()
         self.minimap.update(mouse_pos)
 
+    def _check_key_binding(self, event, key_bindings: dict, action: str) -> bool:
+        """
+        Check if a key event matches a custom key binding.
+
+        Args:
+            event: Pygame key event
+            key_bindings: Dictionary of action -> key name
+            action: Action name to check
+
+        Returns:
+            True if the event matches the binding
+        """
+        if action not in key_bindings:
+            return False
+
+        bound_key = key_bindings[action].upper()
+        pressed_key = pygame.key.name(event.key).upper()
+        return bound_key == pressed_key
+
     def _handle_robot_input(self):
         """Handle arrow key input for controlling the selected robot."""
         if not self.entities.selected_robot:
             return
 
         keys = pygame.key.get_pressed()
+        key_bindings = self.settings_manager.get('controls', 'key_bindings', {})
         dx, dy = 0, 0
 
-        # Arrow keys for robot movement
-        if keys[pygame.K_UP]:
+        # Check custom WASD bindings and arrow keys
+        move_up_key = getattr(pygame, f"K_{key_bindings.get('move_up', 'W').lower()}", pygame.K_w)
+        move_down_key = getattr(pygame, f"K_{key_bindings.get('move_down', 'S').lower()}", pygame.K_s)
+        move_left_key = getattr(pygame, f"K_{key_bindings.get('move_left', 'A').lower()}", pygame.K_a)
+        move_right_key = getattr(pygame, f"K_{key_bindings.get('move_right', 'D').lower()}", pygame.K_d)
+
+        # Custom bindings and arrow keys for robot movement
+        if keys[pygame.K_UP] or keys[move_up_key]:
             dy = -1
-        if keys[pygame.K_DOWN]:
+        if keys[pygame.K_DOWN] or keys[move_down_key]:
             dy = 1
-        if keys[pygame.K_LEFT]:
+        if keys[pygame.K_LEFT] or keys[move_left_key]:
             dx = -1
-        if keys[pygame.K_RIGHT]:
+        if keys[pygame.K_RIGHT] or keys[move_right_key]:
             dx = 1
 
         # Set robot velocity
@@ -661,6 +710,9 @@ class Game:
 
         # Render minimap (if visible)
         self.minimap.render(self.screen, self.grid, self.entities, self.camera, self.buildings)
+
+        # Render settings UI (if visible)
+        self.settings_ui.render(self.screen)
 
         # Show paused indicator
         if self.paused:
