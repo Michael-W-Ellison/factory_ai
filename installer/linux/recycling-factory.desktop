@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Recycling Factory
+GenericName=Factory Management Game
+Comment=AI-controlled automated recycling factory management game
+Exec=RecyclingFactory
+Icon=recycling-factory
+Terminal=false
+Categories=Game;Simulation;StrategyGame;
+Keywords=factory;recycling;management;simulation;robots;
+StartupNotify=true
+StartupWMClass=RecyclingFactory

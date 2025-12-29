@@ -174,6 +174,50 @@ DEBUG_MODE = True
 
 ---
 
+## Building Standalone Executables
+
+### Quick Build
+
+```bash
+# Install build dependencies
+pip install -r requirements-dev.txt
+
+# Build standalone executable
+python build.py
+```
+
+The executable will be created at `dist/RecyclingFactory` (Linux/Mac) or `dist/RecyclingFactory.exe` (Windows).
+
+### Build Options
+
+| Command | Description |
+|---------|-------------|
+| `python build.py` | Single-file executable (~18 MB) |
+| `python build.py --onedir` | Directory build (faster, ~42 MB) |
+| `python build.py --debug` | With console window for debugging |
+| `python build.py --clean` | Remove build artifacts |
+
+### Creating Installers
+
+```bash
+# Build executable + platform installer
+python build_installer.py
+
+# Build installer only (if executable exists)
+python build_installer.py --installer-only
+```
+
+**Windows:** Creates `dist/installer/RecyclingFactory_Setup_1.0.0.exe` (requires [Inno Setup](https://jrsoftware.org/isdl.php))
+
+**Linux:** Creates `dist/RecyclingFactory_Linux.tar.gz` with desktop integration:
+```bash
+tar -xzf RecyclingFactory_Linux.tar.gz
+cd RecyclingFactory_Linux
+./install.sh
+```
+
+---
+
 ## Development
 
 ### Running Tests
