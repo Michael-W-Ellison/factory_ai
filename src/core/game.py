@@ -428,6 +428,12 @@ class Game:
                 elif event.key == pygame.K_m or self._check_key_binding(event, key_bindings, 'map_menu'):
                     self.minimap.toggle()
                     print(f"Minimap: {'visible' if self.minimap.visible else 'hidden'}")
+                # Speed up (+/= key or custom binding)
+                elif event.key in (pygame.K_EQUALS, pygame.K_PLUS, pygame.K_KP_PLUS) or self._check_key_binding(event, key_bindings, 'speed_up'):
+                    self._change_game_speed(0.25)
+                # Speed down (-/_ key or custom binding)
+                elif event.key in (pygame.K_MINUS, pygame.K_KP_MINUS) or self._check_key_binding(event, key_bindings, 'speed_down'):
+                    self._change_game_speed(-0.25)
 
             # Mouse motion (for hover effects)
             elif event.type == pygame.MOUSEMOTION:
@@ -610,6 +616,23 @@ class Game:
         bound_key = key_bindings[action].upper()
         pressed_key = pygame.key.name(event.key).upper()
         return bound_key == pressed_key
+
+    def _change_game_speed(self, delta: float):
+        """
+        Change game speed by delta amount.
+
+        Args:
+            delta: Amount to change speed (positive = faster, negative = slower)
+        """
+        min_speed = 0.25
+        max_speed = 4.0
+        old_speed = self.game_speed
+        self.game_speed = max(min_speed, min(max_speed, self.game_speed + delta))
+
+        if self.game_speed != old_speed:
+            # Update settings manager so it persists
+            self.settings_manager.set('gameplay', 'game_speed', self.game_speed)
+            print(f"Game speed: {self.game_speed:.2f}x")
 
     def render(self):
         """Render game to screen."""

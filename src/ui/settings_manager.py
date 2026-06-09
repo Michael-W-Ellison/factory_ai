@@ -63,6 +63,8 @@ class SettingsManager:
                     'camera_left': 'A',
                     'camera_right': 'D',
                     'pause': 'SPACE',
+                    'speed_up': 'EQUALS',
+                    'speed_down': 'MINUS',
                     'building_menu': 'B',
                     'research_menu': 'R',
                     'map_menu': 'M',

@@ -505,6 +505,8 @@ class SettingsUI:
             ('camera_left', 'Pan Left'),
             ('camera_right', 'Pan Right'),
             ('pause', 'Pause'),
+            ('speed_up', 'Speed Up'),
+            ('speed_down', 'Speed Down'),
             ('building_menu', 'Building Menu'),
             ('research_menu', 'Research Menu'),
             ('map_menu', 'Map/Minimap'),

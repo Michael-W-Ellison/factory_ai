@@ -86,7 +86,8 @@ class ControlsHelp:
             ("Game Controls", [
                 ("SPACE", "Pause/Resume game"),
                 ("ESC", "Exit game"),
-                ("+/-", "Increase/Decrease game speed"),
+                ("+ (=/+)", "Increase game speed (0.25x to 4x)"),
+                ("- (-/_)", "Decrease game speed"),
                 ("G", "Toggle grid display"),
                 ("P", "Toggle pollution overlay"),
             ]),
