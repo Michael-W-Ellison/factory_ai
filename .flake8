@@ -1,0 +1,46 @@
+[flake8]
+# Flake8 configuration for Recycling Factory
+
+# Maximum line length (match black's default)
+max-line-length = 88
+
+# Ignore specific rules for legacy code compatibility
+extend-ignore =
+    # E501: line too long (handled by black)
+    E501,
+    # W503: line break before binary operator (conflicts with black)
+    W503,
+    # E203: whitespace before ':' (conflicts with black for slices)
+    E203
+
+# Exclude directories from checking
+exclude =
+    .git,
+    __pycache__,
+    build,
+    dist,
+    *.egg-info,
+    .eggs,
+    .venv,
+    venv,
+    data,
+    saves
+
+# Per-file ignores for specific files
+per-file-ignores =
+    # Allow unused imports in __init__.py files
+    */__init__.py: F401
+    # Tests may have assertions and unused variables
+    test_*.py: S101, F841
+
+# Maximum complexity
+max-complexity = 15
+
+# Show source code for each error
+show-source = true
+
+# Count errors
+count = true
+
+# Statistics
+statistics = true
