@@ -42,6 +42,7 @@ from src.ui.controls_help import ControlsHelp
 from src.ui.minimap import Minimap
 from src.ui.settings_manager import SettingsManager
 from src.ui.settings_ui import SettingsUI
+from src.ui.game_over_ui import GameOverUI, GameEnding
 from src.systems.audio_manager import AudioManager
 
 
@@ -181,6 +182,11 @@ class Game:
         # Initialize settings UI (pass audio manager for live volume control)
         self.settings_ui = SettingsUI(config.SCREEN_WIDTH, config.SCREEN_HEIGHT,
                                        self.settings_manager, self.audio)
+
+        # Initialize game over UI
+        self.game_over_ui = GameOverUI(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
+        self.game_over_ui.on_restart = self._restart_game
+        self.game_over_ui.on_quit = self._quit_game
 
         # Apply initial game speed from settings
         self.game_speed = self.settings_manager.get('gameplay', 'game_speed', 1.0)
@@ -364,6 +370,10 @@ class Game:
     def handle_events(self):
         """Process user input and system events."""
         for event in pygame.event.get():
+            # Let game over UI handle events first if visible
+            if self.game_over_ui.handle_event(event):
+                continue  # Event was handled by game over UI
+
             # Let settings UI handle events first if visible
             if self.settings_ui.handle_event(event):
                 # Update game speed if changed in settings
@@ -528,19 +538,18 @@ class Game:
         # Update vehicles
         self.vehicles.update(adjusted_dt)
 
+        # Calculate time of day and night status
+        time_of_day = self.hour + self.minute / 60.0
+        is_night = self._is_night_time()
+
         # Update traffic system (moving vehicles on roads)
-        # Pass NPCs for pedestrian detection and time for headlights
         npc_list = self.npcs.npcs if hasattr(self.npcs, 'npcs') else []
-        time_of_day = self.npcs.game_time if hasattr(self.npcs, 'game_time') else 12.0
         self.traffic_manager.update(adjusted_dt, npcs=npc_list, time_of_day=time_of_day)
 
         # Update bus system (public transportation)
-        # Pass NPCs for boarding/alighting and game_time for scheduling
         self.bus_manager.update(adjusted_dt, npcs=npc_list, game_time=time_of_day)
 
-        # Update prop system (turn lights on/off based on time - placeholder for now)
-        # TODO: Integrate with day/night cycle when implemented
-        is_night = False  # Placeholder - will be replaced with actual day/night check
+        # Update prop system (lights on at night)
         self.prop_manager.update(adjusted_dt, is_night)
 
         # Update camera system (camera timers)
@@ -603,9 +612,7 @@ class Game:
         # Check if police captured any robots (game over condition)
         captured = self.police.check_captures(self.entities.robots)
         if captured:
-            self.audio.play_alert('police')
-            # TODO: Implement game over
-            print("⚠️ GAME OVER: Police captured robot!")
+            self._trigger_game_over(GameEnding.POLICE_CAPTURE, "Police captured your robot!")
 
         # Update minimap (hover detection)
         mouse_pos = pygame.mouse.get_pos()
@@ -647,10 +654,98 @@ class Game:
             self.settings_manager.set('gameplay', 'game_speed', self.game_speed)
             print(f"Game speed: {self.game_speed:.2f}x")
 
+    def _is_night_time(self) -> bool:
+        """Check if it's currently night time (before 6am or after 8pm)."""
+        return self.hour < 6 or self.hour >= 20
+
+    def _get_ambient_light(self) -> float:
+        """
+        Get ambient light level based on time of day.
+
+        Returns:
+            Float from 0.0 (darkest) to 1.0 (brightest)
+        """
+        hour = self.hour + self.minute / 60.0
+
+        if 6 <= hour < 7:
+            # Dawn transition (6am-7am)
+            return 0.3 + (hour - 6) * 0.7
+        elif 7 <= hour < 18:
+            # Full daylight
+            return 1.0
+        elif 18 <= hour < 20:
+            # Dusk transition (6pm-8pm)
+            return 1.0 - (hour - 18) * 0.35
+        else:
+            # Night (8pm-6am)
+            return 0.3
+
+    def _get_sky_color(self) -> tuple:
+        """Get sky/background color based on time of day."""
+        light = self._get_ambient_light()
+
+        # Interpolate between night color and day color
+        night_color = (10, 10, 25)
+        day_color = (135, 206, 235)
+
+        r = int(night_color[0] + (day_color[0] - night_color[0]) * light)
+        g = int(night_color[1] + (day_color[1] - night_color[1]) * light)
+        b = int(night_color[2] + (day_color[2] - night_color[2]) * light)
+
+        return (r, g, b)
+
+    def _render_night_overlay(self):
+        """Render semi-transparent overlay for night time darkness."""
+        if not self._is_night_time():
+            return
+
+        light = self._get_ambient_light()
+        darkness = int((1.0 - light) * 180)
+
+        if darkness > 0:
+            overlay = pygame.Surface((config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
+            overlay.fill((0, 0, 30))
+            overlay.set_alpha(darkness)
+            self.screen.blit(overlay, (0, 0))
+
+    def _trigger_game_over(self, ending: GameEnding, reason: str = ""):
+        """
+        Trigger game over state and show game over UI.
+
+        Args:
+            ending: Type of game ending
+            reason: Optional reason text
+        """
+        self.paused = True
+        self.audio.play_alert('police' if ending == GameEnding.POLICE_CAPTURE else 'danger')
+
+        # Gather final statistics
+        final_stats = {
+            'days': self.day,
+            'money_earned': self.stats.get('money_earned', 0),
+            'materials_collected': self.stats.get('materials_collected', 0),
+            'buildings_built': self.stats.get('buildings_built', 0),
+            'research_completed': len(self.research.completed) if hasattr(self.research, 'completed') else 0,
+            'inspections_passed': self.inspection.pass_count if hasattr(self.inspection, 'pass_count') else 0,
+        }
+
+        self.game_over_ui.show(ending, reason, final_stats)
+        print(f"GAME OVER: {ending.name} - {reason}")
+
+    def _restart_game(self):
+        """Restart the game (reinitialize everything)."""
+        self.game_over_ui.hide()
+        self.__init__()
+
+    def _quit_game(self):
+        """Quit the game."""
+        self.running = False
+
     def render(self):
         """Render game to screen."""
-        # Clear screen
-        self.screen.fill((20, 20, 20))  # Dark gray background
+        # Clear screen with sky color based on time of day
+        sky_color = self._get_sky_color()
+        self.screen.fill(sky_color)
 
         # Render grid
         self.grid.render(self.screen, self.camera, config.SHOW_GRID)
@@ -694,6 +789,9 @@ class Game:
         # Render pollution overlay (if enabled)
         self.pollution.render_overlay(self.screen, self.camera, config.TILE_SIZE)
 
+        # Render night overlay for ambient lighting
+        self._render_night_overlay()
+
         # Render HUD (overlays everything)
         self.ui.render(self.screen, self.resources, self.entities, self.clock,
                       self.power, self.buildings, self.research, self.suspicion,
@@ -718,8 +816,12 @@ class Game:
         # Render settings UI (if visible)
         self.settings_ui.render(self.screen)
 
-        # Show paused indicator
-        if self.paused:
+        # Render game over UI (if visible)
+        self.game_over_ui.update(self.clock.get_time() / 1000.0)
+        self.game_over_ui.render(self.screen)
+
+        # Show paused indicator (but not if game over screen is showing)
+        if self.paused and not self.game_over_ui.visible:
             font = pygame.font.Font(None, 72)
             text = font.render("PAUSED", True, (255, 255, 0))
             text_rect = text.get_rect(center=(config.SCREEN_WIDTH // 2, config.SCREEN_HEIGHT // 2))
