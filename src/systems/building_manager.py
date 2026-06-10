@@ -1,6 +1,15 @@
 """
 BuildingManager - manages all buildings in the factory.
+
+Provides:
+- Building placement and removal
+- Grid occupancy tracking
+- Building updates and rendering
+- Research effect application
 """
+
+from typing import Dict, List, Optional, Tuple, Any
+import pygame
 
 from src.entities.building import Building
 
@@ -12,7 +21,7 @@ class BuildingManager:
     Handles placement, removal, updates, and rendering of buildings.
     """
 
-    def __init__(self, grid):
+    def __init__(self, grid) -> None:
         """
         Initialize the building manager.
 
@@ -20,11 +29,11 @@ class BuildingManager:
             grid: Grid object for placement validation
         """
         self.grid = grid
-        self.buildings = {}  # building_id -> Building
-        self.buildings_by_type = {}  # building_type -> list of buildings
-        self.grid_occupancy = {}  # (grid_x, grid_y) -> building_id
+        self.buildings: Dict[str, Building] = {}
+        self.buildings_by_type: Dict[str, List[Building]] = {}
+        self.grid_occupancy: Dict[Tuple[int, int], str] = {}
 
-    def place_building(self, building):
+    def place_building(self, building: Building) -> bool:
         """
         Place a building on the grid.
 
@@ -62,7 +71,7 @@ class BuildingManager:
         print(f"Placed {building}")
         return True
 
-    def remove_building(self, building_id):
+    def remove_building(self, building_id: str) -> bool:
         """
         Remove a building.
 
@@ -70,7 +79,7 @@ class BuildingManager:
             building_id: ID of building to remove
 
         Returns:
-            bool: True if removal successful
+            True if removal successful
         """
         if building_id not in self.buildings:
             return False
@@ -99,7 +108,7 @@ class BuildingManager:
         print(f"Removed {building}")
         return True
 
-    def get_building_at(self, grid_x, grid_y):
+    def get_building_at(self, grid_x: int, grid_y: int) -> Optional[Building]:
         """
         Get building at grid position.
 
@@ -115,7 +124,7 @@ class BuildingManager:
             return self.buildings.get(building_id)
         return None
 
-    def get_buildings_by_type(self, building_type):
+    def get_buildings_by_type(self, building_type: str) -> List[Building]:
         """
         Get all buildings of a specific type.
 
@@ -127,7 +136,7 @@ class BuildingManager:
         """
         return self.buildings_by_type.get(building_type, [])
 
-    def _is_valid_placement(self, building):
+    def _is_valid_placement(self, building: Building) -> bool:
         """
         Check if building can be placed at its position.
 
@@ -157,7 +166,7 @@ class BuildingManager:
 
         return True
 
-    def calculate_total_power_generation(self):
+    def calculate_total_power_generation(self) -> float:
         """
         Calculate total power generation from all buildings.
 
@@ -170,7 +179,7 @@ class BuildingManager:
                 total += building.power_generation
         return total
 
-    def calculate_total_power_consumption(self):
+    def calculate_total_power_consumption(self) -> float:
         """
         Calculate total power consumption from all buildings.
 
@@ -183,7 +192,7 @@ class BuildingManager:
                 total += building.power_consumption
         return total
 
-    def update(self, dt):
+    def update(self, dt: float) -> None:
         """
         Update all buildings.
 
@@ -193,7 +202,7 @@ class BuildingManager:
         for building in list(self.buildings.values()):
             building.update(dt)
 
-    def render(self, screen, camera):
+    def render(self, screen: pygame.Surface, camera) -> None:
         """
         Render all buildings.
 
@@ -206,7 +215,7 @@ class BuildingManager:
         for building in sorted_buildings:
             building.render(screen, camera)
 
-    def get_building_counts(self):
+    def get_building_counts(self) -> Dict[str, int]:
         """
         Get count of buildings by type.
 
@@ -215,7 +224,7 @@ class BuildingManager:
         """
         return {btype: len(blist) for btype, blist in self.buildings_by_type.items()}
 
-    def get_stats(self):
+    def get_stats(self) -> Dict[str, Any]:
         """
         Get statistics about buildings.
 
@@ -229,7 +238,7 @@ class BuildingManager:
             'total_power_consumption': self.calculate_total_power_consumption(),
         }
 
-    def apply_research_effects_to_buildings(self, research_manager):
+    def apply_research_effects_to_buildings(self, research_manager) -> None:
         """
         Apply research effects to all buildings that support it.
 

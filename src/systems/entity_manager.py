@@ -1,9 +1,24 @@
 """
 EntityManager - manages all entities in the game.
+
+Provides:
+- Entity creation (robots, collectibles)
+- Entity lifecycle management
+- Selection and control
+- Research effect application
 """
+
+from typing import Dict, List, Optional, Any, TYPE_CHECKING
+import pygame
 
 from src.entities.robot import Robot
 from src.entities.collectible import CollectibleObject
+
+if TYPE_CHECKING:
+    from src.world.grid import Grid
+    from src.systems.resource_manager import ResourceManager
+    from src.systems.research_manager import ResearchManager
+    from src.systems.material_inventory import MaterialInventory
 
 
 class EntityManager:
@@ -13,7 +28,13 @@ class EntityManager:
     Handles creation, updating, rendering, and removal of entities.
     """
 
-    def __init__(self, grid=None, resource_manager=None, research_manager=None, material_inventory=None):
+    def __init__(
+        self,
+        grid: Optional['Grid'] = None,
+        resource_manager: Optional['ResourceManager'] = None,
+        research_manager: Optional['ResearchManager'] = None,
+        material_inventory: Optional['MaterialInventory'] = None
+    ) -> None:
         """Initialize the entity manager.
 
         Args:
@@ -23,15 +44,15 @@ class EntityManager:
             material_inventory: MaterialInventory (for tracking material sources)
         """
         # All entities by ID
-        self.entities = {}
+        self.entities: Dict[str, Any] = {}
 
         # Entities grouped by type for efficient iteration
-        self.robots = []
-        self.collectibles = []
-        self.buildings = []  # For future use
+        self.robots: List[Robot] = []
+        self.collectibles: List[CollectibleObject] = []
+        self.buildings: List[Any] = []
 
         # Selected robot (for player control)
-        self.selected_robot = None
+        self.selected_robot: Optional[Robot] = None
 
         # Systems
         self.grid = grid
@@ -40,9 +61,9 @@ class EntityManager:
         self.material_inventory = material_inventory
 
         # Factory position (for robots to return to)
-        self.factory_pos = None
+        self.factory_pos: Optional[tuple] = None
 
-    def create_robot(self, x, y, autonomous=True):
+    def create_robot(self, x: float, y: float, autonomous: bool = True) -> Robot:
         """
         Create a new robot.
 
@@ -73,7 +94,9 @@ class EntityManager:
         print(f"Created {robot}")
         return robot
 
-    def create_collectible(self, x, y, material_type, quantity, source=None):
+    def create_collectible(
+        self, x: float, y: float, material_type: str, quantity: float, source=None
+    ) -> CollectibleObject:
         """
         Create a new collectible object.
 
@@ -96,7 +119,7 @@ class EntityManager:
         self.collectibles.append(collectible)
         return collectible
 
-    def select_robot(self, robot):
+    def select_robot(self, robot: Optional[Robot]) -> None:
         """
         Select a robot for player control.
 
@@ -112,7 +135,7 @@ class EntityManager:
         if robot:
             robot.selected = True
 
-    def select_robot_at(self, x, y):
+    def select_robot_at(self, x: float, y: float) -> Optional[Robot]:
         """
         Select a robot at the given world position.
 
@@ -131,7 +154,7 @@ class EntityManager:
                 return robot
         return None
 
-    def get_collectibles_near(self, x, y, radius):
+    def get_collectibles_near(self, x: float, y: float, radius: float) -> List[CollectibleObject]:
         """
         Get collectibles within radius of a position.
 
@@ -152,7 +175,7 @@ class EntityManager:
                 nearby.append(collectible)
         return nearby
 
-    def update(self, dt):
+    def update(self, dt: float) -> None:
         """
         Update all entities.
 
@@ -173,7 +196,7 @@ class EntityManager:
         # Remove inactive entities
         self._remove_inactive_entities()
 
-    def set_factory_position(self, x, y):
+    def set_factory_position(self, x: float, y: float) -> None:
         """
         Set the factory position for all robots.
 
@@ -186,7 +209,7 @@ class EntityManager:
         for robot in self.robots:
             robot.factory_pos = self.factory_pos
 
-    def apply_research_effects_to_robots(self, research_manager):
+    def apply_research_effects_to_robots(self, research_manager) -> None:
         """
         Apply research effects to all robots.
 
@@ -196,12 +219,8 @@ class EntityManager:
         for robot in self.robots:
             robot.apply_research_effects(research_manager)
 
-    def _handle_collection(self):
-        """
-        Handle automatic collection of materials by robots.
-
-        Robots will automatically collect materials they collide with.
-        """
+    def _handle_collection(self) -> None:
+        """Handle automatic collection of materials by robots."""
         # Collection radius (slightly larger than robot size for easier collection)
         collection_radius = 40  # pixels
 
@@ -242,7 +261,7 @@ class EntityManager:
                         print(f"{robot} inventory is full!")
                         break
 
-    def _remove_inactive_entities(self):
+    def _remove_inactive_entities(self) -> None:
         """Remove entities marked as inactive."""
         inactive_ids = [eid for eid, entity in self.entities.items() if not entity.active]
 
@@ -260,7 +279,7 @@ class EntityManager:
             # Remove from main dict
             del self.entities[eid]
 
-    def render(self, screen, camera):
+    def render(self, screen: pygame.Surface, camera) -> None:
         """
         Render all entities.
 
@@ -276,7 +295,7 @@ class EntityManager:
         for robot in self.robots:
             robot.render(screen, camera)
 
-    def get_stats(self):
+    def get_stats(self) -> Dict[str, int]:
         """
         Get statistics about entities.
 
