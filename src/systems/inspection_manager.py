@@ -13,6 +13,10 @@ import random
 from enum import Enum
 from typing import Optional, Dict
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class InspectionStatus(Enum):
     """Inspection status states."""
@@ -141,10 +145,7 @@ class InspectionManager:
         # Calculate countdown in game hours
         hours = warning_time / 3600.0
 
-        print(f"\n⚠️ INSPECTION SCHEDULED!")
-        print(f"  Government inspector will arrive in {hours:.1f} game hours")
-        print(f"  Current suspicion: {self.suspicion.suspicion_level}")
-        print(f"  Prepare your factory for inspection!")
+        logger.warning(f"Inspection scheduled! Inspector arrives in {hours:.1f} game hours (Suspicion: {self.suspicion.suspicion_level})")
 
     def _start_inspection(self, game_time: float):
         """Start the inspection process."""
@@ -152,9 +153,7 @@ class InspectionManager:
         self.inspection_progress = 0.0
         self.last_inspection_time = game_time
 
-        print(f"\n🕵️ INSPECTION STARTED!")
-        print(f"  Inspector is searching your factory...")
-        print(f"  This will take {self.inspection_duration / 3600.0:.1f} game hour")
+        logger.warning(f"Inspection started! Duration: {self.inspection_duration / 3600.0:.1f} game hour")
 
     def _complete_inspection(self, game_time: float):
         """Complete inspection and determine result."""
@@ -270,23 +269,18 @@ class InspectionManager:
             result (InspectionResult): The inspection outcome
             game_time (float): Current game time for scheduling
         """
-        print(f"\n📋 INSPECTION RESULTS: {result.name}")
+        logger.info(f"Inspection results: {result.name}")
 
         if result == InspectionResult.PASS:
             # PASS: suspicion -20, no inspection for 7 days
             self.suspicion.add_suspicion(-20, "Passed factory inspection")
-            print(f"  ✓ PASSED - Factory is clean!")
-            print(f"  ✓ Suspicion reduced by 20")
-            print(f"  ✓ No inspection for 7 days")
+            logger.info("Inspection PASSED - Factory is clean! Suspicion reduced by 20, no inspection for 7 days")
 
         elif result == InspectionResult.FAIL_MINOR:
             # FAIL (minor): suspicion +10, fine $5000, reinspection in 3 days
             self.suspicion.add_suspicion(10, "Failed inspection (minor violations)")
             self.resources.modify_money(-5000)
-            print(f"  ⚠️ FAILED (Minor) - Some questionable materials found")
-            print(f"  ⚠️ Fine: $5,000")
-            print(f"  ⚠️ Suspicion increased by 10")
-            print(f"  ⚠️ Reinspection in 3 days")
+            logger.warning("Inspection FAILED (Minor) - Fine: $5,000, Suspicion +10, Reinspection in 3 days")
             # Schedule mandatory reinspection in 3 days
             self._schedule_reinspection(game_time, self.reinspection_interval)
 
@@ -294,19 +288,13 @@ class InspectionManager:
             # FAIL (major): suspicion +30, fine $20000, restrictions applied
             self.suspicion.add_suspicion(30, "Failed inspection (major violations)")
             self.resources.modify_money(-20000)
-            print(f"  🚨 FAILED (Major) - Illegal materials discovered!")
-            print(f"  🚨 Fine: $20,000")
-            print(f"  🚨 Suspicion increased by 30")
-            print(f"  🚨 Operating restrictions applied")
+            logger.error("Inspection FAILED (Major) - Illegal materials discovered! Fine: $20,000, Suspicion +30, Restrictions applied")
             # Apply restrictions (7 days, 50% production penalty)
             self._apply_restrictions(game_time, duration=604800.0, penalty=0.5)
 
         elif result == InspectionResult.FAIL_CRITICAL:
             # FAIL (critical): game over (FBI raid immediate)
-            print(f"  💀 FAILED (Critical) - GAME OVER!")
-            print(f"  💀 Extensive illegal operation discovered")
-            print(f"  💀 FBI raid in progress")
-            print(f"  💀 Factory shut down")
+            logger.error("Inspection FAILED (Critical) - GAME OVER! Extensive illegal operation discovered, FBI raid in progress")
             # Trigger game over
             self._trigger_game_over("Extensive illegal operation discovered during inspection")
 
@@ -336,9 +324,7 @@ class InspectionManager:
         # Calculate countdown in game hours
         hours = warning_time / 3600.0
 
-        print(f"\n⚠️ REINSPECTION SCHEDULED!")
-        print(f"  Mandatory follow-up inspection in {hours:.1f} game hours")
-        print(f"  You must pass this inspection or face harsher penalties")
+        logger.warning(f"Reinspection scheduled! Mandatory follow-up in {hours:.1f} game hours")
 
     def _apply_restrictions(self, game_time: float, duration: float, penalty: float):
         """
@@ -356,19 +342,14 @@ class InspectionManager:
         # Calculate duration in game days
         days = duration / (24 * 3600.0)
 
-        print(f"\n🔒 OPERATING RESTRICTIONS APPLIED")
-        print(f"  Production reduced by {penalty * 100:.0f}% for {days:.1f} days")
-        print(f"  Government monitoring your operations")
-        print(f"  Restrictions expire: Day {int(game_time / (24 * 3600.0)) + int(days)}")
+        logger.warning(f"Operating restrictions applied: Production reduced by {penalty * 100:.0f}% for {days:.1f} days")
 
     def _expire_restrictions(self):
         """Expire operating restrictions."""
         self.has_restrictions = False
         self.production_penalty = 0.0
 
-        print(f"\n🔓 OPERATING RESTRICTIONS EXPIRED")
-        print(f"  Production penalties removed")
-        print(f"  Normal operations resumed")
+        logger.info("Operating restrictions expired, normal operations resumed")
 
     def _trigger_game_over(self, reason: str):
         """
@@ -380,11 +361,7 @@ class InspectionManager:
         self.game_over = True
         self.game_over_reason = reason
 
-        print(f"\n💀💀💀 GAME OVER 💀💀💀")
-        print(f"  Reason: {reason}")
-        print(f"  Your factory has been shut down")
-        print(f"  You are facing federal charges")
-        print(f"\n  Press ESC to exit")
+        logger.error(f"GAME OVER - {reason}: Factory shut down, facing federal charges")
 
     def force_schedule_inspection(self, game_time: float, warning_hours: float = 24.0):
         """

@@ -13,6 +13,10 @@ import random
 from enum import Enum
 from typing import Optional, Dict, List
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class AuthorityTier(Enum):
     """Law enforcement authority levels."""
@@ -172,27 +176,19 @@ class AuthorityManager:
             old_tier (AuthorityTier): Previous tier
             new_tier (AuthorityTier): New tier
         """
-        print(f"\n⚠️ AUTHORITY ESCALATION!")
-        print(f"  {old_tier.name} → {new_tier.name}")
+        logger.warning(f"Authority escalation: {old_tier.name} -> {new_tier.name}")
 
         if new_tier == AuthorityTier.STATE:
-            print(f"  State police are now monitoring your operations")
-            print(f"  Increased investigation capabilities")
-            print(f"  More frequent patrols")
+            logger.warning("State police monitoring - increased investigation capabilities")
 
         elif new_tier == AuthorityTier.FEDERAL:
-            print(f"  🚨 FBI HAS TAKEN OVER THE INVESTIGATION!")
-            print(f"  Federal resources deployed")
-            print(f"  Advanced surveillance and forensics")
-            print(f"  Risk of federal charges")
+            logger.error("FBI has taken over! Federal resources deployed, risk of federal charges")
             # Automatically start FBI investigation
             self._start_fbi_investigation()
 
     def _on_tier_deescalation(self, old_tier: AuthorityTier, new_tier: AuthorityTier):
         """Handle tier de-escalation (suspicion decreased)."""
-        print(f"\n✓ AUTHORITY DE-ESCALATION")
-        print(f"  {old_tier.name} → {new_tier.name}")
-        print(f"  Reduced law enforcement attention")
+        logger.info(f"Authority de-escalation: {old_tier.name} -> {new_tier.name} - reduced law enforcement attention")
 
     def _start_fbi_investigation(self):
         """Start FBI investigation."""
@@ -215,10 +211,7 @@ class AuthorityManager:
 
         self.investigation_type = random.choice(investigation_types)
 
-        print(f"\n🔍 FBI INVESTIGATION INITIATED!")
-        print(f"  Investigation Type: {self.investigation_type.name}")
-        print(f"  The FBI is building a case against you")
-        print(f"  Evidence collection in progress...")
+        logger.warning(f"FBI investigation initiated! Type: {self.investigation_type.name} - building case")
 
     def _update_fbi_investigation(self, dt: float, game_time: float):
         """Update FBI investigation progress."""
@@ -240,10 +233,7 @@ class AuthorityManager:
 
     def _complete_fbi_investigation(self, game_time: float):
         """Complete FBI investigation and schedule raid."""
-        print(f"\n🚨 FBI INVESTIGATION COMPLETE!")
-        print(f"  Sufficient evidence has been gathered")
-        print(f"  Federal warrant issued for raid")
-        print(f"  FBI raid imminent...")
+        logger.error("FBI investigation complete! Federal warrant issued, raid imminent")
 
         # Schedule raid with warning
         warning_time = random.uniform(self.raid_min_warning, self.raid_max_warning)
@@ -252,11 +242,7 @@ class AuthorityManager:
 
         # Calculate hours
         hours = warning_time / 3600.0
-        print(f"  FBI tactical team arrives in {hours:.1f} game hours")
-        print(f"\n  You have limited time to:")
-        print(f"    - Destroy evidence")
-        print(f"    - Flee the country")
-        print(f"    - Negotiate a plea deal")
+        logger.error(f"FBI tactical team arrives in {hours:.1f} game hours - limited time to act")
 
     def _update_raid_countdown(self, dt: float, game_time: float):
         """Update FBI raid countdown."""
@@ -273,17 +259,7 @@ class AuthorityManager:
         # Clear raid scheduled flag to prevent multiple executions
         self.raid_scheduled = False
 
-        print(f"\n💥💥💥 FBI RAID IN PROGRESS! 💥💥💥")
-        print(f"  Federal agents have stormed your factory!")
-        print(f"  All illegal operations have been shut down")
-        print(f"  Evidence has been seized")
-        print(f"  You are under federal arrest")
-        print(f"\n  Charges:")
-        print(f"    - Operating illegal waste processing facility")
-        print(f"    - Environmental violations")
-        print(f"    - Fraud and money laundering")
-        print(f"    - Obstruction of justice")
-        print(f"\n  GAME OVER")
+        logger.error("FBI RAID - GAME OVER! Federal agents stormed factory, under federal arrest")
 
         self._trigger_ending(GameEnding.FBI_RAID, "FBI raid - Federal arrest")
 
@@ -511,20 +487,7 @@ class AuthorityManager:
 
         game_days = game_time / (24 * 3600)
 
-        print(f"\n{'='*60}")
-        print(f"{info['title']}")
-        print(f"{'='*60}")
-        print(f"\n{info['description']}")
-        print(f"\n{info['details']}")
-        print(f"\n--- Statistics ---")
-        print(f"  Time: {game_days:.1f} game days")
-        print(f"  Money: ${self.resources.money:,.0f}")
-        print(f"  Materials Processed: {stats['materials_processed']:,.0f}")
-        print(f"  Max Suspicion: {stats['max_suspicion']:.0f}")
-        print(f"  Inspections: {stats['inspections_passed']} passed, {stats['inspections_failed']} failed")
-        print(f"\n{'='*60}")
-        print(f"GAME COMPLETE!")
-        print(f"{'='*60}")
+        logger.info(f"GAME COMPLETE - {info['title']}: {game_days:.1f} days, ${self.resources.money:,.0f}")
 
         self._trigger_ending(ending, info['description'])
 
@@ -553,11 +516,11 @@ class AuthorityManager:
         """
         if self.bribe_cooldown > 0:
             hours_remaining = self.bribe_cooldown / 3600.0
-            print(f"Cannot bribe yet. Wait {hours_remaining:.1f} game hours.")
+            logger.warning(f"Cannot bribe yet. Wait {hours_remaining:.1f} game hours.")
             return False
 
         if self.resources.money < amount:
-            print(f"Insufficient funds for bribe (need ${amount:,})")
+            logger.warning(f"Insufficient funds for bribe (need ${amount:,})")
             return False
 
         self.bribes_attempted += 1
@@ -580,16 +543,12 @@ class AuthorityManager:
             if self.fbi_investigation_active:
                 reduction = random.uniform(15, 30)  # 15-30% reduction
                 self.investigation_progress = max(0, self.investigation_progress - reduction)
-                print(f"\n💰 BRIBE SUCCESSFUL")
-                print(f"  Paid: ${amount:,}")
-                print(f"  Investigation progress reduced by {reduction:.1f}%")
+                logger.info(f"Bribe successful! Paid ${amount:,}, investigation progress reduced by {reduction:.1f}%")
             else:
                 # Reduce suspicion
                 suspicion_reduction = random.randint(10, 20)
                 self.suspicion.add_suspicion(-suspicion_reduction, "Successful bribe")
-                print(f"\n💰 BRIBE SUCCESSFUL")
-                print(f"  Paid: ${amount:,}")
-                print(f"  Suspicion reduced by {suspicion_reduction}")
+                logger.info(f"Bribe successful! Paid ${amount:,}, suspicion reduced by {suspicion_reduction}")
 
             # Set cooldown (24-48 hours)
             self.bribe_cooldown = random.uniform(86400.0, 172800.0)
@@ -601,10 +560,7 @@ class AuthorityManager:
             suspicion_increase = 20 + (10 if self.current_tier == AuthorityTier.FEDERAL else 0)
             self.suspicion.add_suspicion(suspicion_increase, "Failed bribe attempt")
 
-            print(f"\n⚠️ BRIBE FAILED!")
-            print(f"  Lost: ${amount:,}")
-            print(f"  Official reported the bribe attempt!")
-            print(f"  Suspicion increased by {suspicion_increase}")
+            logger.error(f"Bribe failed! Lost ${amount:,}, official reported, suspicion +{suspicion_increase}")
 
             # Double cooldown on failure
             self.bribe_cooldown = random.uniform(172800.0, 345600.0)  # 48-96 hours
@@ -622,15 +578,15 @@ class AuthorityManager:
             bool: True if successful
         """
         if self.evidence_planted:
-            print("False evidence already planted")
+            logger.debug("False evidence already planted")
             return False
 
         if not self.fbi_investigation_active:
-            print("No active investigation to misdirect")
+            logger.debug("No active investigation to misdirect")
             return False
 
         if self.resources.money < cost:
-            print(f"Insufficient funds (need ${cost:,})")
+            logger.warning(f"Insufficient funds for false evidence (need ${cost:,})")
             return False
 
         # 60% success rate
@@ -641,10 +597,7 @@ class AuthorityManager:
             # Set disruption factor
             self.disruption_factor = 0.5  # Halves investigation speed
 
-            print(f"\n🎭 FALSE EVIDENCE PLANTED")
-            print(f"  Cost: ${cost:,}")
-            print(f"  Investigation misdirected")
-            print(f"  Investigation speed reduced by 50%")
+            logger.info(f"False evidence planted! Cost ${cost:,}, investigation speed -50%")
 
             return True
         else:
@@ -652,10 +605,7 @@ class AuthorityManager:
             self.resources.modify_money(-cost)
             self.suspicion.add_suspicion(25, "Caught planting false evidence")
 
-            print(f"\n⚠️ FALSE EVIDENCE PLOT DISCOVERED!")
-            print(f"  Lost: ${cost:,}")
-            print(f"  Suspicion increased by 25")
-            print(f"  FBI investigation accelerated")
+            logger.error(f"False evidence plot discovered! Lost ${cost:,}, suspicion +25, FBI accelerated")
 
             # Increase investigation speed as punishment
             self.investigation_speed *= 1.5
@@ -671,7 +621,7 @@ class AuthorityManager:
         """
         # Can only escape if FBI is close
         if not self.fbi_investigation_active:
-            print("No immediate threat - no need to flee yet")
+            logger.debug("No immediate threat - no need to flee yet")
             return False
 
         # Success rate based on investigation progress
@@ -679,18 +629,12 @@ class AuthorityManager:
         success_rate = 1.0 - (self.investigation_progress / 100.0)
 
         if random.random() < success_rate:
-            print(f"\n✈️ ESCAPE SUCCESSFUL!")
-            print(f"  You have fled the country")
-            print(f"  Assets liquidated: ${int(self.resources.money * 0.3):,}")
-            print(f"  Living in exile abroad")
-            print(f"\n  GAME OVER - Escaped justice")
+            logger.info(f"Escape successful! Fled country, assets liquidated: ${int(self.resources.money * 0.3):,} - GAME OVER")
 
             self._trigger_ending(GameEnding.ESCAPE, "Fled the country to avoid arrest")
             return True
         else:
-            print(f"\n⚠️ ESCAPE FAILED!")
-            print(f"  Caught at the border")
-            print(f"  Immediate FBI raid")
+            logger.error("Escape failed! Caught at border, immediate FBI raid")
 
             # Immediate raid
             self._execute_fbi_raid(0.0)
@@ -704,26 +648,22 @@ class AuthorityManager:
             bool: True if deal accepted
         """
         if not self.fbi_investigation_active:
-            print("No investigation to negotiate with")
+            logger.debug("No investigation to negotiate with")
             return False
 
         # Can only negotiate if investigation is 30-80% complete
         if self.investigation_progress < 30:
-            print("Investigation not far enough - authorities not interested in deal")
+            logger.warning("Investigation not far enough - authorities not interested in deal")
             return False
 
         if self.investigation_progress > 80:
-            print("Investigation too far along - authorities want full prosecution")
+            logger.warning("Investigation too far along - authorities want full prosecution")
             return False
 
         # Plea deal cost: forfeit significant money and assets
         deal_cost = max(int(self.resources.money * 0.7), 30000)
 
-        print(f"\n⚖️ PLEA DEAL OFFERED")
-        print(f"  Forfeit: ${deal_cost:,} (70% of assets)")
-        print(f"  Penalty: Temporary business restrictions")
-        print(f"  Benefit: Avoid prison, continue operating")
-        print(f"\n  Accept deal? (This is a game ending)")
+        logger.info(f"Plea deal offered: Forfeit ${deal_cost:,} (70% assets), avoid prison, continue operating")
 
         # For now, auto-accept
         # In full implementation, would wait for player input
@@ -732,11 +672,7 @@ class AuthorityManager:
         if accept:
             self.resources.modify_money(-deal_cost)
 
-            print(f"\n✓ PLEA DEAL ACCEPTED")
-            print(f"  Paid: ${deal_cost:,}")
-            print(f"  Charges reduced to misdemeanors")
-            print(f"  Business allowed to continue with oversight")
-            print(f"\n  GAME OVER - Plea bargain")
+            logger.info(f"Plea deal accepted! Paid ${deal_cost:,}, charges reduced - GAME OVER")
 
             self._trigger_ending(GameEnding.PLEA_DEAL, "Negotiated plea deal with FBI")
             return True
@@ -754,10 +690,7 @@ class AuthorityManager:
         self.game_ending = ending
         self.ending_reason = reason
 
-        print(f"\n{'='*60}")
-        print(f"GAME ENDED: {ending.name}")
-        print(f"Reason: {reason}")
-        print(f"{'='*60}")
+        logger.info(f"GAME ENDED: {ending.name} - {reason}")
 
     def get_status_summary(self) -> Dict:
         """

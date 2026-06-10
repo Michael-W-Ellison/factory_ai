@@ -12,7 +12,11 @@ Handles:
 
 import pygame
 from typing import List, Optional, Tuple
+
+from src.core.logger import get_logger
 from src.entities.security_camera import SecurityCamera
+
+logger = get_logger(__name__)
 
 
 class CameraHackingManager:
@@ -131,13 +135,13 @@ class CameraHackingManager:
 
         # Check if camera is already disabled
         if camera.is_disabled():
-            print("Camera is already disabled")
+            logger.debug("Camera is already disabled")
             return False
 
         # Check if we've reached hack count limit
         currently_hacked = self.camera_manager.get_disabled_camera_count()
         if currently_hacked >= self.hack_count_limit:
-            print(f"Hack limit reached ({self.hack_count_limit} cameras)")
+            logger.warning(f"Hack limit reached ({self.hack_count_limit} cameras)")
             return False
 
         # Start hacking
@@ -149,7 +153,7 @@ class CameraHackingManager:
         self.currently_hacking = True
         self.hack_target = camera
         self.hack_progress = 0.0
-        print(f"Started hacking camera at ({camera.world_x:.0f}, {camera.world_y:.0f})")
+        logger.debug(f"Started hacking camera at ({camera.world_x:.0f}, {camera.world_y:.0f})")
 
     def _complete_hack(self, game_time: float):
         """Complete the hack and disable the camera."""
@@ -169,8 +173,7 @@ class CameraHackingManager:
             f"Camera hacked at ({self.hack_target.world_x:.0f}, {self.hack_target.world_y:.0f})"
         )
 
-        print(f"✓ Camera hacked! Disabled for {self.hack_duration:.0f}s")
-        print(f"  Total hacks: {self.total_hacks}, Suspicion: +{self.suspicion_per_hack}")
+        logger.info(f"Camera hacked! Disabled for {self.hack_duration:.0f}s (Total hacks: {self.total_hacks}, Suspicion: +{self.suspicion_per_hack})")
 
         # Reset hacking state
         self.currently_hacking = False
@@ -217,9 +220,7 @@ class CameraHackingManager:
         import random
         new_cameras = random.randint(5, 10)
 
-        print(f"\n⚠️ SECURITY UPGRADE TRIGGERED!")
-        print(f"  City is adding {new_cameras} new security cameras")
-        print(f"  Detection systems upgraded")
+        logger.warning(f"Security upgrade triggered! City adding {new_cameras} new cameras")
 
         # Add new cameras at random road/building locations
         grid = self.camera_manager.grid
@@ -248,7 +249,7 @@ class CameraHackingManager:
             self.camera_manager.cameras.append(camera)
             placed_count += 1
 
-        print(f"  Successfully placed {placed_count} new cameras")
+        logger.debug(f"Placed {placed_count} new cameras")
 
         # Add suspicion
         self.suspicion.add_suspicion(10, "Security upgrade due to excessive camera hacking")
@@ -257,9 +258,7 @@ class CameraHackingManager:
         """Trigger FBI investigation (major consequence)."""
         self.fbi_investigation_triggered = True
 
-        print(f"\n🚨 FBI INVESTIGATION TRIGGERED!")
-        print(f"  Excessive camera hacking detected ({self.total_hacks} hacks)")
-        print(f"  Federal authorities are investigating")
+        logger.warning(f"FBI investigation triggered! Excessive camera hacking detected ({self.total_hacks} hacks)")
 
         # Major suspicion increase
         self.suspicion.add_suspicion(30, "FBI investigation triggered by excessive hacking")
@@ -269,7 +268,7 @@ class CameraHackingManager:
     def cancel_hack(self):
         """Cancel current hacking attempt."""
         if self.currently_hacking:
-            print("Hacking cancelled")
+            logger.debug("Hacking cancelled")
             self.currently_hacking = False
             self.hack_target = None
             self.hack_progress = 0.0

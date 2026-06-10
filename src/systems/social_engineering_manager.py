@@ -11,6 +11,10 @@ Handles:
 from typing import List, Dict, Optional
 from enum import Enum
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class CampaignType(Enum):
     """Types of social engineering campaigns."""
@@ -122,9 +126,7 @@ class SocialEngineeringManager:
             # Reduce suspicion by 5
             self.suspicion.add_suspicion(-5, "Counter-rumor campaign")
             self.total_suspicion_reduced += 5
-            print(f"\n📢 Counter-rumor campaign taking effect")
-            print(f"   Suspicion reduced by 5")
-            print()
+            logger.info("Counter-rumor campaign taking effect - Suspicion reduced by 5")
 
         # Community relations improvement happens over time
         # This is handled in the campaign duration
@@ -143,12 +145,12 @@ class SocialEngineeringManager:
         """
         # Check if rumors are present (suspicion > 20)
         if self.suspicion.suspicion_level < 20:
-            print("No rumors to counter (suspicion too low)")
+            logger.debug("No rumors to counter (suspicion too low)")
             return False
 
         # Check money
         if self.resources.money < self.counter_rumor_cost:
-            print(f"Not enough money (need ${self.counter_rumor_cost:,})")
+            logger.warning(f"Not enough money for counter-rumor (need ${self.counter_rumor_cost:,})")
             return False
 
         # Pay cost
@@ -167,11 +169,7 @@ class SocialEngineeringManager:
         self.active_campaigns.append(campaign)
         self.campaigns_run += 1
 
-        print(f"\n📢 Counter-Rumor Campaign Started")
-        print(f"   Cost: ${self.counter_rumor_cost:,}")
-        print(f"   Takes effect in 3 game days")
-        print(f"   Effect: -5 suspicion")
-        print()
+        logger.info(f"Counter-rumor campaign started (Cost: ${self.counter_rumor_cost:,}, Effect in 3 days: -5 suspicion)")
 
         return True
 
@@ -189,7 +187,7 @@ class SocialEngineeringManager:
         """
         # Check money
         if self.resources.money < self.donation_cost:
-            print(f"Not enough money (need ${self.donation_cost:,})")
+            logger.warning(f"Not enough money for donation (need ${self.donation_cost:,})")
             return False
 
         # Pay cost
@@ -206,15 +204,9 @@ class SocialEngineeringManager:
         # Check for good neighbor status
         if self.community_relations >= 70 and not self.good_neighbor_active:
             self.good_neighbor_active = True
-            print("\n✓ GOOD NEIGHBOR STATUS ACTIVATED!")
-            print(f"   Passive suspicion reduction: {abs(self.good_neighbor_bonus)} per day")
-            print()
+            logger.info(f"Good Neighbor status activated! Passive suspicion reduction: {abs(self.good_neighbor_bonus)} per day")
 
-        print(f"\n💰 City Donation")
-        print(f"   Donated: ${self.donation_cost:,}")
-        print(f"   Suspicion reduced by 3")
-        print(f"   Community relations: {self.community_relations:.0f}/100")
-        print()
+        logger.info(f"City donation: ${self.donation_cost:,}, Suspicion -3, Community relations: {self.community_relations:.0f}/100")
 
         return True
 
@@ -232,7 +224,7 @@ class SocialEngineeringManager:
         """
         # Check money
         if self.resources.money < self.sponsorship_cost:
-            print(f"Not enough money (need ${self.sponsorship_cost:,})")
+            logger.warning(f"Not enough money for sponsorship (need ${self.sponsorship_cost:,})")
             return False
 
         # Pay cost
@@ -249,15 +241,9 @@ class SocialEngineeringManager:
         # Check for good neighbor status
         if self.community_relations >= 70 and not self.good_neighbor_active:
             self.good_neighbor_active = True
-            print("\n✓ GOOD NEIGHBOR STATUS ACTIVATED!")
-            print(f"   Passive suspicion reduction: {abs(self.good_neighbor_bonus)} per day")
-            print()
+            logger.info(f"Good Neighbor status activated! Passive suspicion reduction: {abs(self.good_neighbor_bonus)} per day")
 
-        print(f"\n🎉 Event Sponsorship")
-        print(f"   Sponsored event for ${self.sponsorship_cost:,}")
-        print(f"   Suspicion reduced by 8")
-        print(f"   Community relations: {self.community_relations:.0f}/100")
-        print()
+        logger.info(f"Event sponsorship: ${self.sponsorship_cost:,}, Suspicion -8, Community relations: {self.community_relations:.0f}/100")
 
         return True
 
@@ -275,16 +261,16 @@ class SocialEngineeringManager:
             bool: True if propaganda started successfully
         """
         if not self.has_social_engineering_research:
-            print("Requires Social Engineering research")
+            logger.warning("Requires Social Engineering research")
             return False
 
         if self.propaganda_active:
-            print("Propaganda already active")
+            logger.debug("Propaganda already active")
             return False
 
         # Check money for first payment
         if self.resources.money < self.propaganda_weekly_cost:
-            print(f"Not enough money (need ${self.propaganda_weekly_cost:,})")
+            logger.warning(f"Not enough money for propaganda (need ${self.propaganda_weekly_cost:,})")
             return False
 
         # Pay first week
@@ -294,11 +280,7 @@ class SocialEngineeringManager:
         self.propaganda_active = True
         self.propaganda_next_payment = game_time + (7 * 24 * 3600)  # Next week
 
-        print(f"\n📺 Propaganda Campaign Started")
-        print(f"   Weekly cost: ${self.propaganda_weekly_cost:,}")
-        print(f"   Effect: Reduces suspicion growth by 50%")
-        print(f"   Warning: Can fail if evidence is too strong")
-        print()
+        logger.info(f"Propaganda campaign started (Weekly cost: ${self.propaganda_weekly_cost:,}, Effect: -50% suspicion growth)")
 
         return True
 
@@ -308,8 +290,7 @@ class SocialEngineeringManager:
             return False
 
         self.propaganda_active = False
-        print("\n📺 Propaganda Campaign Stopped")
-        print()
+        logger.info("Propaganda campaign stopped")
         return True
 
     def _handle_propaganda_payment(self, game_time: float):
@@ -321,10 +302,10 @@ class SocialEngineeringManager:
                 self.total_spent += self.propaganda_weekly_cost
                 self.propaganda_next_payment = game_time + (7 * 24 * 3600)
 
-                print(f"\n📺 Propaganda weekly payment: ${self.propaganda_weekly_cost:,}")
+                logger.debug(f"Propaganda weekly payment: ${self.propaganda_weekly_cost:,}")
             else:
                 # Can't afford - propaganda stops
-                print("\n📺 Propaganda campaign ended (insufficient funds)")
+                logger.warning("Propaganda campaign ended (insufficient funds)")
                 self.propaganda_active = False
 
     def get_suspicion_growth_modifier(self) -> float:

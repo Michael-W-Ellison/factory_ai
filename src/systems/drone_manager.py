@@ -15,6 +15,10 @@ from enum import Enum
 from typing import Dict, List, Tuple, Set, Optional
 from dataclasses import dataclass
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class DroneState(Enum):
     """Drone operational states."""
@@ -257,9 +261,7 @@ class DroneManager:
         self.drones[self.next_drone_id] = drone
         self.next_drone_id += 1
 
-        print(f"\n🚁 DRONE PURCHASED")
-        print(f"  Cost: ${self.drone_purchase_cost:,}")
-        print(f"  Total drones: {len(self.drones)}/{self.max_drones}")
+        logger.info(f"Drone purchased (Cost: ${self.drone_purchase_cost:,}, Total: {len(self.drones)}/{self.max_drones})")
 
         return True
 
@@ -285,7 +287,7 @@ class DroneManager:
 
         # Check battery
         if drone.battery < 10.0:
-            print(f"⚠️ Drone {drone_id} battery too low to deploy ({drone.battery:.1f}%)")
+            logger.warning(f"Drone {drone_id} battery too low to deploy ({drone.battery:.1f}%)")
             return False
 
         # Deploy drone
@@ -294,9 +296,7 @@ class DroneManager:
 
         self.drones_deployed += 1
 
-        print(f"\n🚁 DRONE {drone_id} DEPLOYED")
-        print(f"  Target: ({target_position[0]:.0f}, {target_position[1]:.0f})")
-        print(f"  Battery: {drone.battery:.1f}%")
+        logger.info(f"Drone {drone_id} deployed to ({target_position[0]:.0f}, {target_position[1]:.0f}) - Battery: {drone.battery:.1f}%")
 
         return True
 
@@ -323,9 +323,7 @@ class DroneManager:
         drone.state = DroneState.RETURNING
         drone.target_position = drone.base_position
 
-        print(f"\n🚁 DRONE {drone_id} RECALLED")
-        print(f"  Returning to base")
-        print(f"  Battery: {drone.battery:.1f}%")
+        logger.info(f"Drone {drone_id} recalled, returning to base (Battery: {drone.battery:.1f}%)")
 
         return True
 
@@ -382,16 +380,13 @@ class DroneManager:
                 drone.state = DroneState.CRASHED
                 drone.battery = 0
                 self.drones_crashed += 1
-                print(f"\n💥 DRONE {drone.id} CRASHED!")
-                print(f"  Position: ({drone.position[0]:.0f}, {drone.position[1]:.0f})")
-                print(f"  Battery depleted")
+                logger.warning(f"Drone {drone.id} crashed at ({drone.position[0]:.0f}, {drone.position[1]:.0f}) - Battery depleted")
 
             elif drone.battery <= self.auto_return_battery:
                 # Auto-return to base
                 drone.state = DroneState.RETURNING
                 drone.target_position = drone.base_position
-                print(f"\n⚠️ DRONE {drone.id} AUTO-RETURNING")
-                print(f"  Low battery: {drone.battery:.1f}%")
+                logger.info(f"Drone {drone.id} auto-returning - Low battery: {drone.battery:.1f}%")
 
         elif drone.state == DroneState.RETURNING:
             # Drain battery
@@ -407,9 +402,7 @@ class DroneManager:
                 # Reached base
                 drone.state = DroneState.CHARGING
                 drone.target_position = None
-                print(f"\n🚁 DRONE {drone.id} RETURNED TO BASE")
-                print(f"  Battery: {drone.battery:.1f}%")
-                print(f"  Charging...")
+                logger.info(f"Drone {drone.id} returned to base (Battery: {drone.battery:.1f}%), charging")
 
             # Check battery
             if drone.battery <= 0:
@@ -417,8 +410,7 @@ class DroneManager:
                 drone.state = DroneState.CRASHED
                 drone.battery = 0
                 self.drones_crashed += 1
-                print(f"\n💥 DRONE {drone.id} CRASHED DURING RETURN!")
-                print(f"  Position: ({drone.position[0]:.0f}, {drone.position[1]:.0f})")
+                logger.warning(f"Drone {drone.id} crashed during return at ({drone.position[0]:.0f}, {drone.position[1]:.0f})")
 
         elif drone.state == DroneState.CRASHED:
             # Crashed, permanently lost
