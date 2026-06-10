@@ -408,7 +408,7 @@ class SaveManager:
                 file_path = os.path.join(self.SAVE_DIRECTORY, filename)
 
                 try:
-                    with open(file_path, 'r') as f:
+                    with open(file_path, 'r', encoding='utf-8') as f:
                         save_data = json.load(f)
 
                     save_info = {

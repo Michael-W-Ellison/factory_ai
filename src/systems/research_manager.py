@@ -469,7 +469,7 @@ class ResearchManager:
             'stats': self.stats
         }
 
-    def load_state(self, state: Dict):
+    def load_state(self, state: Dict) -> None:
         """
         Load research manager state.
 

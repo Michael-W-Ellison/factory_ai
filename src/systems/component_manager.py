@@ -41,12 +41,23 @@ class ComponentManager:
             dict: Component definitions
         """
         json_path = os.path.join('data', 'components.json')
-        if os.path.exists(json_path):
-            with open(json_path, 'r') as f:
+
+        if not os.path.exists(json_path):
+            logger.warning(f"{json_path} not found, using empty component definitions")
+            return {}
+
+        try:
+            with open(json_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
                 return data.get('components', {})
-        else:
-            logger.warning(f"{json_path} not found, using empty component definitions")
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in component file: {e}")
+            return {}
+        except PermissionError as e:
+            logger.error(f"Permission denied reading component file: {e}")
+            return {}
+        except OSError as e:
+            logger.error(f"Error reading component file: {e}")
             return {}
 
     def get_component_definition(self, component_type: str) -> Optional[Dict]:
@@ -405,7 +416,7 @@ class ComponentManager:
             'active_manufacturing': self.active_manufacturing
         }
 
-    def load_state(self, state: Dict):
+    def load_state(self, state: Dict) -> None:
         """
         Load component manager state from serialized data.
 
