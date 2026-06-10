@@ -2,8 +2,11 @@
 Factory building - the core control center.
 """
 
-from src.entities.building import Building
 from src.core.constants import Colors
+from src.core.logger import get_logger
+from src.entities.building import Building
+
+logger = get_logger(__name__)
 
 
 class Factory(Building):
@@ -168,7 +171,7 @@ class Factory(Building):
             })
 
         # Waste is lost
-        print(f"Factory processed {quantity:.1f}kg of {material_type} -> {output_quantity:.1f}kg output, {waste_quantity:.1f}kg waste")
+        logger.debug(f"Factory processed {quantity:.1f}kg of {material_type} -> {output_quantity:.1f}kg output, {waste_quantity:.1f}kg waste")
 
         # Clear current processing
         self.processing_current = None

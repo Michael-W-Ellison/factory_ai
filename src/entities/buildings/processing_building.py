@@ -2,8 +2,12 @@
 ProcessingBuilding - base class for material processing buildings.
 """
 
-from src.entities.building import Building
 import random
+
+from src.core.logger import get_logger
+from src.entities.building import Building
+
+logger = get_logger(__name__)
 
 
 class ProcessingBuilding(Building):
@@ -151,9 +155,9 @@ class ProcessingBuilding(Building):
                     current_output += output_quantity
                 else:
                     # Output queue full, material is lost
-                    print(f"{self.name} output queue full! Lost {output_quantity:.1f}kg of {output_material}")
+                    logger.warning(f"{self.name} output queue full! Lost {output_quantity:.1f}kg of {output_material}")
 
-        print(f"{self.name} processed {quantity:.1f}kg of {material_type} "
+        logger.debug(f"{self.name} processed {quantity:.1f}kg of {material_type} "
               f"-> {usable_quantity:.1f}kg output, {waste_quantity:.1f}kg waste")
 
         # Clear current processing

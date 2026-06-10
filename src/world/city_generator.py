@@ -13,6 +13,10 @@ import random
 from enum import Enum
 from typing import List, Tuple, Dict, Optional
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class ZoneType(Enum):
     """Types of zones in the city."""
@@ -88,7 +92,7 @@ class CityGenerator:
         self.center_x = self.blocks_wide // 2
         self.center_y = self.blocks_high // 2
 
-        print(f"CityGenerator initialized: {self.blocks_wide}x{self.blocks_high} blocks "
+        logger.debug(f"CityGenerator initialized: {self.blocks_wide}x{self.blocks_high} blocks "
               f"({self.grid_width}x{self.grid_height} tiles)")
 
     def generate(self, seed: Optional[int] = None) -> Dict:
@@ -104,7 +108,7 @@ class CityGenerator:
         if seed is not None:
             random.seed(seed)
 
-        print("Generating city layout...")
+        logger.debug("Generating city layout...")
 
         # Initialize blocks grid
         self._initialize_blocks()
@@ -121,14 +125,7 @@ class CityGenerator:
         # Generate statistics
         stats = self._get_statistics()
 
-        print(f"City generation complete!")
-        print(f"  Blocks: {stats['total_blocks']}")
-        print(f"  Roads: {stats['road_tiles']} tiles")
-        print(f"  Residential: {stats['residential_blocks']} blocks")
-        print(f"  Commercial: {stats['commercial_blocks']} blocks")
-        print(f"  Industrial: {stats['industrial_blocks']} blocks")
-        print(f"  Parks: {stats['park_blocks']} blocks")
-        print(f"  Buildings: {stats['total_buildings']}")
+        logger.debug(f"City generation complete: {stats['total_blocks']} blocks, {stats['road_tiles']} roads, {stats['total_buildings']} buildings")
 
         return {
             'blocks': self.blocks,

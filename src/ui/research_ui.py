@@ -7,6 +7,10 @@ Provides a menu for browsing technologies, viewing details, and starting researc
 import pygame
 from typing import Optional, Dict, List
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class ResearchUI:
     """
@@ -150,14 +154,14 @@ class ResearchUI:
             if self.start_button_rect and self.start_button_rect.collidepoint(mouse_x, mouse_y):
                 if self.selected_research:
                     if research_manager.start_research(self.selected_research, money):
-                        print(f"Started research: {self.selected_research}")
+                        logger.info(f"Started research: {self.selected_research}")
                         return True
 
             # Check cancel button
             if self.cancel_button_rect and self.cancel_button_rect.collidepoint(mouse_x, mouse_y):
                 cancelled = research_manager.cancel_research()
                 if cancelled:
-                    print(f"Cancelled research: {cancelled}")
+                    logger.info(f"Cancelled research: {cancelled}")
                     return True
 
         elif event.type == pygame.MOUSEWHEEL:

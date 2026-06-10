@@ -12,6 +12,10 @@ import pygame
 from typing import Dict, List, Optional, Tuple, Callable, Any
 from enum import Enum
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class SettingsTab(Enum):
     """Settings menu tabs."""
@@ -720,7 +724,7 @@ class SettingsUI:
         """Apply and save settings."""
         self.settings.save_settings()
         self.has_changes = False
-        print("Settings saved!")
+        logger.info("Settings saved!")
 
     def _reset_settings(self):
         """Reset current tab to defaults."""
@@ -733,7 +737,7 @@ class SettingsUI:
         category = category_map[self.current_tab]
         self.settings.reset_to_defaults(category)
         self._refresh_widgets()
-        print(f"Reset {category} settings to defaults")
+        logger.info(f"Reset {category} settings to defaults")
 
     def render(self, screen: pygame.Surface):
         """Render the settings UI."""

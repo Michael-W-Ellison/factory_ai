@@ -3,7 +3,11 @@ Building entity - base class for all factory buildings.
 """
 
 import pygame
+
+from src.core.logger import get_logger
 from src.entities.entity import Entity
+
+logger = get_logger(__name__)
 
 
 class Building(Entity):
@@ -165,7 +169,7 @@ class Building(Entity):
 
     def on_construction_complete(self):
         """Called when construction finishes."""
-        print(f"{self.name} construction complete at ({self.grid_x}, {self.grid_y})")
+        logger.info(f"{self.name} construction complete at ({self.grid_x}, {self.grid_y})")
 
     def _render_construction(self, screen, screen_x, screen_y, rect):
         """

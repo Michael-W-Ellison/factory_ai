@@ -14,6 +14,10 @@ Key features:
 from enum import Enum
 import math
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class DroneState(Enum):
     """Drone operational states."""
@@ -141,7 +145,7 @@ class Drone:
             self.state = DroneState.RETURNING
             self.target_x = self.drone_pad.x
             self.target_y = self.drone_pad.y
-            print(f"Drone {self.drone_id} returning to pad (low battery)")
+            logger.debug(f"Drone {self.drone_id} returning to pad (low battery)")
 
     def set_manual_target(self, x: float, y: float):
         """Set manual flight target."""
