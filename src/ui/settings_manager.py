@@ -341,12 +341,12 @@ class SettingsManager:
             return False
 
     def get_all_settings(self) -> Dict:
-        """Get all settings as dictionary."""
-        return self.settings.copy()
+        """Get all settings as dictionary (deep copy to prevent external modification)."""
+        return copy.deepcopy(self.settings)
 
     def get_category_settings(self, category: str) -> Dict:
-        """Get all settings in a category."""
-        return self.settings.get(category, {}).copy()
+        """Get all settings in a category (deep copy to prevent external modification)."""
+        return copy.deepcopy(self.settings.get(category, {}))
 
     def get_stats(self) -> Dict:
         """Get settings manager statistics."""

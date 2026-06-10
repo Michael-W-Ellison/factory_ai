@@ -263,7 +263,8 @@ class CameraHackingManager:
         # Major suspicion increase
         self.suspicion.add_suspicion(30, "FBI investigation triggered by excessive hacking")
 
-        # TODO: In future, integrate with FBI system (Phase 9)
+        # Note: FBI manager integration requires game.py to instantiate FBIManager
+        # and pass it to CameraHackingManager. Currently FBI triggers via suspicion level.
 
     def cancel_hack(self):
         """Cancel current hacking attempt."""
