@@ -57,7 +57,8 @@ class ResearchUI:
             self.font_title = pygame.font.Font(None, 32)
             self.font_normal = pygame.font.Font(None, 24)
             self.font_small = pygame.font.Font(None, 20)
-        except:
+        except pygame.error:
+            # Fall back to system font if default font fails
             self.font_title = pygame.font.SysFont('arial', 32)
             self.font_normal = pygame.font.SysFont('arial', 24)
             self.font_small = pygame.font.SysFont('arial', 20)

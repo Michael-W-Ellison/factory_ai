@@ -11,8 +11,14 @@ Handles:
 
 import json
 import os
+import re
 from datetime import datetime
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List, Tuple
+
+
+class SaveValidationError(Exception):
+    """Raised when save file validation fails."""
+    pass
 
 
 class SaveManager:
@@ -41,6 +47,163 @@ class SaveManager:
         # Current save file name (for quick save)
         self.current_save_name: Optional[str] = None
 
+    def _sanitize_save_name(self, save_name: str) -> str:
+        """
+        Sanitize a save name to prevent path traversal and invalid characters.
+
+        Args:
+            save_name: The raw save name input
+
+        Returns:
+            Sanitized save name
+
+        Raises:
+            ValueError: If save name is invalid or potentially malicious
+        """
+        if not save_name:
+            raise ValueError("Save name cannot be empty")
+
+        # Convert to string and strip whitespace
+        save_name = str(save_name).strip()
+
+        if not save_name:
+            raise ValueError("Save name cannot be empty or whitespace only")
+
+        # Check for path traversal attempts
+        if '..' in save_name:
+            raise ValueError("Save name cannot contain '..'")
+
+        if save_name.startswith('/') or save_name.startswith('\\'):
+            raise ValueError("Save name cannot be an absolute path")
+
+        # Check for path separators
+        if '/' in save_name or '\\' in save_name:
+            raise ValueError("Save name cannot contain path separators")
+
+        # Check for other dangerous characters
+        dangerous_chars = ['<', '>', ':', '"', '|', '?', '*', '\x00']
+        for char in dangerous_chars:
+            if char in save_name:
+                raise ValueError(f"Save name cannot contain '{char}'")
+
+        # Validate against whitelist pattern: alphanumeric, underscore, hyphen, space, period
+        if not re.match(r'^[\w\-. ]+$', save_name):
+            raise ValueError("Save name contains invalid characters. Use only letters, numbers, underscore, hyphen, space, or period")
+
+        # Limit length
+        max_length = 50
+        if len(save_name) > max_length:
+            raise ValueError(f"Save name cannot exceed {max_length} characters")
+
+        # Don't allow names that are only dots/spaces
+        if save_name.replace('.', '').replace(' ', '') == '':
+            raise ValueError("Save name must contain at least one alphanumeric character")
+
+        return save_name
+
+    def _validate_path_security(self, file_path: str) -> bool:
+        """
+        Validate that a file path is within the allowed save directory.
+
+        Args:
+            file_path: The file path to validate
+
+        Returns:
+            True if path is safe
+
+        Raises:
+            ValueError: If path escapes the save directory
+        """
+        # Get absolute paths for comparison
+        save_dir_abs = os.path.abspath(self.SAVE_DIRECTORY)
+        file_path_abs = os.path.abspath(file_path)
+
+        # Resolve any symlinks
+        save_dir_real = os.path.realpath(save_dir_abs)
+        file_path_real = os.path.realpath(file_path_abs)
+
+        # Check that file path starts with save directory
+        if not file_path_real.startswith(save_dir_real + os.sep) and file_path_real != save_dir_real:
+            raise ValueError(f"Path '{file_path}' escapes save directory")
+
+        return True
+
+    def _validate_save_schema(self, save_data: Dict[str, Any]) -> Tuple[bool, List[str]]:
+        """
+        Validate save file structure and data types.
+
+        Args:
+            save_data: The loaded save data dictionary
+
+        Returns:
+            Tuple of (is_valid, list of warning messages)
+        """
+        warnings = []
+
+        # Check required top-level keys
+        required_keys = ['version', 'timestamp', 'game_state']
+        for key in required_keys:
+            if key not in save_data:
+                warnings.append(f"Missing required key: {key}")
+
+        # Validate version
+        version = save_data.get('version')
+        if version is not None and not isinstance(version, str):
+            warnings.append(f"Invalid version type: expected str, got {type(version).__name__}")
+
+        # Validate timestamp
+        timestamp = save_data.get('timestamp')
+        if timestamp is not None and not isinstance(timestamp, str):
+            warnings.append(f"Invalid timestamp type: expected str, got {type(timestamp).__name__}")
+
+        # Validate game_state structure
+        game_state = save_data.get('game_state')
+        if game_state is None:
+            warnings.append("game_state is missing or null")
+        elif not isinstance(game_state, dict):
+            warnings.append(f"Invalid game_state type: expected dict, got {type(game_state).__name__}")
+        else:
+            # Validate game_state sub-structures
+            self._validate_game_state_schema(game_state, warnings)
+
+        is_valid = len([w for w in warnings if 'Missing required' in w or 'is missing' in w]) == 0
+        return is_valid, warnings
+
+    def _validate_game_state_schema(self, game_state: Dict[str, Any], warnings: List[str]):
+        """Validate game_state structure and types."""
+        # Validate time section
+        time_data = game_state.get('time', {})
+        if not isinstance(time_data, dict):
+            warnings.append("time should be a dictionary")
+        else:
+            if 'day' in time_data and not isinstance(time_data['day'], (int, float)):
+                warnings.append(f"time.day should be numeric, got {type(time_data['day']).__name__}")
+            if 'hour' in time_data and not isinstance(time_data['hour'], (int, float)):
+                warnings.append(f"time.hour should be numeric, got {type(time_data['hour']).__name__}")
+
+        # Validate resources section
+        resources = game_state.get('resources', {})
+        if not isinstance(resources, dict):
+            warnings.append("resources should be a dictionary")
+        else:
+            if 'money' in resources and not isinstance(resources['money'], (int, float)):
+                warnings.append(f"resources.money should be numeric, got {type(resources['money']).__name__}")
+
+        # Validate buildings section
+        buildings = game_state.get('buildings', [])
+        if not isinstance(buildings, list):
+            warnings.append("buildings should be a list")
+
+        # Validate robots section
+        robots = game_state.get('robots', [])
+        if not isinstance(robots, list):
+            warnings.append("robots should be a list")
+
+        # Validate research section
+        research = game_state.get('research', {})
+        if not isinstance(research, dict):
+            warnings.append("research should be a dictionary")
+
     def save_game(self, game_state: Dict[str, Any], save_name: str = None) -> bool:
         """
         Save the game state to a file.
@@ -55,6 +218,13 @@ class SaveManager:
         if save_name is None:
             save_name = self.current_save_name or self.AUTO_SAVE_NAME
 
+        # Sanitize save name for security
+        try:
+            save_name = self._sanitize_save_name(save_name)
+        except ValueError as e:
+            print(f"Invalid save name: {e}")
+            return False
+
         # Update current save name
         self.current_save_name = save_name
 
@@ -66,8 +236,15 @@ class SaveManager:
             "game_state": game_state
         }
 
-        # Save to file
+        # Get and validate file path
         file_path = self._get_save_path(save_name)
+        try:
+            self._validate_path_security(file_path)
+        except ValueError as e:
+            print(f"Security error: {e}")
+            return False
+
+        # Save to file
         try:
             with open(file_path, 'w') as f:
                 json.dump(save_data, f, indent=2)
@@ -87,7 +264,21 @@ class SaveManager:
         Returns:
             Game state dictionary if successful, None otherwise
         """
+        # Sanitize save name for security
+        try:
+            save_name = self._sanitize_save_name(save_name)
+        except ValueError as e:
+            print(f"Invalid save name: {e}")
+            return None
+
         file_path = self._get_save_path(save_name)
+
+        # Validate path security
+        try:
+            self._validate_path_security(file_path)
+        except ValueError as e:
+            print(f"Security error: {e}")
+            return None
 
         if not os.path.exists(file_path):
             print(f"Save file not found: {file_path}")
@@ -96,6 +287,15 @@ class SaveManager:
         try:
             with open(file_path, 'r') as f:
                 save_data = json.load(f)
+
+            # Validate save file schema
+            is_valid, warnings = self._validate_save_schema(save_data)
+            for warning in warnings:
+                print(f"Save validation warning: {warning}")
+
+            if not is_valid:
+                print("Save file failed validation - required fields missing")
+                return None
 
             # Validate save version
             if save_data.get("version") != self.SAVE_VERSION:
@@ -110,6 +310,9 @@ class SaveManager:
 
             return save_data.get("game_state")
 
+        except json.JSONDecodeError as e:
+            print(f"Error: Save file is not valid JSON: {e}")
+            return None
         except Exception as e:
             print(f"Error loading game: {e}")
             return None
@@ -212,7 +415,21 @@ class SaveManager:
         Returns:
             True if deleted successfully, False otherwise
         """
+        # Sanitize save name for security
+        try:
+            save_name = self._sanitize_save_name(save_name)
+        except ValueError as e:
+            print(f"Invalid save name: {e}")
+            return False
+
         file_path = self._get_save_path(save_name)
+
+        # Validate path security
+        try:
+            self._validate_path_security(file_path)
+        except ValueError as e:
+            print(f"Security error: {e}")
+            return False
 
         if os.path.exists(file_path):
             try:
@@ -370,6 +587,59 @@ class SaveManager:
         return game_state
 
     @staticmethod
+    def _safe_int(value: Any, default: int) -> int:
+        """Safely convert value to int with default fallback."""
+        if value is None:
+            return default
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return default
+
+    @staticmethod
+    def _safe_float(value: Any, default: float) -> float:
+        """Safely convert value to float with default fallback."""
+        if value is None:
+            return default
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return default
+
+    @staticmethod
+    def _safe_bool(value: Any, default: bool) -> bool:
+        """Safely convert value to bool with default fallback."""
+        if value is None:
+            return default
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            return value.lower() in ('true', '1', 'yes')
+        return bool(value)
+
+    @staticmethod
+    def _safe_dict(value: Any, default: Dict = None) -> Dict:
+        """Safely get dictionary with default fallback."""
+        if default is None:
+            default = {}
+        if value is None:
+            return default.copy() if default else {}
+        if isinstance(value, dict):
+            return value.copy()
+        return default.copy() if default else {}
+
+    @staticmethod
+    def _safe_list(value: Any, default: list = None) -> list:
+        """Safely get list with default fallback."""
+        if default is None:
+            default = []
+        if value is None:
+            return default.copy() if default else []
+        if isinstance(value, list):
+            return value.copy()
+        return default.copy() if default else []
+
+    @staticmethod
     def deserialize_game_state(game, game_state: Dict[str, Any]) -> bool:
         """
         Restore the game state from a dictionary.
@@ -381,80 +651,147 @@ class SaveManager:
         Returns:
             True if successful, False otherwise
         """
-        try:
-            # Restore time
-            time_data = game_state.get("time", {})
-            game.day = time_data.get("day", 1)
-            game.hour = time_data.get("hour", 6)
-            game.minute = time_data.get("minute", 0)
-            game.time_speed = time_data.get("time_speed", 1)
-            game.paused = time_data.get("paused", False)
+        if not isinstance(game_state, dict):
+            print("Error: game_state must be a dictionary")
+            return False
 
-            # Restore resources
-            resources_data = game_state.get("resources", {})
-            game.resource_manager.money = resources_data.get("money", 10000)
-            game.resource_manager.materials = resources_data.get("materials", {}).copy()
+        try:
+            # Restore time with type validation
+            time_data = SaveManager._safe_dict(game_state.get("time"))
+            game.day = SaveManager._safe_int(time_data.get("day"), 1)
+            game.hour = SaveManager._safe_int(time_data.get("hour"), 6)
+            game.minute = SaveManager._safe_int(time_data.get("minute"), 0)
+            game.time_speed = SaveManager._safe_float(time_data.get("time_speed"), 1.0)
+            game.paused = SaveManager._safe_bool(time_data.get("paused"), False)
+
+            # Validate time ranges
+            game.day = max(1, game.day)
+            game.hour = max(0, min(23, game.hour))
+            game.minute = max(0, min(59, game.minute))
+            game.time_speed = max(0.1, min(10.0, game.time_speed))
+
+            # Restore resources with type validation
+            resources_data = SaveManager._safe_dict(game_state.get("resources"))
+            game.resource_manager.money = SaveManager._safe_float(resources_data.get("money"), 10000)
+            game.resource_manager.money = max(0, game.resource_manager.money)  # No negative money
+
+            materials = SaveManager._safe_dict(resources_data.get("materials"))
+            # Validate materials dict has numeric values
+            game.resource_manager.materials = {
+                str(k): SaveManager._safe_float(v, 0)
+                for k, v in materials.items()
+            }
 
             # Clear existing entities
             game.entity_manager.clear_all()
             game.building_manager.buildings.clear()
 
-            # Restore buildings
-            for building_data in game_state.get("buildings", []):
+            # Restore buildings with validation
+            buildings_data = SaveManager._safe_list(game_state.get("buildings"))
+            for building_data in buildings_data:
+                if not isinstance(building_data, dict):
+                    print(f"Warning: Skipping invalid building data: {type(building_data)}")
+                    continue
                 # This would need to call building_manager.create_building() with proper parameters
                 # Implementation depends on your building creation system
                 pass
 
-            # Restore robots
-            for robot_data in game_state.get("robots", []):
+            # Restore robots with validation
+            robots_data = SaveManager._safe_list(game_state.get("robots"))
+            for robot_data in robots_data:
+                if not isinstance(robot_data, dict):
+                    print(f"Warning: Skipping invalid robot data: {type(robot_data)}")
+                    continue
                 # This would need to call entity_manager.create_robot() with proper parameters
                 # Implementation depends on your robot creation system
                 pass
 
-            # Restore research
-            research_data = game_state.get("research", {})
-            game.research_manager.completed_research = set(research_data.get("completed", []))
+            # Restore research with type validation
+            research_data = SaveManager._safe_dict(game_state.get("research"))
+            completed = SaveManager._safe_list(research_data.get("completed"))
+            # Filter to only valid string values
+            game.research_manager.completed_research = set(
+                str(item) for item in completed if item is not None
+            )
             game.research_manager.current_research = research_data.get("current")
-            game.research_manager.research_progress = research_data.get("progress", 0)
-            game.research_manager.research_time_required = research_data.get("time_required", 0)
+            game.research_manager.research_progress = SaveManager._safe_float(
+                research_data.get("progress"), 0
+            )
+            game.research_manager.research_time_required = SaveManager._safe_float(
+                research_data.get("time_required"), 0
+            )
 
-            # Restore suspicion
+            # Restore suspicion with validation
             if hasattr(game, 'suspicion_manager'):
-                suspicion_data = game_state.get("suspicion", {})
-                game.suspicion_manager.suspicion_level = suspicion_data.get("level", 0)
-                game.suspicion_manager.suspicion_sources = suspicion_data.get("sources", {}).copy()
+                suspicion_data = SaveManager._safe_dict(game_state.get("suspicion"))
+                game.suspicion_manager.suspicion_level = SaveManager._safe_float(
+                    suspicion_data.get("level"), 0
+                )
+                game.suspicion_manager.suspicion_level = max(0, min(100,
+                    game.suspicion_manager.suspicion_level))
+                game.suspicion_manager.suspicion_sources = SaveManager._safe_dict(
+                    suspicion_data.get("sources")
+                )
 
-            # Restore cameras
+            # Restore cameras with validation
             if hasattr(game, 'camera_manager'):
-                for camera_data in game_state.get("cameras", []):
+                cameras_data = SaveManager._safe_list(game_state.get("cameras"))
+                for camera_data in cameras_data:
+                    if not isinstance(camera_data, dict):
+                        continue
                     # Restore camera states
                     pass
 
-            # Restore inspection
+            # Restore inspection with validation
             if hasattr(game, 'inspection_manager'):
-                inspection_data = game_state.get("inspection", {})
-                game.inspection_manager.inspection_scheduled = inspection_data.get("scheduled", False)
-                game.inspection_manager.inspection_countdown = inspection_data.get("countdown", 0)
+                inspection_data = SaveManager._safe_dict(game_state.get("inspection"))
+                game.inspection_manager.inspection_scheduled = SaveManager._safe_bool(
+                    inspection_data.get("scheduled"), False
+                )
+                game.inspection_manager.inspection_countdown = SaveManager._safe_float(
+                    inspection_data.get("countdown"), 0
+                )
 
-            # Restore FBI
+            # Restore FBI with validation
             if hasattr(game, 'fbi_manager'):
-                fbi_data = game_state.get("fbi", {})
-                game.fbi_manager.investigation_level = fbi_data.get("investigation_level", 0)
-                game.fbi_manager.investigation_active = fbi_data.get("active", False)
+                fbi_data = SaveManager._safe_dict(game_state.get("fbi"))
+                game.fbi_manager.investigation_level = SaveManager._safe_int(
+                    fbi_data.get("investigation_level"), 0
+                )
+                game.fbi_manager.investigation_active = SaveManager._safe_bool(
+                    fbi_data.get("active"), False
+                )
 
-            # Restore weather
+            # Restore weather with validation
             if hasattr(game, 'weather_manager'):
-                weather_data = game_state.get("weather", {})
+                weather_data = SaveManager._safe_dict(game_state.get("weather"))
                 # This would need to set weather state properly
                 pass
 
-            # Restore statistics
+            # Restore statistics with validation
             if hasattr(game, 'stats'):
-                game.stats = game_state.get("stats", {}).copy()
+                stats_data = SaveManager._safe_dict(game_state.get("stats"))
+                game.stats = {
+                    "materials_collected": SaveManager._safe_int(
+                        stats_data.get("total_materials_collected"), 0
+                    ),
+                    "money_earned": SaveManager._safe_float(
+                        stats_data.get("total_money_earned"), 0
+                    ),
+                    "buildings_built": SaveManager._safe_int(
+                        stats_data.get("total_buildings_built"), 0
+                    ),
+                }
 
             print("Game state restored successfully")
             return True
 
+        except KeyError as e:
+            print(f"Error: Missing required key in save data: {e}")
+            return False
+        except TypeError as e:
+            print(f"Error: Invalid data type in save data: {e}")
+            return False
         except Exception as e:
             print(f"Error restoring game state: {e}")
             import traceback
