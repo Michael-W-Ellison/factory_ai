@@ -337,7 +337,7 @@ class SettingsUI:
     - Gameplay settings (difficulty, speed)
     """
 
-    def __init__(self, screen_width: int, screen_height: int, settings_manager):
+    def __init__(self, screen_width: int, screen_height: int, settings_manager, audio_manager=None):
         """
         Initialize settings UI.
 
@@ -345,10 +345,12 @@ class SettingsUI:
             screen_width: Screen width in pixels
             screen_height: Screen height in pixels
             settings_manager: SettingsManager instance
+            audio_manager: Optional AudioManager for live volume control
         """
         self.screen_width = screen_width
         self.screen_height = screen_height
         self.settings = settings_manager
+        self.audio = audio_manager
 
         # Visibility
         self.visible = False
@@ -601,6 +603,17 @@ class SettingsUI:
         """Handle setting value change."""
         self.settings.set(category, key, value)
         self.has_changes = True
+
+        # Apply audio changes in real-time
+        if category == 'audio' and self.audio:
+            if key == 'master_volume':
+                self.audio.set_master_volume(value)
+            elif key == 'music_volume':
+                self.audio.set_music_volume(value)
+            elif key == 'sfx_volume':
+                self.audio.set_sfx_volume(value)
+            elif key == 'mute':
+                self.audio.set_muted(value)
 
     def _on_resolution_change(self, index: int, resolution: str):
         """Handle resolution change."""

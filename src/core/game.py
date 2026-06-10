@@ -42,6 +42,7 @@ from src.ui.controls_help import ControlsHelp
 from src.ui.minimap import Minimap
 from src.ui.settings_manager import SettingsManager
 from src.ui.settings_ui import SettingsUI
+from src.systems.audio_manager import AudioManager
 
 
 class Game:
@@ -173,8 +174,13 @@ class Game:
 
         # Initialize settings system
         self.settings_manager = SettingsManager()
+
+        # Initialize audio system
+        self.audio = AudioManager(self.settings_manager, sound_dir='data/sounds')
+
+        # Initialize settings UI (pass audio manager for live volume control)
         self.settings_ui = SettingsUI(config.SCREEN_WIDTH, config.SCREEN_HEIGHT,
-                                       self.settings_manager)
+                                       self.settings_manager, self.audio)
 
         # Apply initial game speed from settings
         self.game_speed = self.settings_manager.get('gameplay', 'game_speed', 1.0)
@@ -351,6 +357,7 @@ class Game:
             self.render()
 
         # Clean up
+        self.audio.cleanup()
         pygame.quit()
         print("Game ended.")
 
@@ -394,6 +401,7 @@ class Game:
                 # O key to open settings menu
                 elif event.key == pygame.K_o:
                     self.settings_ui.toggle()
+                    self.audio.play_sfx('ui_open' if self.settings_ui.visible else 'ui_close')
                     print(f"Settings menu: {'opened' if self.settings_ui.visible else 'closed'}")
                 # Toggle grid display with G key
                 elif event.key == pygame.K_g:
@@ -402,6 +410,7 @@ class Game:
                 # R key to open research menu (check settings binding)
                 elif event.key == pygame.K_r or self._check_key_binding(event, key_bindings, 'research_menu'):
                     self.research_ui.toggle()
+                    self.audio.play_sfx('ui_open' if self.research_ui.visible else 'ui_close')
                     print(f"Research menu: {'opened' if self.research_ui.visible else 'closed'}")
                 # P key to toggle pollution overlay
                 elif event.key == pygame.K_p:
@@ -463,6 +472,7 @@ class Game:
                 # Try to select a robot
                 selected = self.entities.select_robot_at(world_x, world_y)
                 if selected:
+                    self.audio.play_robot_select()
                     print(f"Selected {selected}")
                 else:
                     # If no robot selected, show tile info
@@ -503,6 +513,7 @@ class Game:
             self.entities.apply_research_effects_to_robots(self.research)
             self.buildings.apply_research_effects_to_buildings(self.research)
             self.research.effects_changed = False
+            self.audio.play_research_complete()
             print("Applied research effects to all robots and buildings")
 
         # Update entities (includes collection mechanics)
@@ -553,6 +564,7 @@ class Game:
             changed = self.suspicion.process_detection_report(report)
             if changed:
                 tier_changed = True
+                self.audio.play_alert('warning')
             # Notify police of high-level detections
             self.police.handle_detection_report(report)
 
@@ -591,6 +603,7 @@ class Game:
         # Check if police captured any robots (game over condition)
         captured = self.police.check_captures(self.entities.robots)
         if captured:
+            self.audio.play_alert('police')
             # TODO: Implement game over
             print("⚠️ GAME OVER: Police captured robot!")
 
