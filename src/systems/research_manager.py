@@ -9,6 +9,10 @@ import json
 import os
 from typing import Dict, List, Optional, Set
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class ResearchManager:
     """
@@ -46,15 +50,33 @@ class ResearchManager:
         Load research definitions from JSON file.
 
         Returns:
-            dict: Research technology definitions
+            Research technology definitions, or empty dict on error
         """
         json_path = os.path.join('data', 'research.json')
-        if os.path.exists(json_path):
-            with open(json_path, 'r') as f:
+
+        if not os.path.exists(json_path):
+            logger.warning(f"Research file not found: {json_path}, using empty research tree")
+            return {}
+
+        try:
+            with open(json_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-                return data.get('technologies', {})
-        else:
-            print(f"Warning: {json_path} not found, using empty research tree")
+
+            technologies = data.get('technologies', {})
+            if technologies:
+                logger.info(f"Loaded {len(technologies)} research technologies")
+            else:
+                logger.warning("Research file contains no technologies")
+            return technologies
+
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in research file: {e}")
+            return {}
+        except PermissionError as e:
+            logger.error(f"Permission denied reading research file: {e}")
+            return {}
+        except Exception as e:
+            logger.exception(f"Unexpected error loading research file: {e}")
             return {}
 
     def get_research_definition(self, tech_id: str) -> Optional[Dict]:

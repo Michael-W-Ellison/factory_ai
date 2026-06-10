@@ -1,3 +1,8 @@
 # Python dependencies for Recycling Factory game
+# Install with: pip install -r requirements.txt
 
-pygame>=2.5.0
+# Core game engine
+pygame>=2.5.0,<3.0.0
+
+# Procedural terrain/noise generation
+noise>=1.2.2,<2.0.0

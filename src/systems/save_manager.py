@@ -3,8 +3,8 @@ SaveManager - Manages saving and loading game state.
 
 Handles:
 - Serializing game state to JSON
-- Saving to file
-- Loading from file
+- Saving to file with atomic writes
+- Loading from file with validation
 - Auto-save functionality
 - Multiple save slots
 """
@@ -12,8 +12,14 @@ Handles:
 import json
 import os
 import re
+import shutil
+import tempfile
 from datetime import datetime
 from typing import Dict, Any, Optional, List, Tuple
+
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class SaveValidationError(Exception):
@@ -222,7 +228,7 @@ class SaveManager:
         try:
             save_name = self._sanitize_save_name(save_name)
         except ValueError as e:
-            print(f"Invalid save name: {e}")
+            logger.error(f"Invalid save name: {e}")
             return False
 
         # Update current save name
@@ -241,17 +247,38 @@ class SaveManager:
         try:
             self._validate_path_security(file_path)
         except ValueError as e:
-            print(f"Security error: {e}")
+            logger.error(f"Security error: {e}")
             return False
 
-        # Save to file
+        # Save to file using atomic write
         try:
-            with open(file_path, 'w') as f:
-                json.dump(save_data, f, indent=2)
-            print(f"Game saved to: {file_path}")
-            return True
+            save_dir = os.path.dirname(file_path)
+            fd, temp_path = tempfile.mkstemp(
+                suffix='.json.tmp',
+                prefix=f'{save_name}_',
+                dir=save_dir
+            )
+            try:
+                with os.fdopen(fd, 'w', encoding='utf-8') as f:
+                    json.dump(save_data, f, indent=2)
+                    f.flush()
+                    os.fsync(f.fileno())
+                shutil.move(temp_path, file_path)
+                logger.info(f"Game saved to: {file_path}")
+                return True
+            except Exception:
+                if os.path.exists(temp_path):
+                    os.unlink(temp_path)
+                raise
+
+        except PermissionError as e:
+            logger.error(f"Permission denied saving game: {e}")
+            return False
+        except OSError as e:
+            logger.error(f"OS error saving game: {e}")
+            return False
         except Exception as e:
-            print(f"Error saving game: {e}")
+            logger.exception(f"Error saving game: {e}")
             return False
 
     def load_game(self, save_name: str) -> Optional[Dict[str, Any]]:
@@ -268,7 +295,7 @@ class SaveManager:
         try:
             save_name = self._sanitize_save_name(save_name)
         except ValueError as e:
-            print(f"Invalid save name: {e}")
+            logger.error(f"Invalid save name: {e}")
             return None
 
         file_path = self._get_save_path(save_name)
@@ -277,44 +304,46 @@ class SaveManager:
         try:
             self._validate_path_security(file_path)
         except ValueError as e:
-            print(f"Security error: {e}")
+            logger.error(f"Security error: {e}")
             return None
 
         if not os.path.exists(file_path):
-            print(f"Save file not found: {file_path}")
+            logger.warning(f"Save file not found: {file_path}")
             return None
 
         try:
-            with open(file_path, 'r') as f:
+            with open(file_path, 'r', encoding='utf-8') as f:
                 save_data = json.load(f)
 
             # Validate save file schema
             is_valid, warnings = self._validate_save_schema(save_data)
             for warning in warnings:
-                print(f"Save validation warning: {warning}")
+                logger.warning(f"Save validation: {warning}")
 
             if not is_valid:
-                print("Save file failed validation - required fields missing")
+                logger.error("Save file failed validation - required fields missing")
                 return None
 
             # Validate save version
             if save_data.get("version") != self.SAVE_VERSION:
-                print(f"Warning: Save file version mismatch. Expected {self.SAVE_VERSION}, got {save_data.get('version')}")
-                # Could implement version migration here
+                logger.warning(f"Save version mismatch. Expected {self.SAVE_VERSION}, got {save_data.get('version')}")
 
             # Update current save name
             self.current_save_name = save_name
 
-            print(f"Game loaded from: {file_path}")
-            print(f"Save timestamp: {save_data.get('timestamp')}")
+            logger.info(f"Game loaded from: {file_path}")
+            logger.debug(f"Save timestamp: {save_data.get('timestamp')}")
 
             return save_data.get("game_state")
 
         except json.JSONDecodeError as e:
-            print(f"Error: Save file is not valid JSON: {e}")
+            logger.error(f"Save file is not valid JSON: {e}")
+            return None
+        except PermissionError as e:
+            logger.error(f"Permission denied reading save: {e}")
             return None
         except Exception as e:
-            print(f"Error loading game: {e}")
+            logger.exception(f"Error loading game: {e}")
             return None
 
     def quick_save(self, game_state: Dict[str, Any]) -> bool:
@@ -356,7 +385,7 @@ class SaveManager:
             success = self.save_game(game_state, self.AUTO_SAVE_NAME)
             if success:
                 self.last_auto_save_day = current_day
-                print(f"Auto-save completed at day {current_day}")
+                logger.info(f"Auto-save completed at day {current_day}")
             return success
 
         return False
@@ -398,7 +427,7 @@ class SaveManager:
                     save_files.append(save_info)
 
                 except Exception as e:
-                    print(f"Error reading save file {filename}: {e}")
+                    logger.warning(f"Error reading save file {filename}: {e}")
 
         # Sort by timestamp (newest first)
         save_files.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
@@ -419,7 +448,7 @@ class SaveManager:
         try:
             save_name = self._sanitize_save_name(save_name)
         except ValueError as e:
-            print(f"Invalid save name: {e}")
+            logger.error(f"Invalid save name: {e}")
             return False
 
         file_path = self._get_save_path(save_name)
@@ -428,19 +457,22 @@ class SaveManager:
         try:
             self._validate_path_security(file_path)
         except ValueError as e:
-            print(f"Security error: {e}")
+            logger.error(f"Security error: {e}")
             return False
 
         if os.path.exists(file_path):
             try:
                 os.remove(file_path)
-                print(f"Deleted save: {save_name}")
+                logger.info(f"Deleted save: {save_name}")
                 return True
+            except PermissionError as e:
+                logger.error(f"Permission denied deleting save: {e}")
+                return False
             except Exception as e:
-                print(f"Error deleting save: {e}")
+                logger.exception(f"Error deleting save: {e}")
                 return False
         else:
-            print(f"Save file not found: {save_name}")
+            logger.warning(f"Save file not found: {save_name}")
             return False
 
     def _get_save_path(self, save_name: str) -> str:
@@ -652,7 +684,7 @@ class SaveManager:
             True if successful, False otherwise
         """
         if not isinstance(game_state, dict):
-            print("Error: game_state must be a dictionary")
+            logger.error("game_state must be a dictionary")
             return False
 
         try:
@@ -690,7 +722,7 @@ class SaveManager:
             buildings_data = SaveManager._safe_list(game_state.get("buildings"))
             for building_data in buildings_data:
                 if not isinstance(building_data, dict):
-                    print(f"Warning: Skipping invalid building data: {type(building_data)}")
+                    logger.warning(f"Skipping invalid building data: {type(building_data)}")
                     continue
                 # This would need to call building_manager.create_building() with proper parameters
                 # Implementation depends on your building creation system
@@ -700,7 +732,7 @@ class SaveManager:
             robots_data = SaveManager._safe_list(game_state.get("robots"))
             for robot_data in robots_data:
                 if not isinstance(robot_data, dict):
-                    print(f"Warning: Skipping invalid robot data: {type(robot_data)}")
+                    logger.warning(f"Skipping invalid robot data: {type(robot_data)}")
                     continue
                 # This would need to call entity_manager.create_robot() with proper parameters
                 # Implementation depends on your robot creation system
@@ -783,17 +815,15 @@ class SaveManager:
                     ),
                 }
 
-            print("Game state restored successfully")
+            logger.info("Game state restored successfully")
             return True
 
         except KeyError as e:
-            print(f"Error: Missing required key in save data: {e}")
+            logger.error(f"Missing required key in save data: {e}")
             return False
         except TypeError as e:
-            print(f"Error: Invalid data type in save data: {e}")
+            logger.error(f"Invalid data type in save data: {e}")
             return False
         except Exception as e:
-            print(f"Error restoring game state: {e}")
-            import traceback
-            traceback.print_exc()
+            logger.exception(f"Error restoring game state: {e}")
             return False
