@@ -10,8 +10,12 @@ Handles:
 
 import random
 from typing import List, Tuple, Optional
+
+from src.core.logger import get_logger
 from src.entities.fence import Fence, FenceType
 from src.world.tile import TileType
+
+logger = get_logger(__name__)
 
 
 class FenceManager:
@@ -49,7 +53,7 @@ class FenceManager:
         # Find all buildings
         buildings = self._find_buildings()
 
-        print(f"Found {len(buildings)} buildings for potential fencing")
+        logger.debug(f"Found {len(buildings)} buildings for potential fencing")
 
         # Spawn fences around selected buildings
         fenced_count = 0
@@ -65,8 +69,8 @@ class FenceManager:
             self._create_fence_perimeter(grid_x, grid_y, fence_type, rng)
             fenced_count += 1
 
-        print(f"Created fences around {fenced_count} buildings")
-        print(f"Total fence segments: {len(self.fences)}")
+        logger.debug(f"Created fences around {fenced_count} buildings")
+        logger.debug(f"Total fence segments: {len(self.fences)}")
 
     def _find_buildings(self) -> List[Tuple[int, int]]:
         """

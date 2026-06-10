@@ -10,7 +10,11 @@ Handles:
 
 import random
 from typing import List, Optional, Tuple
+
+from src.core.logger import get_logger
 from src.entities.security_camera import SecurityCamera, CameraStatus
+
+logger = get_logger(__name__)
 
 
 class CameraManager:
@@ -54,7 +58,7 @@ class CameraManager:
         Args:
             police_stations (list): List of police station positions (optional)
         """
-        print("Placing security cameras...")
+        logger.debug("Placing security cameras...")
 
         # Clear existing cameras
         self.cameras.clear()
@@ -70,7 +74,7 @@ class CameraManager:
         # Place cameras on random buildings
         self._place_building_cameras()
 
-        print(f"Placed {len(self.cameras)} security cameras")
+        logger.debug(f"Placed {len(self.cameras)} security cameras")
 
     def _place_police_station_cameras(self, police_stations: List):
         """

@@ -9,7 +9,11 @@ Provides:
 """
 
 from typing import Dict, List, Tuple, Set, Optional
+
+from src.core.logger import get_logger
 from src.world.tile import TileType
+
+logger = get_logger(__name__)
 
 
 class RoadSegment:
@@ -82,7 +86,7 @@ class RoadNetwork:
 
     def _build_network(self):
         """Build the road network graph from grid tiles."""
-        print("Building road network...")
+        logger.debug("Building road network...")
 
         # Step 1: Find all road tiles
         self._find_road_tiles()
@@ -96,7 +100,7 @@ class RoadNetwork:
         # Step 4: Calculate lane centers for each road tile
         self._calculate_lane_centers()
 
-        print(f"Road network built: {len(self.road_tiles)} road tiles, "
+        logger.debug(f"Road network built: {len(self.road_tiles)} road tiles, "
               f"{len(self.intersections)} intersections")
 
     def _find_road_tiles(self):

@@ -9,6 +9,10 @@ import json
 import os
 from typing import Dict, List, Optional, Tuple
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class ComponentManager:
     """
@@ -42,7 +46,7 @@ class ComponentManager:
                 data = json.load(f)
                 return data.get('components', {})
         else:
-            print(f"Warning: {json_path} not found, using empty component definitions")
+            logger.warning(f"{json_path} not found, using empty component definitions")
             return {}
 
     def get_component_definition(self, component_type: str) -> Optional[Dict]:
@@ -135,7 +139,7 @@ class ComponentManager:
             bool: True if added successfully
         """
         if component_type not in self.component_definitions:
-            print(f"Warning: Unknown component type: {component_type}")
+            logger.warning(f"Unknown component type: {component_type}")
             return False
 
         # Initialize component entry if needed
@@ -294,7 +298,7 @@ class ComponentManager:
         # Check if can manufacture
         can_make, reason = self.can_manufacture(component_type, resource_manager, quality)
         if not can_make:
-            print(f"Cannot start manufacturing {component_type}: {reason}")
+            logger.warning(f"Cannot start manufacturing {component_type}: {reason}")
             return False
 
         # Consume materials from resource manager
@@ -316,7 +320,7 @@ class ComponentManager:
             'total_time': processing_time
         }
 
-        print(f"Started manufacturing {component_type} ({quality}) at building {building_id}")
+        logger.info(f"Started manufacturing {component_type} ({quality}) at building {building_id}")
         return True
 
     def update(self, dt: float, buildings_dict: Dict):
@@ -352,7 +356,7 @@ class ComponentManager:
                 # Add completed component to inventory
                 self.add_component(component_type, quality, 1.0)
 
-                print(f"✓ Completed manufacturing: {component_type} ({quality})")
+                logger.info(f"Completed manufacturing: {component_type} ({quality})")
                 completed.append(building_id)
 
         # Remove completed manufacturing

@@ -12,6 +12,10 @@ Handles:
 import pygame
 from typing import Dict, Tuple, List, Optional
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class PollutionManager:
     """
@@ -50,7 +54,7 @@ class PollutionManager:
         self.update_timer = 0.0
         self.update_interval = 0.5  # Update every 0.5 seconds
 
-        print(f"PollutionManager initialized for {grid_width}x{grid_height} grid")
+        logger.debug(f"PollutionManager initialized for {grid_width}x{grid_height} grid")
 
     def add_source(self, grid_x: int, grid_y: int, rate: float):
         """
@@ -121,7 +125,7 @@ class PollutionManager:
     def toggle_overlay(self):
         """Toggle pollution overlay visibility."""
         self.overlay_visible = not self.overlay_visible
-        print(f"Pollution overlay: {'ON' if self.overlay_visible else 'OFF'}")
+        logger.debug(f"Pollution overlay: {'ON' if self.overlay_visible else 'OFF'}")
 
     def update(self, dt: float):
         """

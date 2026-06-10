@@ -11,8 +11,11 @@ Provides:
 from typing import Dict, List, Optional, Any, TYPE_CHECKING
 import pygame
 
+from src.core.logger import get_logger
 from src.entities.robot import Robot
 from src.entities.collectible import CollectibleObject
+
+logger = get_logger(__name__)
 
 if TYPE_CHECKING:
     from src.world.grid import Grid
@@ -91,7 +94,7 @@ class EntityManager:
         if not autonomous and self.selected_robot is None:
             self.select_robot(robot)
 
-        print(f"Created {robot}")
+        logger.debug(f"Created {robot}")
         return robot
 
     def create_collectible(
@@ -254,11 +257,11 @@ class EntityManager:
 
                     # Print feedback
                     if amount_collected > 0:
-                        print(f"{robot} collected {amount_collected:.1f}kg of {collectible.material_type}")
+                        logger.debug(f"{robot} collected {amount_collected:.1f}kg of {collectible.material_type}")
 
                     # If robot is now full, stop collecting
                     if robot.is_full():
-                        print(f"{robot} inventory is full!")
+                        logger.debug(f"{robot} inventory is full!")
                         break
 
     def _remove_inactive_entities(self) -> None:

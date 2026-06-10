@@ -10,8 +10,12 @@ Handles:
 
 import random
 from typing import List, Tuple, Optional
+
+from src.core.logger import get_logger
 from src.entities.vehicle import Vehicle
 from src.world.tile import TileType
+
+logger = get_logger(__name__)
 
 
 class VehicleManager:
@@ -50,7 +54,7 @@ class VehicleManager:
         # Find all suitable spawn locations
         spawn_locations = self._find_spawn_locations()
 
-        print(f"Found {len(spawn_locations)} potential vehicle spawn locations")
+        logger.debug(f"Found {len(spawn_locations)} potential vehicle spawn locations")
 
         # Spawn vehicles at selected locations
         spawned = 0
@@ -80,7 +84,7 @@ class VehicleManager:
             self.vehicles.append(vehicle)
             spawned += 1
 
-        print(f"Spawned {spawned} vehicles ({int(spawned * self.scrap_ratio)} scrap, {spawned - int(spawned * self.scrap_ratio)} working)")
+        logger.debug(f"Spawned {spawned} vehicles ({int(spawned * self.scrap_ratio)} scrap, {spawned - int(spawned * self.scrap_ratio)} working)")
 
     def _find_spawn_locations(self) -> List[Tuple[int, int, str]]:
         """

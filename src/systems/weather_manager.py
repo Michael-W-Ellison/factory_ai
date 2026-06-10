@@ -14,6 +14,10 @@ Weather types:
 from enum import Enum
 import random
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class WeatherType(Enum):
     """Weather conditions."""
@@ -161,7 +165,7 @@ class WeatherManager:
         # Set duration for new weather (2-6 hours)
         self.weather_duration = random.uniform(2 * 3600, 6 * 3600)
 
-        print(f"\n🌤️  Weather changing to {new_weather.value}")
+        logger.info(f"Weather changing to {new_weather.value}")
 
     def _pick_new_weather(self) -> WeatherType:
         """Pick new weather based on probabilities."""

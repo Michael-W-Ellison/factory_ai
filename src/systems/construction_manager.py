@@ -10,7 +10,11 @@ Handles:
 """
 
 from typing import List, Dict, Optional, Tuple
+
+from src.core.logger import get_logger
 from src.entities.construction_site import ConstructionSite
+
+logger = get_logger(__name__)
 
 
 class ConstructionOrder:
@@ -283,7 +287,7 @@ class ConstructionManager:
         order.construction_site = site
         order.started = True
 
-        print(f"Started construction: {order.building_type} at ({order.grid_x}, {order.grid_y})")
+        logger.info(f"Started construction: {order.building_type} at ({order.grid_x}, {order.grid_y})")
 
     def _complete_construction(self, site: ConstructionSite):
         """
@@ -325,7 +329,7 @@ class ConstructionManager:
         if building:
             # Place the building (building manager will mark tiles as occupied)
             self.building_manager.place_building(building)
-            print(f"Construction complete: {building.name} at ({order.grid_x}, {order.grid_y})")
+            logger.info(f"Construction complete: {building.name} at ({order.grid_x}, {order.grid_y})")
 
         # Remove from active sites and queue
         self.active_sites.remove(site)

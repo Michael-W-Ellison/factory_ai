@@ -9,6 +9,10 @@ A bus route consists of:
 
 from typing import List, Tuple, Optional
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class BusRoute:
     """
@@ -84,7 +88,7 @@ class BusRoute:
             path_segment = road_network.find_path(start_x, start_y, end_x, end_y)
 
             if path_segment is None:
-                print(f"Warning: Could not find path from stop {i} to stop {next_index} on route {self.route_id}")
+                logger.warning(f"Could not find path from stop {i} to stop {next_index} on route {self.route_id}")
                 return False
 
             # Add path segment to waypoints (avoid duplicating the stop position)

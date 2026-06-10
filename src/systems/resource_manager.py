@@ -10,6 +10,10 @@ Provides:
 
 from typing import Dict, Optional, Any, TYPE_CHECKING
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 if TYPE_CHECKING:
     from src.systems.material_inventory import MaterialInventory, MaterialSource
 
@@ -85,7 +89,7 @@ class ResourceManager:
                 total_deposited += quantity
                 self.total_materials_collected += quantity
 
-                print(f"Deposited {quantity:.1f}kg of {material_type}")
+                logger.debug(f"Deposited {quantity:.1f}kg of {material_type}")
 
         return total_deposited
 
@@ -103,7 +107,7 @@ class ResourceManager:
         # Check if we have enough
         current_quantity = self.stored_materials.get(material_type, 0)
         if current_quantity < quantity:
-            print(f"Not enough {material_type} to sell (have {current_quantity:.1f}kg, need {quantity:.1f}kg)")
+            logger.warning(f"Not enough {material_type} to sell (have {current_quantity:.1f}kg, need {quantity:.1f}kg)")
             return 0.0
 
         # Calculate value
@@ -117,7 +121,7 @@ class ResourceManager:
         self.money += money_earned
         self.total_money_earned += money_earned
 
-        print(f"Sold {quantity:.1f}kg of {material_type} for ${money_earned:.2f}")
+        logger.info(f"Sold {quantity:.1f}kg of {material_type} for ${money_earned:.2f}")
         return money_earned
 
     def sell_all_materials(self) -> float:

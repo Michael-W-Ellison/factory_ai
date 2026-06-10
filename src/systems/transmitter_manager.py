@@ -14,6 +14,10 @@ from enum import Enum
 from typing import Dict, List, Tuple, Set, Optional
 from dataclasses import dataclass
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class TransmitterType(Enum):
     """Types of wireless transmitters."""
@@ -149,16 +153,13 @@ class TransmitterManager:
 
         # Check if player can afford it
         if self.resources.money < specs['cost']:
-            print(f"⚠️ Insufficient funds for {specs['name']}")
-            print(f"  Cost: ${specs['cost']:,}")
-            print(f"  Current: ${self.resources.money:,}")
+            logger.warning(f"Insufficient funds for {specs['name']} (Cost: ${specs['cost']:,}, Current: ${self.resources.money:,})")
             return None
 
         # Check if position has signal coverage
         # Must be within range of base or another transmitter
         if not self.has_signal_coverage(position):
-            print(f"⚠️ Cannot place transmitter - no signal coverage at position")
-            print(f"  Must be within range of factory or another transmitter")
+            logger.warning("Cannot place transmitter - no signal coverage at position (must be within range of factory or another transmitter)")
             return None
 
         # Purchase transmitter
@@ -179,10 +180,7 @@ class TransmitterManager:
         self.next_transmitter_id += 1
         self.total_transmitters_placed += 1
 
-        print(f"\n📡 {specs['name'].upper()} PLACED")
-        print(f"  Position: ({position[0]:.0f}, {position[1]:.0f})")
-        print(f"  Range: {specs['range']} tiles")
-        print(f"  Cost: ${specs['cost']:,}")
+        logger.info(f"{specs['name']} placed at ({position[0]:.0f}, {position[1]:.0f}) - Range: {specs['range']} tiles, Cost: ${specs['cost']:,}")
 
         return transmitter.id
 
@@ -204,8 +202,7 @@ class TransmitterManager:
         # Remove transmitter (no refund)
         del self.transmitters[transmitter_id]
 
-        print(f"\n📡 TRANSMITTER {transmitter_id} REMOVED")
-        print(f"  Position: ({transmitter.position[0]:.0f}, {transmitter.position[1]:.0f})")
+        logger.info(f"Transmitter {transmitter_id} removed at ({transmitter.position[0]:.0f}, {transmitter.position[1]:.0f})")
 
         return True
 

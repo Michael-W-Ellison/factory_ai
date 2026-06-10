@@ -15,6 +15,10 @@ from enum import Enum
 from typing import Dict, List, Tuple, Optional
 from dataclasses import dataclass
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class MarketTrend(Enum):
     """Market trend states."""
@@ -162,16 +166,16 @@ class MarketManager:
         weights = list(trend_weights.values())
         self.current_trend = random.choices(trends, weights=weights)[0]
 
-        print(f"\n📈 MARKET TREND CHANGED: {self.current_trend.name}")
+        logger.info(f"Market trend changed: {self.current_trend.name}")
 
         if self.current_trend == MarketTrend.BULLISH:
-            print("  Prices trending upward - good time to sell!")
+            logger.info("Prices trending upward - good time to sell!")
         elif self.current_trend == MarketTrend.BEARISH:
-            print("  Prices trending downward - good time to buy!")
+            logger.info("Prices trending downward - good time to buy!")
         elif self.current_trend == MarketTrend.VOLATILE:
-            print("  Market is unstable - prices fluctuating rapidly!")
+            logger.info("Market is unstable - prices fluctuating rapidly!")
         elif self.current_trend == MarketTrend.CRASH:
-            print("  ⚠️ MARKET CRASH! Prices plummeting!")
+            logger.warning("MARKET CRASH! Prices plummeting!")
 
     def _update_prices(self, dt: float):
         """Update prices based on trend."""
@@ -272,9 +276,7 @@ class MarketManager:
         self.active_events.append(event)
         self.total_events += 1
 
-        print(f"\n📰 MARKET EVENT: {event.name}")
-        print(f"  {event.description}")
-        print(f"  Duration: {event.duration / 3600.0:.1f} hours")
+        logger.info(f"Market event: {event.name} - {event.description} (Duration: {event.duration / 3600.0:.1f} hours)")
 
         # Apply event multipliers
         for material, multiplier in event.price_multipliers.items():

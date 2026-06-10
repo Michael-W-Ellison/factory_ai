@@ -14,6 +14,10 @@ from enum import Enum
 from typing import Dict, List, Tuple, Optional
 from dataclasses import dataclass, field
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class ScoreCategory(Enum):
     """Score categories for breakdown."""
@@ -355,10 +359,7 @@ class ScoringManager:
         achievement.unlocked = True
         achievement.unlock_time = game_time
 
-        print(f"\n🏆 ACHIEVEMENT UNLOCKED!")
-        print(f"  {achievement.icon} {achievement.name}")
-        print(f"  {achievement.description}")
-        print(f"  +{achievement.points} points")
+        logger.info(f"Achievement unlocked: {achievement.name} - {achievement.description} (+{achievement.points} points)")
 
     def calculate_final_score(self, game_time: float, ending_type: str,
                               current_money: float, max_suspicion: float,

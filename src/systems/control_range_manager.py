@@ -13,6 +13,10 @@ Key features:
 from typing import List, Tuple, Dict
 import math
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class ControlRangeManager:
     """
@@ -60,10 +64,7 @@ class ControlRangeManager:
         """
         transmitter_range = self.transmitter_ranges.get(level, 300)
         self.transmitters.append((x, y, transmitter_range, level))
-        print(f"\n📡 Wireless Transmitter added at ({x}, {y})")
-        print(f"   Range: {transmitter_range} tiles")
-        print(f"   Level: {level}")
-        print()
+        logger.info(f"Wireless Transmitter added at ({x}, {y}) - Range: {transmitter_range} tiles, Level: {level}")
 
     def remove_transmitter(self, x: float, y: float):
         """
@@ -76,7 +77,7 @@ class ControlRangeManager:
         for i, (tx, ty, _, _) in enumerate(self.transmitters):
             if abs(tx - x) < 10 and abs(ty - y) < 10:  # Nearby
                 self.transmitters.pop(i)
-                print(f"\n📡 Wireless Transmitter removed from ({x}, {y})")
+                logger.info(f"Wireless Transmitter removed from ({x}, {y})")
                 return True
         return False
 

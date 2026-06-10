@@ -203,7 +203,7 @@ class ResearchManager:
         can_research, reason = self.can_start_research(tech_id, money)
 
         if not can_research:
-            print(f"Cannot start research: {reason}")
+            logger.warning(f"Cannot start research: {reason}")
             return False, money
 
         tech = self.get_research_definition(tech_id)
@@ -221,7 +221,7 @@ class ResearchManager:
         # Update statistics
         self.stats['money_spent'] += cost
 
-        print(f"Started research: {tech.get('name', tech_id)} (${cost}, {time} hours)")
+        logger.info(f"Started research: {tech.get('name', tech_id)} (${cost}, {time} hours)")
 
         return True, money_remaining
 
@@ -275,7 +275,7 @@ class ResearchManager:
         self.research_progress = 0.0
         self.research_total_time = 0.0
 
-        print(f"✓ Research complete: {tech.get('name', tech_id)}")
+        logger.info(f"Research complete: {tech.get('name', tech_id)}")
 
     def cancel_research(self) -> bool:
         """
@@ -290,7 +290,7 @@ class ResearchManager:
         tech_id = self.current_research
         tech = self.get_research_definition(tech_id)
 
-        print(f"Cancelled research: {tech.get('name', tech_id) if tech else tech_id}")
+        logger.info(f"Cancelled research: {tech.get('name', tech_id) if tech else tech_id}")
 
         self.current_research = None
         self.research_progress = 0.0

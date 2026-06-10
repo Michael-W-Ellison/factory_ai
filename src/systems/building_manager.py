@@ -11,7 +11,10 @@ Provides:
 from typing import Dict, List, Optional, Tuple, Any
 import pygame
 
+from src.core.logger import get_logger
 from src.entities.building import Building
+
+logger = get_logger(__name__)
 
 
 class BuildingManager:
@@ -45,7 +48,7 @@ class BuildingManager:
         """
         # Check if location is valid
         if not self._is_valid_placement(building):
-            print(f"Cannot place {building.name} at ({building.grid_x}, {building.grid_y}) - location blocked")
+            logger.warning(f"Cannot place {building.name} at ({building.grid_x}, {building.grid_y}) - location blocked")
             return False
 
         # Add to buildings dictionary
@@ -68,7 +71,7 @@ class BuildingManager:
                 if tile:
                     tile.occupied = True
 
-        print(f"Placed {building}")
+        logger.debug(f"Placed {building}")
         return True
 
     def remove_building(self, building_id: str) -> bool:
@@ -105,7 +108,7 @@ class BuildingManager:
 
         # Remove building
         del self.buildings[building_id]
-        print(f"Removed {building}")
+        logger.debug(f"Removed {building}")
         return True
 
     def get_building_at(self, grid_x: int, grid_y: int) -> Optional[Building]:
