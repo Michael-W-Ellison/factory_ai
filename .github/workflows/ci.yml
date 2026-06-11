@@ -67,7 +67,6 @@ jobs:
       - name: Run tests with coverage
         run: |
           pytest --cov=src --cov-report=xml --cov-report=term-missing -v
-        continue-on-error: true
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -108,7 +107,6 @@ jobs:
       - name: Build with PyInstaller (dry run)
         run: |
           python build.py --onedir
-        continue-on-error: true
 
   # Windows build job (optional, runs on tags only)
   build-windows:
