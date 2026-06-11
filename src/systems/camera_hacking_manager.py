@@ -27,7 +27,7 @@ class CameraHackingManager:
     but tracks hacking activity and triggers consequences.
     """
 
-    def __init__(self, camera_manager, research_manager, suspicion_manager):
+    def __init__(self, camera_manager, research_manager, suspicion_manager, fbi_manager=None):
         """
         Initialize camera hacking manager.
 
@@ -35,10 +35,12 @@ class CameraHackingManager:
             camera_manager: CameraManager instance
             research_manager: ResearchManager instance
             suspicion_manager: SuspicionManager instance
+            fbi_manager: Optional FBIManager instance for reporting excessive hacks
         """
         self.camera_manager = camera_manager
         self.research = research_manager
         self.suspicion = suspicion_manager
+        self.fbi = fbi_manager
 
         # Hacking state
         self.hacking_enabled = False
@@ -106,7 +108,7 @@ class CameraHackingManager:
                 self._complete_hack(game_time)
 
         # Check for consequences
-        self._check_consequences()
+        self._check_consequences(game_time)
 
     def handle_click(self, world_x: float, world_y: float, game_time: float) -> bool:
         """
@@ -202,7 +204,7 @@ class CameraHackingManager:
 
         return None
 
-    def _check_consequences(self):
+    def _check_consequences(self, game_time: float):
         """Check and trigger consequences of excessive hacking."""
         # Security upgrade after 10 hacks
         if self.total_hacks >= self.security_upgrade_threshold and not self.security_upgrade_triggered:
@@ -210,7 +212,7 @@ class CameraHackingManager:
 
         # FBI investigation after 20 hacks
         if self.total_hacks >= self.fbi_threshold and not self.fbi_investigation_triggered:
-            self._trigger_fbi_investigation()
+            self._trigger_fbi_investigation(game_time)
 
     def _trigger_security_upgrade(self):
         """Trigger security upgrade (more cameras, better detection)."""
@@ -254,7 +256,7 @@ class CameraHackingManager:
         # Add suspicion
         self.suspicion.add_suspicion(10, "Security upgrade due to excessive camera hacking")
 
-    def _trigger_fbi_investigation(self):
+    def _trigger_fbi_investigation(self, game_time: float):
         """Trigger FBI investigation (major consequence)."""
         self.fbi_investigation_triggered = True
 
@@ -263,8 +265,9 @@ class CameraHackingManager:
         # Major suspicion increase
         self.suspicion.add_suspicion(30, "FBI investigation triggered by excessive hacking")
 
-        # Note: FBI manager integration requires game.py to instantiate FBIManager
-        # and pass it to CameraHackingManager. Currently FBI triggers via suspicion level.
+        # Report to FBI manager if available
+        if self.fbi:
+            self.fbi.report_camera_hacks(self.total_hacks, game_time)
 
     def cancel_hack(self):
         """Cancel current hacking attempt."""

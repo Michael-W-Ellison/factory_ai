@@ -38,7 +38,10 @@ from src.systems.camera_manager import CameraManager
 from src.systems.camera_hacking_manager import CameraHackingManager
 from src.systems.inspection_manager import InspectionManager
 from src.systems.material_inventory import MaterialInventory
+from src.systems.fbi_manager import FBIManager
+from src.systems.authority_manager import AuthorityManager
 from src.ui.inspection_ui import InspectionUI
+from src.ui.authority_ui import AuthorityUI
 from src.systems.save_manager import SaveManager
 from src.ui.save_load_menu import SaveLoadMenu
 from src.ui.controls_help import ControlsHelp
@@ -158,12 +161,20 @@ class Game:
         self.ui = HUD(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
         self.research_ui = ResearchUI(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
 
-        # Initialize camera hacking system (requires camera_manager, research, and suspicion)
-        self.camera_hacking = CameraHackingManager(self.camera_manager, self.research, self.suspicion)
+        # Initialize FBI manager (requires resources, suspicion)
+        # Must be created before camera_hacking so it can report excessive hacks
+        self.fbi = FBIManager(self.resources, self.suspicion)
+
+        # Initialize camera hacking system (requires camera_manager, research, suspicion, and optional fbi)
+        self.camera_hacking = CameraHackingManager(self.camera_manager, self.research, self.suspicion, self.fbi)
 
         # Initialize inspection system (requires resources, suspicion, and material inventory)
         self.inspection = InspectionManager(self.resources, self.suspicion, self.material_inventory)
         self.inspection_ui = InspectionUI(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
+
+        # Initialize authority manager (requires suspicion, resources, inspection)
+        self.authority = AuthorityManager(self.suspicion, self.resources, self.inspection)
+        self.authority_ui = AuthorityUI(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
 
         # Initialize save/load system
         self.save_manager = SaveManager()
@@ -593,6 +604,12 @@ class Game:
         # Update inspection system
         self.inspection.update(adjusted_dt, self.npcs.game_time)
 
+        # Update FBI manager (tracks high suspicion, camera hacks, investigation timers)
+        self.fbi.update(adjusted_dt, self.npcs.game_time)
+
+        # Update authority manager (tier escalation, FBI raids, game endings)
+        self.authority.update(adjusted_dt, self.npcs.game_time)
+
         # Update game time (1 game minute = 1 real second by default)
         self.time_elapsed += adjusted_dt
         if self.time_elapsed >= 1.0:  # Every second
@@ -616,6 +633,21 @@ class Game:
         captured = self.police.check_captures(self.entities.robots)
         if captured:
             self._trigger_game_over(GameEnding.POLICE_CAPTURE, "Police captured your robot!")
+
+        # Check if FBI raided the factory (game over condition)
+        if self.fbi.is_raided():
+            self._trigger_game_over(GameEnding.FBI_RAID, "FBI raided your factory!")
+
+        # Check authority manager game endings
+        if self.authority.is_game_over():
+            ending = self.authority.get_game_ending()
+            # Map authority endings to game_over_ui endings
+            if ending.name == 'FBI_RAID':
+                self._trigger_game_over(GameEnding.FBI_RAID, self.authority.ending_reason)
+            elif ending.name == 'BANKRUPTCY':
+                self._trigger_game_over(GameEnding.BANKRUPTCY, self.authority.ending_reason)
+            elif ending.name == 'INSPECTOR_FAILURE':
+                self._trigger_game_over(GameEnding.INSPECTOR_FAILURE, self.authority.ending_reason)
 
         # Update minimap (hover detection)
         mouse_pos = pygame.mouse.get_pos()
@@ -806,6 +838,9 @@ class Game:
         # Render inspection UI (warnings, progress, results)
         adjusted_dt = self.clock.get_time() / 1000.0
         self.inspection_ui.render(self.screen, self.inspection, adjusted_dt)
+
+        # Render authority UI (tier indicator, FBI investigation, raid countdown)
+        self.authority_ui.render(self.screen, self.authority)
 
         # Render save/load menu (if visible)
         self.save_load_menu.render(self.screen)
