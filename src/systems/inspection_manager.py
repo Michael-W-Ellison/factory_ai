@@ -14,6 +14,7 @@ from enum import Enum
 from typing import Optional, Dict
 
 from src.core.logger import get_logger
+from src.core.game_config import INSPECTION, SUSPICION
 
 logger = get_logger(__name__)
 
@@ -66,12 +67,12 @@ class InspectionManager:
         self.last_result: Optional[InspectionResult] = None
         self.last_inspection_time = -999999.0  # Game time of last inspection
 
-        # Thresholds
-        self.suspicion_trigger_threshold = 60  # Trigger at 60 suspicion
-        self.min_warning_time = 86400.0  # 24 hours in game seconds (24 * 3600)
-        self.max_warning_time = 172800.0  # 48 hours in game seconds (48 * 3600)
-        self.inspection_duration = 3600.0  # 1 hour in game seconds
-        self.immunity_duration = 604800.0  # 7 days in game seconds (for PASS)
+        # Thresholds (from centralized config)
+        self.suspicion_trigger_threshold = INSPECTION.SUSPICION_THRESHOLD
+        self.min_warning_time = INSPECTION.WARNING_TIME_MIN
+        self.max_warning_time = INSPECTION.WARNING_TIME_MAX
+        self.inspection_duration = INSPECTION.DURATION
+        self.immunity_duration = INSPECTION.IMMUNITY_PERIOD
         self.reinspection_interval = 259200.0  # 3 days in game seconds (for FAIL_MINOR)
 
         # Illegal material counts (simplified - will be expanded in Phase 8.4)

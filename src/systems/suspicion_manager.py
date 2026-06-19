@@ -13,6 +13,7 @@ from typing import List, Dict, Optional
 import time
 
 from src.core.logger import get_logger
+from src.core.game_config import SUSPICION
 
 logger = get_logger(__name__)
 
@@ -42,18 +43,18 @@ class SuspicionManager:
         # Current tier
         self.current_tier = SuspicionTier.NORMAL
 
-        # Tier thresholds
+        # Tier thresholds (from centralized config)
         self.tier_thresholds = {
-            SuspicionTier.NORMAL: 0,
-            SuspicionTier.RUMORS: 21,
-            SuspicionTier.INVESTIGATION: 41,
-            SuspicionTier.INSPECTION: 61,
-            SuspicionTier.RESTRICTIONS: 81,
+            SuspicionTier.NORMAL: SUSPICION.TIER_NONE,
+            SuspicionTier.RUMORS: SUSPICION.TIER_RUMORS,
+            SuspicionTier.INVESTIGATION: SUSPICION.TIER_INVESTIGATION,
+            SuspicionTier.INSPECTION: SUSPICION.TIER_INSPECTION,
+            SuspicionTier.RESTRICTIONS: SUSPICION.TIER_RESTRICTED,
         }
 
         # Suspicion decay rates (per game hour)
-        self.base_decay_rate = 0.1  # Normal decay
-        self.decay_stops_at = 60.0  # Decay stops above this level
+        self.base_decay_rate = SUSPICION.BASE_DECAY_RATE
+        self.decay_stops_at = SUSPICION.DECAY_STOP_LEVEL
 
         # Event history
         self.suspicion_events: List[Dict] = []
