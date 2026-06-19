@@ -40,6 +40,9 @@ class HUD:
         self.color_bad = (255, 100, 100)
         self.color_bg = (0, 0, 0)
 
+        # Notification system
+        self.notifications = []  # List of {message, time_remaining, alpha}
+
     def render(self, screen, resource_manager, entity_manager, clock=None, power_manager=None, building_manager=None, research_manager=None, suspicion_manager=None, day=None, hour=None, minute=None):
         """
         Render the HUD.
@@ -385,14 +388,91 @@ class HUD:
 
         screen.blit(fps_text, text_rect)
 
+    def add_notification(self, message: str, duration: float = 5.0):
+        """
+        Add a notification that auto-dismisses after duration.
+
+        Args:
+            message (str): Notification message
+            duration (float): How long to show (seconds)
+        """
+        notification = {
+            'message': message,
+            'time_remaining': duration,
+            'alpha': 255
+        }
+        self.notifications.append(notification)
+        logger.debug(f"Notification added: {message} (duration: {duration}s)")
+
+    def update_notifications(self, dt: float):
+        """
+        Update notification timers and remove expired notifications.
+
+        Args:
+            dt (float): Delta time in seconds
+        """
+        for notification in self.notifications[:]:
+            notification['time_remaining'] -= dt
+
+            # Fade out during last 0.5 seconds
+            if notification['time_remaining'] < 0.5:
+                fade_progress = notification['time_remaining'] / 0.5
+                notification['alpha'] = int(255 * max(0, fade_progress))
+
+            # Remove expired notifications
+            if notification['time_remaining'] <= 0:
+                self.notifications.remove(notification)
+
+    def render_notifications(self, screen):
+        """
+        Render all active notifications.
+
+        Args:
+            screen: Pygame surface
+        """
+        if not self.notifications:
+            return
+
+        # Render notifications stacked at bottom-right
+        y_offset = self.screen_height - 50
+        notification_spacing = 35
+
+        for i, notification in enumerate(reversed(self.notifications)):
+            if i >= 5:
+                break  # Maximum 5 visible notifications
+
+            text = self.font_medium.render(notification['message'], True, self.color_text)
+            text_rect = text.get_rect()
+            text_rect.right = self.screen_width - 20
+            text_rect.bottom = y_offset - (i * notification_spacing)
+
+            # Background with alpha
+            bg_width = text_rect.width + 20
+            bg_height = text_rect.height + 10
+            bg_surface = pygame.Surface((bg_width, bg_height), pygame.SRCALPHA)
+            bg_alpha = int(180 * (notification['alpha'] / 255))
+            bg_surface.fill((0, 0, 0, bg_alpha))
+            bg_rect = bg_surface.get_rect()
+            bg_rect.centerx = text_rect.centerx
+            bg_rect.centery = text_rect.centery
+            screen.blit(bg_surface, bg_rect)
+
+            # Text with alpha
+            text_alpha = notification['alpha']
+            text.set_alpha(text_alpha)
+            screen.blit(text, text_rect)
+
     def render_message(self, screen, message, duration=2.0):
         """
         Render a temporary message in the center of the screen.
 
+        This is for immediate one-time display. For persistent notifications
+        that auto-dismiss, use add_notification().
+
         Args:
             screen: Pygame surface
             message (str): Message to display
-            duration (float): How long to show (seconds) - not implemented yet
+            duration (float): How long to show (seconds) - for notification system
         """
         text = self.font_large.render(message, True, self.color_money)
         text_rect = text.get_rect(center=(self.screen_width // 2, self.screen_height // 2))

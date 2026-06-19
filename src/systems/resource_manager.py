@@ -27,6 +27,9 @@ class ResourceManager:
 
     def __init__(self) -> None:
         """Initialize the resource manager."""
+        import random
+        self._random = random.Random()
+
         # Materials stored in the factory (material_type -> quantity in kg)
         self.stored_materials: Dict[str, float] = {}
 
@@ -37,8 +40,8 @@ class ResourceManager:
         self.total_materials_collected = 0.0  # Total kg collected all-time
         self.total_money_earned = 0.0  # Total money earned all-time
 
-        # Material values ($ per kg) - these will eventually come from market system
-        self.material_values: Dict[str, float] = {
+        # Base material values ($ per kg)
+        self.base_material_values: Dict[str, float] = {
             'plastic': 0.50,
             'metal': 1.20,
             'glass': 0.30,
@@ -48,6 +51,20 @@ class ResourceManager:
             'wood': 0.40,
             'electronic': 2.50,
         }
+
+        # Current material values (fluctuate around base)
+        self.material_values: Dict[str, float] = self.base_material_values.copy()
+
+        # Market price fluctuation settings
+        self._market_timer = 0.0
+        self._market_update_interval = 60.0  # Update prices every game minute
+        self._price_fluctuation_range = 0.15  # +/- 15% fluctuation
+
+        # Decay settings for organic materials
+        self._decay_timer = 0.0
+        self._decay_interval = 300.0  # Check decay every 5 game minutes
+        self._organic_decay_rate = 0.001  # 0.1% per check
+        self._decayable_materials = {'organic', 'wood', 'paper'}
 
     def deposit_materials(
         self,
@@ -203,16 +220,50 @@ class ResourceManager:
 
     def update(self, dt: float) -> None:
         """
-        Update resource manager (placeholder for future use).
+        Update resource manager state.
+
+        Handles market price fluctuations and organic material decay.
 
         Args:
             dt (float): Delta time in seconds
         """
-        # Future features:
-        # - Market price fluctuations
-        # - Storage decay
-        # - Passive income from processing
-        pass
+        # Update market prices periodically
+        self._market_timer += dt
+        if self._market_timer >= self._market_update_interval:
+            self._market_timer = 0.0
+            self._apply_price_fluctuations()
+
+        # Apply decay to organic materials
+        self._decay_timer += dt
+        if self._decay_timer >= self._decay_interval:
+            self._decay_timer = 0.0
+            self._apply_storage_decay()
+
+    def _apply_price_fluctuations(self) -> None:
+        """Apply small random fluctuations to market prices."""
+        for material, base_value in self.base_material_values.items():
+            # Random fluctuation within range
+            fluctuation = self._random.uniform(
+                -self._price_fluctuation_range,
+                self._price_fluctuation_range
+            )
+            new_value = base_value * (1.0 + fluctuation)
+            self.material_values[material] = round(new_value, 2)
+
+    def _apply_storage_decay(self) -> None:
+        """Apply decay to organic materials in storage."""
+        total_decay = 0.0
+
+        for material in self._decayable_materials:
+            if material in self.stored_materials:
+                current_amount = self.stored_materials[material]
+                if current_amount > 0:
+                    decay_amount = current_amount * self._organic_decay_rate
+                    self.stored_materials[material] = max(0.0, current_amount - decay_amount)
+                    total_decay += decay_amount
+
+        if total_decay > 0.01:
+            logger.debug(f"Storage decay: {total_decay:.2f}kg of organic materials degraded")
 
     def get_stats(self) -> Dict[str, Any]:
         """

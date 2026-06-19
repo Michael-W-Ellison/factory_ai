@@ -3,6 +3,8 @@ Game configuration file.
 Modify these values to change game settings.
 """
 
+import os
+
 # Display settings
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
@@ -20,9 +22,9 @@ STARTING_ROBOTS = 2
 TIME_SCALE = 60  # 1 real second = 1 game minute
 
 # Debug settings
-DEBUG_MODE = True
-SHOW_FPS = True
-SHOW_GRID = True
+DEBUG_MODE = os.environ.get('DEBUG_MODE', 'false').lower() == 'true'
+SHOW_FPS = DEBUG_MODE
+SHOW_GRID = DEBUG_MODE
 
 # Logging settings
 LOG_LEVEL = 'DEBUG' if DEBUG_MODE else 'INFO'  # DEBUG, INFO, WARNING, ERROR, CRITICAL
