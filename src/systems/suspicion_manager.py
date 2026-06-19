@@ -12,6 +12,10 @@ Handles:
 from typing import List, Dict, Optional
 import time
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class SuspicionTier:
     """Suspicion tier enumeration."""
@@ -174,7 +178,7 @@ class SuspicionManager:
                 'suspicion_level': self.suspicion_level,
             }
             self.tier_changes.append(tier_change)
-            print(f"⚠ Suspicion tier changed: {self.tier_names[old_tier]} → {self.tier_names[new_tier]} ({self.suspicion_level:.1f})")
+            logger.warning(f"Suspicion tier changed: {self.tier_names[old_tier]} -> {self.tier_names[new_tier]} ({self.suspicion_level:.1f})")
 
         return tier_changed
 
@@ -212,7 +216,7 @@ class SuspicionManager:
                     'suspicion_level': self.suspicion_level,
                 }
                 self.tier_changes.append(tier_change)
-                print(f"✓ Suspicion tier lowered: {self.tier_names[old_tier]} → {self.tier_names[new_tier]} ({self.suspicion_level:.1f})")
+                logger.info(f"Suspicion tier lowered: {self.tier_names[old_tier]} -> {self.tier_names[new_tier]} ({self.suspicion_level:.1f})")
 
     def process_detection_report(self, report: Dict) -> bool:
         """

@@ -1,0 +1,69 @@
+[run]
+# Coverage configuration for Recycling Factory
+
+# Source directories to measure
+source = src
+
+# Directories/files to omit
+omit =
+    */test_*.py
+    */__pycache__/*
+    */.venv/*
+    */venv/*
+    */build/*
+    */dist/*
+    setup.py
+    conftest.py
+
+# Branch coverage
+branch = true
+
+# Parallel mode for multi-process testing
+parallel = true
+
+# Data file location
+data_file = .coverage
+
+[report]
+# Reporting settings
+
+# Fail if coverage is below this percentage (can enable later)
+# fail_under = 70
+
+# Lines to exclude from coverage
+exclude_lines =
+    # Standard pragmas
+    pragma: no cover
+
+    # Debug-only code
+    def __repr__
+    def __str__
+
+    # Defensive assertions
+    raise AssertionError
+    raise NotImplementedError
+
+    # Non-runnable code
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+
+    # Abstract methods
+    @abstractmethod
+
+# Don't report on files with 100% coverage
+skip_covered = false
+
+# Show missing lines
+show_missing = true
+
+# Precision for percentages
+precision = 2
+
+[html]
+# HTML report settings
+directory = htmlcov
+title = Recycling Factory Test Coverage
+
+[xml]
+# XML report for CI integration
+output = coverage.xml

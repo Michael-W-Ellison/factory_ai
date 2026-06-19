@@ -9,6 +9,10 @@ import json
 import os
 from typing import Dict, List, Optional, Set
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class ResearchManager:
     """
@@ -46,15 +50,33 @@ class ResearchManager:
         Load research definitions from JSON file.
 
         Returns:
-            dict: Research technology definitions
+            Research technology definitions, or empty dict on error
         """
         json_path = os.path.join('data', 'research.json')
-        if os.path.exists(json_path):
-            with open(json_path, 'r') as f:
+
+        if not os.path.exists(json_path):
+            logger.warning(f"Research file not found: {json_path}, using empty research tree")
+            return {}
+
+        try:
+            with open(json_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-                return data.get('technologies', {})
-        else:
-            print(f"Warning: {json_path} not found, using empty research tree")
+
+            technologies = data.get('technologies', {})
+            if technologies:
+                logger.info(f"Loaded {len(technologies)} research technologies")
+            else:
+                logger.warning("Research file contains no technologies")
+            return technologies
+
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in research file: {e}")
+            return {}
+        except PermissionError as e:
+            logger.error(f"Permission denied reading research file: {e}")
+            return {}
+        except Exception as e:
+            logger.exception(f"Unexpected error loading research file: {e}")
             return {}
 
     def get_research_definition(self, tech_id: str) -> Optional[Dict]:
@@ -181,7 +203,7 @@ class ResearchManager:
         can_research, reason = self.can_start_research(tech_id, money)
 
         if not can_research:
-            print(f"Cannot start research: {reason}")
+            logger.warning(f"Cannot start research: {reason}")
             return False, money
 
         tech = self.get_research_definition(tech_id)
@@ -199,7 +221,7 @@ class ResearchManager:
         # Update statistics
         self.stats['money_spent'] += cost
 
-        print(f"Started research: {tech.get('name', tech_id)} (${cost}, {time} hours)")
+        logger.info(f"Started research: {tech.get('name', tech_id)} (${cost}, {time} hours)")
 
         return True, money_remaining
 
@@ -253,7 +275,7 @@ class ResearchManager:
         self.research_progress = 0.0
         self.research_total_time = 0.0
 
-        print(f"✓ Research complete: {tech.get('name', tech_id)}")
+        logger.info(f"Research complete: {tech.get('name', tech_id)}")
 
     def cancel_research(self) -> bool:
         """
@@ -268,7 +290,7 @@ class ResearchManager:
         tech_id = self.current_research
         tech = self.get_research_definition(tech_id)
 
-        print(f"Cancelled research: {tech.get('name', tech_id) if tech else tech_id}")
+        logger.info(f"Cancelled research: {tech.get('name', tech_id) if tech else tech_id}")
 
         self.current_research = None
         self.research_progress = 0.0
@@ -447,7 +469,7 @@ class ResearchManager:
             'stats': self.stats
         }
 
-    def load_state(self, state: Dict):
+    def load_state(self, state: Dict) -> None:
         """
         Load research manager state.
 

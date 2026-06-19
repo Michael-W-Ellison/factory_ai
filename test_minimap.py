@@ -13,7 +13,8 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 import pygame
 from src.ui.minimap import Minimap
-from src.systems.grid import Grid, TileType
+from src.world.grid import Grid
+from src.world.tile import TileType
 
 
 class MockCamera:

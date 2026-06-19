@@ -23,3 +23,9 @@ TIME_SCALE = 60  # 1 real second = 1 game minute
 DEBUG_MODE = True
 SHOW_FPS = True
 SHOW_GRID = True
+
+# Logging settings
+LOG_LEVEL = 'DEBUG' if DEBUG_MODE else 'INFO'  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+LOG_TO_FILE = True  # Whether to write logs to file
+LOG_FILE = 'game.log'  # Log file name (stored in data/logs/)
+LOG_DIR = 'data/logs'  # Directory for log files

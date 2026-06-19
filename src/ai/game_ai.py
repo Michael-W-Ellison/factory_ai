@@ -10,6 +10,8 @@ The AI can:
 """
 
 import random
+
+from src.core.logger import get_logger
 from src.entities.buildings import (
     Factory,
     LandfillGasExtraction,
@@ -24,6 +26,8 @@ from src.entities.buildings import (
     Warehouse,
     Silo
 )
+
+logger = get_logger(__name__)
 
 
 class GameAI:
@@ -204,7 +208,7 @@ class GameAI:
                         # Try to place
                         if self.game.buildings.place_building(building):
                             self.stats['buildings_placed'] += 1
-                            print(f"[AI] Placed {building.name} at ({grid_x}, {grid_y})")
+                            logger.debug(f"[AI] Placed {building.name} at ({grid_x}, {grid_y})")
 
                             # Deduct cost
                             self.game.resources.money -= building.base_cost

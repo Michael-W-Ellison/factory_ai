@@ -69,7 +69,7 @@ class AutomationManager:
             'priority_boost': 0  # Can be adjusted per building
         }
 
-    def disable_building_automation(self, building_id: int):
+    def disable_building_automation(self, building_id: int) -> None:
         """
         Disable automation for a building.
 
@@ -92,7 +92,7 @@ class AutomationManager:
         settings = self.building_automation.get(building_id)
         return settings is not None and settings.get('enabled', False)
 
-    def set_material_routing(self, material_type: str, building_ids: List[int]):
+    def set_material_routing(self, material_type: str, building_ids: List[int]) -> None:
         """
         Set preferred buildings for a material type.
 
@@ -114,7 +114,7 @@ class AutomationManager:
         """
         return self.material_routing.get(material_type, [])
 
-    def add_routing_preference(self, material_type: str, building_id: int):
+    def add_routing_preference(self, material_type: str, building_id: int) -> None:
         """
         Add a building to the routing preference for a material.
 
@@ -128,7 +128,7 @@ class AutomationManager:
         if building_id not in self.material_routing[material_type]:
             self.material_routing[material_type].append(building_id)
 
-    def remove_routing_preference(self, material_type: str, building_id: int):
+    def remove_routing_preference(self, material_type: str, building_id: int) -> None:
         """
         Remove a building from routing preference.
 
@@ -401,7 +401,7 @@ class AutomationManager:
             'stats': self.stats
         }
 
-    def load_state(self, state: Dict):
+    def load_state(self, state: Dict) -> None:
         """
         Load automation manager state.
 

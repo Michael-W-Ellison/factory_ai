@@ -9,10 +9,14 @@ Handles:
 
 import random
 from typing import List, Optional
+
+from src.core.logger import get_logger
 from src.entities.prop import (Prop, Bench, LightPole, TrashCan, Bicycle, Tree,
                                 FlowerBed, FireHydrant, Mailbox, ParkingMeter,
                                 NewspaperStand, PropType)
 from src.world.tile import TileType
+
+logger = get_logger(__name__)
 
 
 class PropManager:
@@ -45,7 +49,7 @@ class PropManager:
 
     def generate_props(self):
         """Generate props throughout the city."""
-        print("Generating city props...")
+        logger.debug("Generating city props...")
 
         # Clear existing props
         self.props.clear()
@@ -62,17 +66,7 @@ class PropManager:
         self._place_parking_meters()
         self._place_newspaper_stands()
 
-        print(f"Generated {len(self.props)} props total:")
-        print(f"  {self._count_props(PropType.TREE)} trees")
-        print(f"  {self._count_props(PropType.FLOWER_BED)} flower beds")
-        print(f"  {self._count_props(PropType.LIGHT_POLE)} light poles")
-        print(f"  {self._count_props(PropType.BENCH)} benches")
-        print(f"  {self._count_props(PropType.TRASH_CAN)} trash cans")
-        print(f"  {self._count_props(PropType.BICYCLE)} bicycles")
-        print(f"  {self._count_props(PropType.FIRE_HYDRANT)} fire hydrants")
-        print(f"  {self._count_props(PropType.MAILBOX)} mailboxes")
-        print(f"  {self._count_props(PropType.PARKING_METER)} parking meters")
-        print(f"  {self._count_props(PropType.NEWSPAPER_STAND)} newspaper stands")
+        logger.debug(f"Generated {len(self.props)} props total")
 
     def _place_light_poles(self):
         """Place light poles along roads."""

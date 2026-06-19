@@ -14,6 +14,10 @@ from enum import Enum
 from typing import Dict, List, Tuple, Optional
 from dataclasses import dataclass, field
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class ScoreCategory(Enum):
     """Score categories for breakdown."""
@@ -116,6 +120,20 @@ class ScoringManager:
             'max_suspicion': 0,
             'min_money': 0,
             'max_money': 0,
+            # Ending condition tracking
+            'landfill_cleared_percent': 0.0,
+            'illegal_materials_processed': 0,
+            'city_materials_collected': 0,
+            'legal_materials_only': True,
+            'violations_count': 0,
+            'fines_paid': 0,
+            'renewable_energy_used': 0,
+            'total_energy_used': 0,
+            'litter_cleaned': 0,
+            'air_pollution_total': 0,
+            'game_days_played': 0,
+            'high_risk_operations': 0,
+            'suspicion_never_above_20': True,
         }
 
         # Performance metrics
@@ -168,6 +186,14 @@ class ScoringManager:
 
             # Ending achievements
             Achievement("legitimate_success", "Legitimate Success", "Win via legitimate business", 500, icon="🏆"),
+            Achievement("perfect_cleanup", "Environmental Hero", "Complete perfect cleanup with no issues", 1000, icon="🌟"),
+            Achievement("eco_warrior", "Eco Warrior", "Complete using only renewable energy", 750, icon="🌱"),
+            Achievement("criminal_mastermind", "Criminal Mastermind", "Max illegal profits, evade all authorities", 900, icon="🎭"),
+            Achievement("speed_demon", "Speed Demon", "Complete in record time", 600, icon="⚡"),
+            Achievement("slow_steady", "Slow and Steady", "Complete safely with minimal risk", 400, icon="🐢"),
+            Achievement("morally_flexible", "Morally Flexible", "Maximize profits creatively", 550, icon="💼"),
+            Achievement("urban_recycler", "Urban Recycler", "Aggressively recycle city materials", 500, icon="🏙️"),
+            Achievement("efficient_operator", "Efficient Operator", "Complete with high efficiency", 450, icon="⚙️"),
             Achievement("great_escape", "Great Escape", "Escape before FBI raid", 300, icon="✈️"),
             Achievement("deal_maker", "Deal Maker", "Negotiate plea deal", 200, icon="⚖️"),
             Achievement("caught", "Caught", "Get raided by FBI", 50, icon="🚔", hidden=True),
@@ -269,6 +295,51 @@ class ScoringManager:
         else:
             self.stats['inspections_failed'] += 1
 
+    def record_illegal_material(self, quantity: float):
+        """Record illegal material processed."""
+        self.stats['illegal_materials_processed'] += quantity
+        self.stats['legal_materials_only'] = False
+
+    def record_city_material(self, quantity: float):
+        """Record material collected from city (potentially illegal)."""
+        self.stats['city_materials_collected'] += quantity
+
+    def record_violation(self):
+        """Record a violation."""
+        self.stats['violations_count'] += 1
+
+    def record_fine_paid(self, amount: float):
+        """Record fine payment."""
+        self.stats['fines_paid'] += amount
+
+    def record_energy_usage(self, total: float, renewable: float):
+        """Record energy usage."""
+        self.stats['total_energy_used'] += total
+        self.stats['renewable_energy_used'] += renewable
+
+    def record_litter_cleaned(self, quantity: float):
+        """Record litter cleaned from environment."""
+        self.stats['litter_cleaned'] += quantity
+
+    def record_pollution(self, amount: float):
+        """Record air pollution generated."""
+        self.stats['air_pollution_total'] += amount
+
+    def record_high_risk_operation(self):
+        """Record a high-risk operation."""
+        self.stats['high_risk_operations'] += 1
+
+    def update_landfill_progress(self, percent_cleared: float):
+        """Update landfill clearance progress."""
+        self.stats['landfill_cleared_percent'] = percent_cleared
+
+    def update_suspicion_tracking(self, current_suspicion: float):
+        """Track if suspicion ever goes above 20."""
+        if current_suspicion > 20:
+            self.stats['suspicion_never_above_20'] = False
+        if current_suspicion > self.stats['max_suspicion']:
+            self.stats['max_suspicion'] = current_suspicion
+
     def unlock_achievement(self, achievement_id: str, game_time: float):
         """
         Unlock an achievement.
@@ -288,10 +359,7 @@ class ScoringManager:
         achievement.unlocked = True
         achievement.unlock_time = game_time
 
-        print(f"\n🏆 ACHIEVEMENT UNLOCKED!")
-        print(f"  {achievement.icon} {achievement.name}")
-        print(f"  {achievement.description}")
-        print(f"  +{achievement.points} points")
+        logger.info(f"Achievement unlocked: {achievement.name} - {achievement.description} (+{achievement.points} points)")
 
     def calculate_final_score(self, game_time: float, ending_type: str,
                               current_money: float, max_suspicion: float,
@@ -338,14 +406,24 @@ class ScoringManager:
         self.exploration_score = exploration_percent / 100.0
         self.scores[ScoreCategory.EXPLORATION] = self.exploration_score
 
-        # Ending bonus
+        # Ending bonus - positive endings give higher bonuses
         ending_bonuses = {
-            'LEGITIMATE_SUCCESS': 5000,
-            'ESCAPE': 3000,
-            'PLEA_DEAL': 1500,
-            'FBI_RAID': 500,
-            'BANKRUPTCY': 0,
-            'INSPECTOR_FAILURE': 200,
+            # Positive endings (victory)
+            'PERFECT_CLEANUP': 10000,       # Best ending
+            'CRIMINAL_MASTERMIND': 8000,    # High risk, high reward
+            'ECO_WARRIOR': 7000,            # Environmental focus
+            'SPEED_DEMON': 6000,            # Fast completion
+            'MORALLY_FLEXIBLE': 5500,       # Creative profits
+            'LEGITIMATE_SUCCESS': 5000,     # Clean business
+            'URBAN_RECYCLER': 4500,         # Aggressive but managed
+            'EFFICIENT_OPERATOR': 4000,     # Good efficiency
+            'SLOW_AND_STEADY': 3000,        # Safe but slow
+            # Negative endings
+            'ESCAPE': 2000,                 # Got away
+            'PLEA_DEAL': 1500,              # Negotiated out
+            'FBI_RAID': 500,                # Caught
+            'INSPECTOR_FAILURE': 200,       # Failed inspection
+            'BANKRUPTCY': 0,                # Ran out of money
         }
         self.scores[ScoreCategory.ENDING_BONUS] = ending_bonuses.get(ending_type, 0)
 
@@ -367,14 +445,22 @@ class ScoringManager:
         self._calculate_rank()
 
         # Check ending-specific achievements
-        if ending_type == 'LEGITIMATE_SUCCESS':
-            self.unlock_achievement("legitimate_success", game_time)
-        elif ending_type == 'ESCAPE':
-            self.unlock_achievement("great_escape", game_time)
-        elif ending_type == 'PLEA_DEAL':
-            self.unlock_achievement("deal_maker", game_time)
-        elif ending_type == 'FBI_RAID':
-            self.unlock_achievement("caught", game_time)
+        ending_achievement_map = {
+            'LEGITIMATE_SUCCESS': 'legitimate_success',
+            'PERFECT_CLEANUP': 'perfect_cleanup',
+            'ECO_WARRIOR': 'eco_warrior',
+            'CRIMINAL_MASTERMIND': 'criminal_mastermind',
+            'SPEED_DEMON': 'speed_demon',
+            'SLOW_AND_STEADY': 'slow_steady',
+            'MORALLY_FLEXIBLE': 'morally_flexible',
+            'URBAN_RECYCLER': 'urban_recycler',
+            'EFFICIENT_OPERATOR': 'efficient_operator',
+            'ESCAPE': 'great_escape',
+            'PLEA_DEAL': 'deal_maker',
+            'FBI_RAID': 'caught',
+        }
+        if ending_type in ending_achievement_map:
+            self.unlock_achievement(ending_achievement_map[ending_type], game_time)
 
         # Check max suspicion achievements
         if max_suspicion < 20 and ending_type != 'FBI_RAID':

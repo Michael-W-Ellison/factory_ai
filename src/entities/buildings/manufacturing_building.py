@@ -4,7 +4,10 @@ ManufacturingBuilding - base class for component manufacturing buildings.
 Extends ProcessingBuilding to handle multi-material recipes and component production.
 """
 
+from src.core.logger import get_logger
 from src.entities.buildings.processing_building import ProcessingBuilding
+
+logger = get_logger(__name__)
 
 
 class ManufacturingBuilding(ProcessingBuilding):
@@ -97,7 +100,7 @@ class ManufacturingBuilding(ProcessingBuilding):
 
             # Verify we consumed enough
             if remaining_to_consume > 0.01:
-                print(f"ERROR: Failed to consume {remaining_to_consume}kg of {mat_type}")
+                logger.error(f"Failed to consume {remaining_to_consume}kg of {mat_type}")
                 return False
 
         return True
@@ -120,7 +123,7 @@ class ManufacturingBuilding(ProcessingBuilding):
         # Processing time is base speed * batch size
         self.processing_time_remaining = self.processing_speed * self.output_per_batch
 
-        print(f"{self.name} started manufacturing {self.output_component} "
+        logger.debug(f"{self.name} started manufacturing {self.output_component} "
               f"(batch size: {self.output_per_batch:.1f})")
 
     def _finish_processing(self):
@@ -149,9 +152,9 @@ class ManufacturingBuilding(ProcessingBuilding):
                     })
                     current_output += output_qty
                 else:
-                    print(f"{self.name} output queue full! Lost {output_qty:.1f} units of {output_comp}")
+                    logger.warning(f"{self.name} output queue full! Lost {output_qty:.1f} units of {output_comp}")
 
-        print(f"{self.name} completed manufacturing: {usable_quantity:.2f} units of {component_type}")
+        logger.debug(f"{self.name} completed manufacturing: {usable_quantity:.2f} units of {component_type}")
 
         # Clear current processing
         self.processing_current = None

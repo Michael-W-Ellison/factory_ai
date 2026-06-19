@@ -1,6 +1,21 @@
 """
 ResourceManager - tracks materials, money, and resources.
+
+Provides:
+- Material storage and tracking
+- Money management
+- Material selling with market prices
+- Statistics tracking
 """
+
+from typing import Dict, Optional, Any, TYPE_CHECKING
+
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
+if TYPE_CHECKING:
+    from src.systems.material_inventory import MaterialInventory, MaterialSource
 
 
 class ResourceManager:
@@ -10,10 +25,10 @@ class ResourceManager:
     This tracks all materials collected and processed, as well as money earned.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the resource manager."""
         # Materials stored in the factory (material_type -> quantity in kg)
-        self.stored_materials = {}
+        self.stored_materials: Dict[str, float] = {}
 
         # Money
         self.money = 1000.0  # Starting money in $
@@ -23,7 +38,7 @@ class ResourceManager:
         self.total_money_earned = 0.0  # Total money earned all-time
 
         # Material values ($ per kg) - these will eventually come from market system
-        self.material_values = {
+        self.material_values: Dict[str, float] = {
             'plastic': 0.50,
             'metal': 1.20,
             'glass': 0.30,
@@ -34,7 +49,12 @@ class ResourceManager:
             'electronic': 2.50,
         }
 
-    def deposit_materials(self, materials_dict, sources_dict=None, material_inventory=None):
+    def deposit_materials(
+        self,
+        materials_dict: Dict[str, float],
+        sources_dict: Optional[Dict[str, 'MaterialSource']] = None,
+        material_inventory: Optional['MaterialInventory'] = None
+    ) -> float:
         """
         Deposit materials into storage (e.g., from a robot's inventory).
 
@@ -69,11 +89,11 @@ class ResourceManager:
                 total_deposited += quantity
                 self.total_materials_collected += quantity
 
-                print(f"Deposited {quantity:.1f}kg of {material_type}")
+                logger.debug(f"Deposited {quantity:.1f}kg of {material_type}")
 
         return total_deposited
 
-    def sell_material(self, material_type, quantity):
+    def sell_material(self, material_type: str, quantity: float) -> float:
         """
         Sell a specific material for money.
 
@@ -87,7 +107,7 @@ class ResourceManager:
         # Check if we have enough
         current_quantity = self.stored_materials.get(material_type, 0)
         if current_quantity < quantity:
-            print(f"Not enough {material_type} to sell (have {current_quantity:.1f}kg, need {quantity:.1f}kg)")
+            logger.warning(f"Not enough {material_type} to sell (have {current_quantity:.1f}kg, need {quantity:.1f}kg)")
             return 0.0
 
         # Calculate value
@@ -101,10 +121,10 @@ class ResourceManager:
         self.money += money_earned
         self.total_money_earned += money_earned
 
-        print(f"Sold {quantity:.1f}kg of {material_type} for ${money_earned:.2f}")
+        logger.info(f"Sold {quantity:.1f}kg of {material_type} for ${money_earned:.2f}")
         return money_earned
 
-    def sell_all_materials(self):
+    def sell_all_materials(self) -> float:
         """
         Sell all stored materials.
 
@@ -123,7 +143,7 @@ class ResourceManager:
 
         return total_earned
 
-    def get_material_value(self, material_type, quantity):
+    def get_material_value(self, material_type: str, quantity: float) -> float:
         """
         Calculate the value of a material without selling it.
 
@@ -137,7 +157,7 @@ class ResourceManager:
         value_per_kg = self.material_values.get(material_type, 0.5)
         return quantity * value_per_kg
 
-    def get_total_stored_value(self):
+    def get_total_stored_value(self) -> float:
         """
         Calculate the total value of all stored materials.
 
@@ -149,7 +169,7 @@ class ResourceManager:
             total_value += self.get_material_value(material_type, quantity)
         return total_value
 
-    def modify_money(self, amount):
+    def modify_money(self, amount: float) -> None:
         """
         Modify the player's money (add or subtract).
 
@@ -160,7 +180,7 @@ class ResourceManager:
         if amount > 0:
             self.total_money_earned += amount
 
-    def get_material_quantity(self, material_type):
+    def get_material_quantity(self, material_type: str) -> float:
         """
         Get the quantity of a specific material in storage.
 
@@ -172,7 +192,7 @@ class ResourceManager:
         """
         return self.stored_materials.get(material_type, 0.0)
 
-    def get_total_stored_weight(self):
+    def get_total_stored_weight(self) -> float:
         """
         Get the total weight of all stored materials.
 
@@ -181,7 +201,7 @@ class ResourceManager:
         """
         return sum(self.stored_materials.values())
 
-    def update(self, dt):
+    def update(self, dt: float) -> None:
         """
         Update resource manager (placeholder for future use).
 
@@ -194,7 +214,7 @@ class ResourceManager:
         # - Passive income from processing
         pass
 
-    def get_stats(self):
+    def get_stats(self) -> Dict[str, Any]:
         """
         Get resource statistics.
 

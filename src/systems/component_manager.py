@@ -9,6 +9,10 @@ import json
 import os
 from typing import Dict, List, Optional, Tuple
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class ComponentManager:
     """
@@ -37,12 +41,23 @@ class ComponentManager:
             dict: Component definitions
         """
         json_path = os.path.join('data', 'components.json')
-        if os.path.exists(json_path):
-            with open(json_path, 'r') as f:
+
+        if not os.path.exists(json_path):
+            logger.warning(f"{json_path} not found, using empty component definitions")
+            return {}
+
+        try:
+            with open(json_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
                 return data.get('components', {})
-        else:
-            print(f"Warning: {json_path} not found, using empty component definitions")
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in component file: {e}")
+            return {}
+        except PermissionError as e:
+            logger.error(f"Permission denied reading component file: {e}")
+            return {}
+        except OSError as e:
+            logger.error(f"Error reading component file: {e}")
             return {}
 
     def get_component_definition(self, component_type: str) -> Optional[Dict]:
@@ -135,7 +150,7 @@ class ComponentManager:
             bool: True if added successfully
         """
         if component_type not in self.component_definitions:
-            print(f"Warning: Unknown component type: {component_type}")
+            logger.warning(f"Unknown component type: {component_type}")
             return False
 
         # Initialize component entry if needed
@@ -294,7 +309,7 @@ class ComponentManager:
         # Check if can manufacture
         can_make, reason = self.can_manufacture(component_type, resource_manager, quality)
         if not can_make:
-            print(f"Cannot start manufacturing {component_type}: {reason}")
+            logger.warning(f"Cannot start manufacturing {component_type}: {reason}")
             return False
 
         # Consume materials from resource manager
@@ -316,7 +331,7 @@ class ComponentManager:
             'total_time': processing_time
         }
 
-        print(f"Started manufacturing {component_type} ({quality}) at building {building_id}")
+        logger.info(f"Started manufacturing {component_type} ({quality}) at building {building_id}")
         return True
 
     def update(self, dt: float, buildings_dict: Dict):
@@ -352,7 +367,7 @@ class ComponentManager:
                 # Add completed component to inventory
                 self.add_component(component_type, quality, 1.0)
 
-                print(f"✓ Completed manufacturing: {component_type} ({quality})")
+                logger.info(f"Completed manufacturing: {component_type} ({quality})")
                 completed.append(building_id)
 
         # Remove completed manufacturing
@@ -401,7 +416,7 @@ class ComponentManager:
             'active_manufacturing': self.active_manufacturing
         }
 
-    def load_state(self, state: Dict):
+    def load_state(self, state: Dict) -> None:
         """
         Load component manager state from serialized data.
 

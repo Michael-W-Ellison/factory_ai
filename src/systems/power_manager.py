@@ -1,6 +1,23 @@
 """
 PowerManager - manages power generation, consumption, and distribution.
+
+Features:
+- Tracks power generation, consumption, and storage
+- Priority-based distribution during blackouts
+- Battery storage management
 """
+
+from enum import IntEnum
+from typing import List, Dict, Any
+
+
+class PowerPriority(IntEnum):
+    """Power priority levels (higher = more important)."""
+    CRITICAL = 100      # Life support, security
+    HIGH = 75           # Factory core, main processors
+    MEDIUM = 50         # Storage, secondary systems
+    LOW = 25            # Lighting, comfort
+    OPTIONAL = 10       # Decorative, non-essential
 
 
 class PowerManager:
@@ -116,17 +133,74 @@ class PowerManager:
 
     def _handle_blackout(self, building_manager):
         """
-        Handle power distribution during blackout.
+        Handle power distribution during blackout using priority system.
 
         Args:
             building_manager: BuildingManager instance
         """
-        # During blackout, shut down non-essential buildings
-        # Priority: Power generation > Factory > Processing > Storage
+        # Get available power (generation only, storage is depleted)
+        available_power = self.total_generation
 
-        # For now, simple approach: shut down everything
-        # TODO: Implement priority system
-        pass
+        # Get all buildings that consume power, sorted by priority
+        consumers = []
+        for building in building_manager.buildings.values():
+            if building.power_consumption > 0:
+                priority = self._get_building_priority(building)
+                consumers.append((priority, building.power_consumption, building))
+
+        # Sort by priority (highest first)
+        consumers.sort(key=lambda x: x[0], reverse=True)
+
+        # Distribute power by priority
+        remaining_power = available_power
+        for priority, consumption, building in consumers:
+            if remaining_power >= consumption:
+                building.powered = True
+                remaining_power -= consumption
+            else:
+                building.powered = False
+
+    def _get_building_priority(self, building) -> int:
+        """
+        Get power priority for a building.
+
+        Args:
+            building: Building instance
+
+        Returns:
+            Priority level (higher = more important)
+        """
+        # Check if building has a custom priority attribute
+        if hasattr(building, 'power_priority'):
+            return building.power_priority
+
+        # Default priorities based on building type
+        building_type = type(building).__name__
+
+        priority_map = {
+            # Critical - must stay on
+            'Factory': PowerPriority.CRITICAL,
+            'SecurityStation': PowerPriority.CRITICAL,
+
+            # High priority - core operations
+            'Processor': PowerPriority.HIGH,
+            'Sorter': PowerPriority.HIGH,
+            'ChargingStation': PowerPriority.HIGH,
+            'ResearchLab': PowerPriority.HIGH,
+
+            # Medium priority - useful but not critical
+            'Storage': PowerPriority.MEDIUM,
+            'Conveyor': PowerPriority.MEDIUM,
+            'Battery': PowerPriority.MEDIUM,
+
+            # Low priority - comfort/convenience
+            'Lighting': PowerPriority.LOW,
+
+            # Optional - can be shut down
+            'Decoration': PowerPriority.OPTIONAL,
+        }
+
+        return priority_map.get(building_type, PowerPriority.MEDIUM)
 
     def add_battery_storage(self, capacity):
         """
@@ -146,6 +220,36 @@ class PowerManager:
         """
         self.max_storage -= capacity
         self.current_power = min(self.current_power, self.max_storage)
+
+    def set_building_priority(self, building, priority: PowerPriority):
+        """
+        Set custom power priority for a building.
+
+        Args:
+            building: Building instance
+            priority: PowerPriority level
+        """
+        building.power_priority = int(priority)
+
+    def get_powered_buildings_count(self, building_manager) -> Dict[str, int]:
+        """
+        Get count of powered vs unpowered buildings.
+
+        Args:
+            building_manager: BuildingManager instance
+
+        Returns:
+            Dict with 'powered' and 'unpowered' counts
+        """
+        powered = 0
+        unpowered = 0
+        for building in building_manager.buildings.values():
+            if building.power_consumption > 0:
+                if building.powered:
+                    powered += 1
+                else:
+                    unpowered += 1
+        return {'powered': powered, 'unpowered': unpowered}
 
     def get_power_status(self):
         """

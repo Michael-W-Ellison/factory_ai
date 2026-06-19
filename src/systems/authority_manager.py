@@ -13,6 +13,10 @@ import random
 from enum import Enum
 from typing import Optional, Dict, List
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class AuthorityTier(Enum):
     """Law enforcement authority levels."""
@@ -34,12 +38,22 @@ class InvestigationType(Enum):
 class GameEnding(Enum):
     """Possible game ending scenarios."""
     NONE = 0
-    LEGITIMATE_SUCCESS = 1  # Clean business, low suspicion, profitable
-    FBI_RAID = 2           # Caught by FBI raid
-    BANKRUPTCY = 3         # Ran out of money
-    ESCAPE = 4             # Player fled before capture
-    PLEA_DEAL = 5          # Negotiated with authorities
-    INSPECTOR_FAILURE = 6  # Failed critical inspection (already handled)
+    # Positive endings (victory)
+    LEGITIMATE_SUCCESS = 1   # Clean business, low suspicion, profitable
+    PERFECT_CLEANUP = 2      # Environmental Hero - perfect run
+    EFFICIENT_OPERATOR = 3   # Completed efficiently with minor issues
+    ECO_WARRIOR = 4          # Environmental focus, renewable energy
+    CRIMINAL_MASTERMIND = 5  # High illegal profit, evaded all authorities
+    SPEED_DEMON = 6          # Fast completion with high risk
+    SLOW_AND_STEADY = 7      # Safe approach, took time
+    MORALLY_FLEXIBLE = 8     # Maximized profits through "creative" methods
+    URBAN_RECYCLER = 9       # Aggressive city material collection
+    # Negative endings (failure)
+    FBI_RAID = 10            # Caught by FBI raid
+    BANKRUPTCY = 11          # Ran out of money
+    ESCAPE = 12              # Player fled before capture
+    PLEA_DEAL = 13           # Negotiated with authorities
+    INSPECTOR_FAILURE = 14   # Failed critical inspection
 
 
 class AuthorityManager:
@@ -162,27 +176,19 @@ class AuthorityManager:
             old_tier (AuthorityTier): Previous tier
             new_tier (AuthorityTier): New tier
         """
-        print(f"\n⚠️ AUTHORITY ESCALATION!")
-        print(f"  {old_tier.name} → {new_tier.name}")
+        logger.warning(f"Authority escalation: {old_tier.name} -> {new_tier.name}")
 
         if new_tier == AuthorityTier.STATE:
-            print(f"  State police are now monitoring your operations")
-            print(f"  Increased investigation capabilities")
-            print(f"  More frequent patrols")
+            logger.warning("State police monitoring - increased investigation capabilities")
 
         elif new_tier == AuthorityTier.FEDERAL:
-            print(f"  🚨 FBI HAS TAKEN OVER THE INVESTIGATION!")
-            print(f"  Federal resources deployed")
-            print(f"  Advanced surveillance and forensics")
-            print(f"  Risk of federal charges")
+            logger.error("FBI has taken over! Federal resources deployed, risk of federal charges")
             # Automatically start FBI investigation
             self._start_fbi_investigation()
 
     def _on_tier_deescalation(self, old_tier: AuthorityTier, new_tier: AuthorityTier):
         """Handle tier de-escalation (suspicion decreased)."""
-        print(f"\n✓ AUTHORITY DE-ESCALATION")
-        print(f"  {old_tier.name} → {new_tier.name}")
-        print(f"  Reduced law enforcement attention")
+        logger.info(f"Authority de-escalation: {old_tier.name} -> {new_tier.name} - reduced law enforcement attention")
 
     def _start_fbi_investigation(self):
         """Start FBI investigation."""
@@ -205,10 +211,7 @@ class AuthorityManager:
 
         self.investigation_type = random.choice(investigation_types)
 
-        print(f"\n🔍 FBI INVESTIGATION INITIATED!")
-        print(f"  Investigation Type: {self.investigation_type.name}")
-        print(f"  The FBI is building a case against you")
-        print(f"  Evidence collection in progress...")
+        logger.warning(f"FBI investigation initiated! Type: {self.investigation_type.name} - building case")
 
     def _update_fbi_investigation(self, dt: float, game_time: float):
         """Update FBI investigation progress."""
@@ -230,10 +233,7 @@ class AuthorityManager:
 
     def _complete_fbi_investigation(self, game_time: float):
         """Complete FBI investigation and schedule raid."""
-        print(f"\n🚨 FBI INVESTIGATION COMPLETE!")
-        print(f"  Sufficient evidence has been gathered")
-        print(f"  Federal warrant issued for raid")
-        print(f"  FBI raid imminent...")
+        logger.error("FBI investigation complete! Federal warrant issued, raid imminent")
 
         # Schedule raid with warning
         warning_time = random.uniform(self.raid_min_warning, self.raid_max_warning)
@@ -242,11 +242,7 @@ class AuthorityManager:
 
         # Calculate hours
         hours = warning_time / 3600.0
-        print(f"  FBI tactical team arrives in {hours:.1f} game hours")
-        print(f"\n  You have limited time to:")
-        print(f"    - Destroy evidence")
-        print(f"    - Flee the country")
-        print(f"    - Negotiate a plea deal")
+        logger.error(f"FBI tactical team arrives in {hours:.1f} game hours - limited time to act")
 
     def _update_raid_countdown(self, dt: float, game_time: float):
         """Update FBI raid countdown."""
@@ -263,17 +259,7 @@ class AuthorityManager:
         # Clear raid scheduled flag to prevent multiple executions
         self.raid_scheduled = False
 
-        print(f"\n💥💥💥 FBI RAID IN PROGRESS! 💥💥💥")
-        print(f"  Federal agents have stormed your factory!")
-        print(f"  All illegal operations have been shut down")
-        print(f"  Evidence has been seized")
-        print(f"  You are under federal arrest")
-        print(f"\n  Charges:")
-        print(f"    - Operating illegal waste processing facility")
-        print(f"    - Environmental violations")
-        print(f"    - Fraud and money laundering")
-        print(f"    - Obstruction of justice")
-        print(f"\n  GAME OVER")
+        logger.error("FBI RAID - GAME OVER! Federal agents stormed factory, under federal arrest")
 
         self._trigger_ending(GameEnding.FBI_RAID, "FBI raid - Federal arrest")
 
@@ -297,6 +283,227 @@ class AuthorityManager:
                 self.inspection.game_over_reason
             )
 
+    def check_victory_conditions(self, scoring_manager, game_time: float) -> bool:
+        """
+        Check if player has achieved a victory condition.
+
+        This should be called when the landfill is cleared or other
+        victory triggers occur.
+
+        Args:
+            scoring_manager: ScoringManager instance with game stats
+            game_time: Current game time in seconds
+
+        Returns:
+            bool: True if a victory ending was triggered
+        """
+        if self.game_ending != GameEnding.NONE:
+            return False  # Already ended
+
+        stats = scoring_manager.stats
+
+        # Check if landfill is cleared (primary victory condition)
+        if stats['landfill_cleared_percent'] < 100.0:
+            return False  # Not complete yet
+
+        # Determine which victory ending to award based on playstyle
+        ending = self._evaluate_victory_ending(stats, game_time)
+
+        if ending != GameEnding.NONE:
+            self._trigger_victory_ending(ending, stats, game_time)
+            return True
+
+        return False
+
+    def _evaluate_victory_ending(self, stats: dict, game_time: float) -> GameEnding:
+        """
+        Evaluate which victory ending the player has earned.
+
+        Endings are checked in order of priority (best to worst).
+
+        Args:
+            stats: Player statistics from scoring_manager
+            game_time: Current game time
+
+        Returns:
+            GameEnding: The appropriate ending type
+        """
+        suspicion_level = self.suspicion.suspicion_level
+        max_suspicion = stats['max_suspicion']
+        illegal_processed = stats['illegal_materials_processed']
+        city_materials = stats['city_materials_collected']
+        game_days = game_time / (24 * 3600)  # Convert to days
+        violations = stats['violations_count']
+        fines = stats['fines_paid']
+        renewable_ratio = (stats['renewable_energy_used'] / max(1, stats['total_energy_used']))
+        litter_cleaned = stats['litter_cleaned']
+        high_risk_ops = stats['high_risk_operations']
+        money = self.resources.money
+
+        # PERFECT_CLEANUP - Environmental Hero (hardest to achieve)
+        # No violations, no fines, low suspicion, 100% landfill cleared
+        if (violations == 0 and fines == 0 and
+            max_suspicion == 0 and suspicion_level == 0 and
+            not self.fbi_investigation_active):
+            return GameEnding.PERFECT_CLEANUP
+
+        # CRIMINAL_MASTERMIND - High illegal profits, evaded all authorities
+        # High illegal materials, no FBI raid, high profit
+        if (illegal_processed >= 10000 and
+            not self.fbi_investigation_active and
+            money >= 500000):
+            return GameEnding.CRIMINAL_MASTERMIND
+
+        # ECO_WARRIOR - Environmental focus
+        # High renewable energy usage, lots of litter cleaned, low pollution
+        if (renewable_ratio >= 0.8 and
+            litter_cleaned >= 5000 and
+            stats['air_pollution_total'] < 1000):
+            return GameEnding.ECO_WARRIOR
+
+        # SPEED_DEMON - Fast completion with high risk
+        # Completed in under 15 game days
+        if game_days <= 15 and high_risk_ops >= 10:
+            return GameEnding.SPEED_DEMON
+
+        # MORALLY_FLEXIBLE - Maximized profits through creative methods
+        # High illegal materials but passed all inspections
+        if (illegal_processed >= 1000 and illegal_processed < 10000 and
+            stats['inspections_failed'] == 0 and
+            money >= 200000):
+            return GameEnding.MORALLY_FLEXIBLE
+
+        # URBAN_RECYCLER - Aggressive city material collection
+        # 30-70% of materials from city
+        total_materials = stats['materials_collected']
+        city_ratio = city_materials / max(1, total_materials)
+        if 0.3 <= city_ratio <= 0.7 and money > 0:
+            return GameEnding.URBAN_RECYCLER
+
+        # SLOW_AND_STEADY - Safe approach, took time
+        # Suspicion never above 20, minimal risk
+        if (stats['suspicion_never_above_20'] and
+            high_risk_ops < 5 and
+            game_days >= 60):
+            return GameEnding.SLOW_AND_STEADY
+
+        # EFFICIENT_OPERATOR - Good efficiency with minor issues
+        # Good completion, some violations but recovered
+        if (violations <= 3 and
+            stats['inspections_passed'] > stats['inspections_failed'] and
+            money > 50000):
+            return GameEnding.EFFICIENT_OPERATOR
+
+        # LEGITIMATE_SUCCESS - Default positive ending
+        # Clean business, low suspicion, profitable
+        if (suspicion_level < 50 and
+            money > 0 and
+            not self.fbi_investigation_active):
+            return GameEnding.LEGITIMATE_SUCCESS
+
+        # If somehow none of the above matched but landfill is complete
+        return GameEnding.LEGITIMATE_SUCCESS
+
+    def _trigger_victory_ending(self, ending: GameEnding, stats: dict, game_time: float):
+        """
+        Trigger a victory ending with appropriate messaging.
+
+        Args:
+            ending: The victory ending type
+            stats: Player statistics
+            game_time: Current game time
+        """
+        ending_info = {
+            GameEnding.PERFECT_CLEANUP: {
+                'title': '🌟 ENVIRONMENTAL HERO 🌟',
+                'description': 'Perfect cleanup with no incidents!',
+                'details': 'You completed the landfill cleanup perfectly. '
+                          'No violations, no fines, no suspicion. '
+                          'The city praises your efficiency and ethics.',
+            },
+            GameEnding.CRIMINAL_MASTERMIND: {
+                'title': '🎭 CRIMINAL MASTERMIND 🎭',
+                'description': 'Maximum profit, zero consequences!',
+                'details': 'You processed massive amounts of illegal materials '
+                          'while evading all authorities. '
+                          'The FBI never caught on. Impressive... and concerning.',
+            },
+            GameEnding.ECO_WARRIOR: {
+                'title': '🌱 ECO WARRIOR 🌱',
+                'description': 'Champion of the environment!',
+                'details': 'You cleaned the landfill using renewable energy '
+                          'and even cleaned up city litter. '
+                          'The environment thanks you.',
+            },
+            GameEnding.SPEED_DEMON: {
+                'title': '⚡ SPEED DEMON ⚡',
+                'description': 'Blazing fast completion!',
+                'details': 'You completed the cleanup in record time. '
+                          'High risk, high reward gameplay. '
+                          'The city is impressed by your efficiency.',
+            },
+            GameEnding.MORALLY_FLEXIBLE: {
+                'title': '💼 MORALLY FLEXIBLE ENTREPRENEUR 💼',
+                'description': 'Creative interpretation of regulations!',
+                'details': 'You maximized profits through creative methods '
+                          'while somehow passing every inspection. '
+                          'Clever business practices indeed.',
+            },
+            GameEnding.URBAN_RECYCLER: {
+                'title': '🏙️ URBAN MINING SPECIALIST 🏙️',
+                'description': 'Aggressive but effective!',
+                'details': 'You aggressively recycled city infrastructure '
+                          'while managing the heat from authorities. '
+                          'A bold strategy that paid off.',
+            },
+            GameEnding.SLOW_AND_STEADY: {
+                'title': '🐢 SLOW AND STEADY 🐢',
+                'description': 'Safe approach wins the race!',
+                'details': 'You took your time and played it safe. '
+                          'The landfill is clean, and you avoided all trouble. '
+                          'Patience is a virtue.',
+            },
+            GameEnding.EFFICIENT_OPERATOR: {
+                'title': '⚙️ EFFICIENT OPERATOR ⚙️',
+                'description': 'Job well done!',
+                'details': 'You cleaned the landfill efficiently with minimal issues. '
+                          'Some bumps along the way, but you recovered well. '
+                          'A solid performance.',
+            },
+            GameEnding.LEGITIMATE_SUCCESS: {
+                'title': '🏆 LEGITIMATE SUCCESS 🏆',
+                'description': 'Clean business victory!',
+                'details': 'You completed the cleanup through legitimate means. '
+                          'Low suspicion, positive profit, no FBI involvement. '
+                          'A respectable achievement.',
+            },
+        }
+
+        info = ending_info.get(ending, {
+            'title': '🏆 VICTORY 🏆',
+            'description': 'Landfill cleanup complete!',
+            'details': 'You have successfully completed the landfill cleanup.',
+        })
+
+        game_days = game_time / (24 * 3600)
+
+        logger.info(f"GAME COMPLETE - {info['title']}: {game_days:.1f} days, ${self.resources.money:,.0f}")
+
+        self._trigger_ending(ending, info['description'])
+
+    def trigger_landfill_complete(self, scoring_manager, game_time: float):
+        """
+        Called when the landfill is 100% cleared.
+
+        This is the primary trigger for positive victory endings.
+
+        Args:
+            scoring_manager: ScoringManager instance
+            game_time: Current game time
+        """
+        scoring_manager.update_landfill_progress(100.0)
+        self.check_victory_conditions(scoring_manager, game_time)
+
     def attempt_bribe(self, amount: int = 10000) -> bool:
         """
         Attempt to bribe officials to slow investigation.
@@ -309,11 +516,11 @@ class AuthorityManager:
         """
         if self.bribe_cooldown > 0:
             hours_remaining = self.bribe_cooldown / 3600.0
-            print(f"Cannot bribe yet. Wait {hours_remaining:.1f} game hours.")
+            logger.warning(f"Cannot bribe yet. Wait {hours_remaining:.1f} game hours.")
             return False
 
         if self.resources.money < amount:
-            print(f"Insufficient funds for bribe (need ${amount:,})")
+            logger.warning(f"Insufficient funds for bribe (need ${amount:,})")
             return False
 
         self.bribes_attempted += 1
@@ -336,16 +543,12 @@ class AuthorityManager:
             if self.fbi_investigation_active:
                 reduction = random.uniform(15, 30)  # 15-30% reduction
                 self.investigation_progress = max(0, self.investigation_progress - reduction)
-                print(f"\n💰 BRIBE SUCCESSFUL")
-                print(f"  Paid: ${amount:,}")
-                print(f"  Investigation progress reduced by {reduction:.1f}%")
+                logger.info(f"Bribe successful! Paid ${amount:,}, investigation progress reduced by {reduction:.1f}%")
             else:
                 # Reduce suspicion
                 suspicion_reduction = random.randint(10, 20)
                 self.suspicion.add_suspicion(-suspicion_reduction, "Successful bribe")
-                print(f"\n💰 BRIBE SUCCESSFUL")
-                print(f"  Paid: ${amount:,}")
-                print(f"  Suspicion reduced by {suspicion_reduction}")
+                logger.info(f"Bribe successful! Paid ${amount:,}, suspicion reduced by {suspicion_reduction}")
 
             # Set cooldown (24-48 hours)
             self.bribe_cooldown = random.uniform(86400.0, 172800.0)
@@ -357,10 +560,7 @@ class AuthorityManager:
             suspicion_increase = 20 + (10 if self.current_tier == AuthorityTier.FEDERAL else 0)
             self.suspicion.add_suspicion(suspicion_increase, "Failed bribe attempt")
 
-            print(f"\n⚠️ BRIBE FAILED!")
-            print(f"  Lost: ${amount:,}")
-            print(f"  Official reported the bribe attempt!")
-            print(f"  Suspicion increased by {suspicion_increase}")
+            logger.error(f"Bribe failed! Lost ${amount:,}, official reported, suspicion +{suspicion_increase}")
 
             # Double cooldown on failure
             self.bribe_cooldown = random.uniform(172800.0, 345600.0)  # 48-96 hours
@@ -378,15 +578,15 @@ class AuthorityManager:
             bool: True if successful
         """
         if self.evidence_planted:
-            print("False evidence already planted")
+            logger.debug("False evidence already planted")
             return False
 
         if not self.fbi_investigation_active:
-            print("No active investigation to misdirect")
+            logger.debug("No active investigation to misdirect")
             return False
 
         if self.resources.money < cost:
-            print(f"Insufficient funds (need ${cost:,})")
+            logger.warning(f"Insufficient funds for false evidence (need ${cost:,})")
             return False
 
         # 60% success rate
@@ -397,10 +597,7 @@ class AuthorityManager:
             # Set disruption factor
             self.disruption_factor = 0.5  # Halves investigation speed
 
-            print(f"\n🎭 FALSE EVIDENCE PLANTED")
-            print(f"  Cost: ${cost:,}")
-            print(f"  Investigation misdirected")
-            print(f"  Investigation speed reduced by 50%")
+            logger.info(f"False evidence planted! Cost ${cost:,}, investigation speed -50%")
 
             return True
         else:
@@ -408,10 +605,7 @@ class AuthorityManager:
             self.resources.modify_money(-cost)
             self.suspicion.add_suspicion(25, "Caught planting false evidence")
 
-            print(f"\n⚠️ FALSE EVIDENCE PLOT DISCOVERED!")
-            print(f"  Lost: ${cost:,}")
-            print(f"  Suspicion increased by 25")
-            print(f"  FBI investigation accelerated")
+            logger.error(f"False evidence plot discovered! Lost ${cost:,}, suspicion +25, FBI accelerated")
 
             # Increase investigation speed as punishment
             self.investigation_speed *= 1.5
@@ -427,7 +621,7 @@ class AuthorityManager:
         """
         # Can only escape if FBI is close
         if not self.fbi_investigation_active:
-            print("No immediate threat - no need to flee yet")
+            logger.debug("No immediate threat - no need to flee yet")
             return False
 
         # Success rate based on investigation progress
@@ -435,18 +629,12 @@ class AuthorityManager:
         success_rate = 1.0 - (self.investigation_progress / 100.0)
 
         if random.random() < success_rate:
-            print(f"\n✈️ ESCAPE SUCCESSFUL!")
-            print(f"  You have fled the country")
-            print(f"  Assets liquidated: ${int(self.resources.money * 0.3):,}")
-            print(f"  Living in exile abroad")
-            print(f"\n  GAME OVER - Escaped justice")
+            logger.info(f"Escape successful! Fled country, assets liquidated: ${int(self.resources.money * 0.3):,} - GAME OVER")
 
             self._trigger_ending(GameEnding.ESCAPE, "Fled the country to avoid arrest")
             return True
         else:
-            print(f"\n⚠️ ESCAPE FAILED!")
-            print(f"  Caught at the border")
-            print(f"  Immediate FBI raid")
+            logger.error("Escape failed! Caught at border, immediate FBI raid")
 
             # Immediate raid
             self._execute_fbi_raid(0.0)
@@ -460,26 +648,22 @@ class AuthorityManager:
             bool: True if deal accepted
         """
         if not self.fbi_investigation_active:
-            print("No investigation to negotiate with")
+            logger.debug("No investigation to negotiate with")
             return False
 
         # Can only negotiate if investigation is 30-80% complete
         if self.investigation_progress < 30:
-            print("Investigation not far enough - authorities not interested in deal")
+            logger.warning("Investigation not far enough - authorities not interested in deal")
             return False
 
         if self.investigation_progress > 80:
-            print("Investigation too far along - authorities want full prosecution")
+            logger.warning("Investigation too far along - authorities want full prosecution")
             return False
 
         # Plea deal cost: forfeit significant money and assets
         deal_cost = max(int(self.resources.money * 0.7), 30000)
 
-        print(f"\n⚖️ PLEA DEAL OFFERED")
-        print(f"  Forfeit: ${deal_cost:,} (70% of assets)")
-        print(f"  Penalty: Temporary business restrictions")
-        print(f"  Benefit: Avoid prison, continue operating")
-        print(f"\n  Accept deal? (This is a game ending)")
+        logger.info(f"Plea deal offered: Forfeit ${deal_cost:,} (70% assets), avoid prison, continue operating")
 
         # For now, auto-accept
         # In full implementation, would wait for player input
@@ -488,11 +672,7 @@ class AuthorityManager:
         if accept:
             self.resources.modify_money(-deal_cost)
 
-            print(f"\n✓ PLEA DEAL ACCEPTED")
-            print(f"  Paid: ${deal_cost:,}")
-            print(f"  Charges reduced to misdemeanors")
-            print(f"  Business allowed to continue with oversight")
-            print(f"\n  GAME OVER - Plea bargain")
+            logger.info(f"Plea deal accepted! Paid ${deal_cost:,}, charges reduced - GAME OVER")
 
             self._trigger_ending(GameEnding.PLEA_DEAL, "Negotiated plea deal with FBI")
             return True
@@ -510,10 +690,7 @@ class AuthorityManager:
         self.game_ending = ending
         self.ending_reason = reason
 
-        print(f"\n{'='*60}")
-        print(f"GAME ENDED: {ending.name}")
-        print(f"Reason: {reason}")
-        print(f"{'='*60}")
+        logger.info(f"GAME ENDED: {ending.name} - {reason}")
 
     def get_status_summary(self) -> Dict:
         """

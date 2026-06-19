@@ -250,31 +250,91 @@ class AuthorityUI:
         box_surface.fill(self.color_bg)
         screen.blit(box_surface, (box_x, box_y))
 
-        # Choose color and title based on ending
-        if ending == GameEnding.LEGITIMATE_SUCCESS:
-            border_color = self.color_success
-            title_text = "🎉 LEGITIMATE SUCCESS! 🎉"
-            subtitle = "You built a successful legal business!"
-        elif ending == GameEnding.FBI_RAID:
-            border_color = (255, 0, 0)
-            title_text = "💥 FBI RAID - ARRESTED 💥"
-            subtitle = "Federal agents have shut down your operation"
-        elif ending == GameEnding.BANKRUPTCY:
-            border_color = (150, 150, 150)
-            title_text = "💸 BANKRUPTCY 💸"
-            subtitle = "Unable to recover from financial losses"
-        elif ending == GameEnding.ESCAPE:
-            border_color = (200, 200, 100)
-            title_text = "✈️ ESCAPED ✈️"
-            subtitle = "Living in exile abroad"
-        elif ending == GameEnding.PLEA_DEAL:
-            border_color = (255, 200, 100)
-            title_text = "⚖️ PLEA DEAL ⚖️"
-            subtitle = "Negotiated reduced charges"
-        else:  # INSPECTOR_FAILURE
-            border_color = (255, 50, 50)
-            title_text = "💀 INSPECTION FAILURE 💀"
-            subtitle = "Critical violations discovered"
+        # Ending display configuration
+        ending_config = {
+            # Positive endings (victory)
+            GameEnding.PERFECT_CLEANUP: {
+                'color': (255, 215, 0),  # Gold
+                'title': "🌟 ENVIRONMENTAL HERO! 🌟",
+                'subtitle': "Perfect cleanup with zero incidents!"
+            },
+            GameEnding.CRIMINAL_MASTERMIND: {
+                'color': (128, 0, 128),  # Purple
+                'title': "🎭 CRIMINAL MASTERMIND! 🎭",
+                'subtitle': "Maximum profit, zero consequences!"
+            },
+            GameEnding.ECO_WARRIOR: {
+                'color': (34, 139, 34),  # Forest Green
+                'title': "🌱 ECO WARRIOR! 🌱",
+                'subtitle': "Champion of the environment!"
+            },
+            GameEnding.SPEED_DEMON: {
+                'color': (255, 140, 0),  # Dark Orange
+                'title': "⚡ SPEED DEMON! ⚡",
+                'subtitle': "Blazing fast completion!"
+            },
+            GameEnding.MORALLY_FLEXIBLE: {
+                'color': (70, 130, 180),  # Steel Blue
+                'title': "💼 MORALLY FLEXIBLE! 💼",
+                'subtitle': "Creative interpretation of regulations!"
+            },
+            GameEnding.URBAN_RECYCLER: {
+                'color': (100, 149, 237),  # Cornflower Blue
+                'title': "🏙️ URBAN MINING SPECIALIST! 🏙️",
+                'subtitle': "Aggressive but effective recycling!"
+            },
+            GameEnding.SLOW_AND_STEADY: {
+                'color': (107, 142, 35),  # Olive Drab
+                'title': "🐢 SLOW AND STEADY! 🐢",
+                'subtitle': "Safe approach wins the race!"
+            },
+            GameEnding.EFFICIENT_OPERATOR: {
+                'color': (46, 139, 87),  # Sea Green
+                'title': "⚙️ EFFICIENT OPERATOR! ⚙️",
+                'subtitle': "Job well done with minor hiccups!"
+            },
+            GameEnding.LEGITIMATE_SUCCESS: {
+                'color': self.color_success,
+                'title': "🎉 LEGITIMATE SUCCESS! 🎉",
+                'subtitle': "You built a successful legal business!"
+            },
+            # Negative endings
+            GameEnding.FBI_RAID: {
+                'color': (255, 0, 0),
+                'title': "💥 FBI RAID - ARRESTED 💥",
+                'subtitle': "Federal agents have shut down your operation"
+            },
+            GameEnding.BANKRUPTCY: {
+                'color': (150, 150, 150),
+                'title': "💸 BANKRUPTCY 💸",
+                'subtitle': "Unable to recover from financial losses"
+            },
+            GameEnding.ESCAPE: {
+                'color': (200, 200, 100),
+                'title': "✈️ ESCAPED ✈️",
+                'subtitle': "Living in exile abroad"
+            },
+            GameEnding.PLEA_DEAL: {
+                'color': (255, 200, 100),
+                'title': "⚖️ PLEA DEAL ⚖️",
+                'subtitle': "Negotiated reduced charges"
+            },
+            GameEnding.INSPECTOR_FAILURE: {
+                'color': (255, 50, 50),
+                'title': "💀 INSPECTION FAILURE 💀",
+                'subtitle': "Critical violations discovered"
+            },
+        }
+
+        # Get ending config or use default
+        config = ending_config.get(ending, {
+            'color': (200, 200, 200),
+            'title': "GAME OVER",
+            'subtitle': "The game has ended"
+        })
+        border_color = config['color']
+        title_text = config['title']
+        subtitle = config['subtitle']
 
         # Border
         pygame.draw.rect(screen, border_color, (box_x, box_y, box_width, box_height), 5)

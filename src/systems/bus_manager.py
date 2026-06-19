@@ -10,9 +10,13 @@ Handles:
 
 import random
 from typing import List, Dict, Optional
+
+from src.core.logger import get_logger
 from src.entities.bus import Bus
 from src.entities.bus_stop import BusStop
 from src.systems.bus_route import BusRoute
+
+logger = get_logger(__name__)
 
 
 class BusManager:
@@ -63,19 +67,19 @@ class BusManager:
         if num_routes is None:
             num_routes = self.target_routes
 
-        print(f"Generating {num_routes} bus routes...")
+        logger.debug(f"Generating {num_routes} bus routes...")
 
         for i in range(num_routes):
             route = self._generate_single_route(i)
 
             if route and route.get_stop_count() >= 3:
                 self.routes[route.route_id] = route
-                print(f"  Route {route.route_id}: {route.get_stop_count()} stops, "
+                logger.debug(f"Route {route.route_id}: {route.get_stop_count()} stops, "
                       f"{route.get_total_waypoint_count()} waypoints")
             else:
-                print(f"  Route {i}: Failed to generate (not enough stops)")
+                logger.debug(f"Route {i}: Failed to generate (not enough stops)")
 
-        print(f"Generated {len(self.routes)} routes total")
+        logger.debug(f"Generated {len(self.routes)} routes total")
 
     def _generate_single_route(self, route_id: int) -> Optional[BusRoute]:
         """
@@ -200,7 +204,7 @@ class BusManager:
 
     def spawn_buses(self):
         """Spawn buses on all routes."""
-        print(f"Spawning buses on {len(self.routes)} routes...")
+        logger.debug(f"Spawning buses on {len(self.routes)} routes...")
 
         for route_id, route in self.routes.items():
             for bus_index in range(self.buses_per_route):
@@ -208,7 +212,7 @@ class BusManager:
                 if bus:
                     self.buses.append(bus)
 
-        print(f"Spawned {len(self.buses)} buses total")
+        logger.debug(f"Spawned {len(self.buses)} buses total")
 
     def _spawn_bus_on_route(self, route: BusRoute, bus_index: int, is_express: bool = False) -> Optional[Bus]:
         """

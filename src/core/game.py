@@ -8,7 +8,10 @@ the development phases.
 import pygame
 import random
 import config
+from src.core.logger import get_logger
 from src.world.grid import Grid
+
+logger = get_logger(__name__)
 from src.rendering.camera import Camera
 from src.systems.entity_manager import EntityManager
 from src.systems.resource_manager import ResourceManager
@@ -35,11 +38,18 @@ from src.systems.camera_manager import CameraManager
 from src.systems.camera_hacking_manager import CameraHackingManager
 from src.systems.inspection_manager import InspectionManager
 from src.systems.material_inventory import MaterialInventory
+from src.systems.fbi_manager import FBIManager
+from src.systems.authority_manager import AuthorityManager
 from src.ui.inspection_ui import InspectionUI
+from src.ui.authority_ui import AuthorityUI
 from src.systems.save_manager import SaveManager
 from src.ui.save_load_menu import SaveLoadMenu
 from src.ui.controls_help import ControlsHelp
 from src.ui.minimap import Minimap
+from src.ui.settings_manager import SettingsManager
+from src.ui.settings_ui import SettingsUI
+from src.ui.game_over_ui import GameOverUI, GameEnding
+from src.systems.audio_manager import AudioManager
 
 
 class Game:
@@ -151,12 +161,20 @@ class Game:
         self.ui = HUD(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
         self.research_ui = ResearchUI(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
 
-        # Initialize camera hacking system (requires camera_manager, research, and suspicion)
-        self.camera_hacking = CameraHackingManager(self.camera_manager, self.research, self.suspicion)
+        # Initialize FBI manager (requires resources, suspicion)
+        # Must be created before camera_hacking so it can report excessive hacks
+        self.fbi = FBIManager(self.resources, self.suspicion)
+
+        # Initialize camera hacking system (requires camera_manager, research, suspicion, and optional fbi)
+        self.camera_hacking = CameraHackingManager(self.camera_manager, self.research, self.suspicion, self.fbi)
 
         # Initialize inspection system (requires resources, suspicion, and material inventory)
         self.inspection = InspectionManager(self.resources, self.suspicion, self.material_inventory)
         self.inspection_ui = InspectionUI(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
+
+        # Initialize authority manager (requires suspicion, resources, inspection)
+        self.authority = AuthorityManager(self.suspicion, self.resources, self.inspection)
+        self.authority_ui = AuthorityUI(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
 
         # Initialize save/load system
         self.save_manager = SaveManager()
@@ -168,6 +186,24 @@ class Game:
         # Initialize minimap
         self.minimap = Minimap(config.SCREEN_WIDTH, config.SCREEN_HEIGHT,
                               config.WORLD_WIDTH, config.WORLD_HEIGHT)
+
+        # Initialize settings system
+        self.settings_manager = SettingsManager()
+
+        # Initialize audio system
+        self.audio = AudioManager(self.settings_manager, sound_dir='data/sounds')
+
+        # Initialize settings UI (pass audio manager for live volume control)
+        self.settings_ui = SettingsUI(config.SCREEN_WIDTH, config.SCREEN_HEIGHT,
+                                       self.settings_manager, self.audio)
+
+        # Initialize game over UI
+        self.game_over_ui = GameOverUI(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
+        self.game_over_ui.on_restart = self._restart_game
+        self.game_over_ui.on_quit = self._quit_game
+
+        # Apply initial game speed from settings
+        self.game_speed = self.settings_manager.get('gameplay', 'game_speed', 1.0)
 
         # Game statistics tracking
         self.stats = {
@@ -209,9 +245,9 @@ class Game:
         # Spawn initial police patrols
         self.police.spawn_initial_patrols(seed=42)
 
-        print("Game initialized successfully!")
-        print(f"World size: {config.WORLD_WIDTH}x{config.WORLD_HEIGHT} pixels")
-        print(f"Grid size: {grid_width}x{grid_height} tiles")
+        logger.info("Game initialized successfully!")
+        logger.info(f"World size: {config.WORLD_WIDTH}x{config.WORLD_HEIGHT} pixels")
+        logger.info(f"Grid size: {grid_width}x{grid_height} tiles")
 
     def _place_starting_buildings(self):
         """Place the starting buildings (Factory and Landfill Gas Extraction)."""
@@ -226,13 +262,13 @@ class Game:
             factory_world_x = self.factory.x + self.factory.width // 2
             factory_world_y = self.factory.y + self.factory.height // 2
             self.entities.set_factory_position(factory_world_x, factory_world_y)
-            print(f"Factory placed at grid ({self.factory.grid_x}, {self.factory.grid_y})")
+            logger.info(f"Factory placed at grid ({self.factory.grid_x}, {self.factory.grid_y})")
 
         # Place Landfill Gas Extraction near landfill area (left side)
         # Landfill is roughly at grid coordinates (5-25, 10-30)
         gas_extraction = LandfillGasExtraction(15, 20)
         if self.buildings.place_building(gas_extraction):
-            print(f"Landfill Gas Extraction placed at grid ({gas_extraction.grid_x}, {gas_extraction.grid_y})")
+            logger.info(f"Landfill Gas Extraction placed at grid ({gas_extraction.grid_x}, {gas_extraction.grid_y})")
 
     def _create_test_entities(self):
         """Create test robots and collectibles for gameplay demonstration."""
@@ -268,11 +304,11 @@ class Game:
             quantity = random.uniform(10, 30)
             self.entities.create_collectible(x, y, material, quantity)
 
-        print(f"Created {len(self.entities.robots)} robots and {len(self.entities.collectibles)} collectibles")
+        logger.info(f"Created {len(self.entities.robots)} robots and {len(self.entities.collectibles)} collectibles")
 
     def _generate_geographic_features(self):
         """Generate rivers, ocean, and bridges for the game world."""
-        print("Generating geographic features...")
+        logger.info("Generating geographic features...")
 
         # Generate ocean at south edge (for aesthetic/gameplay boundary)
         ocean_stats = self.river_generator.generate_ocean(
@@ -301,8 +337,8 @@ class Game:
         )
 
         successful_bridges = sum(1 for success, _, _ in bridge_results if success)
-        print(f"Geographic features generated: {ocean_stats['ocean_tiles']} ocean tiles, "
-              f"{ocean_stats['dock_tiles']} docks, {river_count} rivers, {successful_bridges} bridges")
+        logger.info(f"Geographic features generated: {ocean_stats['ocean_tiles']} ocean tiles, "
+                    f"{ocean_stats['dock_tiles']} docks, {river_count} rivers, {successful_bridges} bridges")
 
     def _register_landfill_pollution(self):
         """Register all landfill tiles as pollution sources based on their fullness."""
@@ -320,11 +356,11 @@ class Game:
                         self.pollution.add_source(x, y, pollution_rate)
                         landfill_count += 1
 
-        print(f"Registered {landfill_count} landfill tiles as pollution sources")
+        logger.info(f"Registered {landfill_count} landfill tiles as pollution sources")
 
     def run(self):
         """Main game loop."""
-        print("Starting game loop...")
+        logger.info("Starting game loop...")
 
         while self.running:
             # Calculate delta time (time since last frame)
@@ -341,12 +377,23 @@ class Game:
             self.render()
 
         # Clean up
+        self.audio.cleanup()
         pygame.quit()
-        print("Game ended.")
+        logger.info("Game ended.")
 
     def handle_events(self):
         """Process user input and system events."""
         for event in pygame.event.get():
+            # Let game over UI handle events first if visible
+            if self.game_over_ui.handle_event(event):
+                continue  # Event was handled by game over UI
+
+            # Let settings UI handle events first if visible
+            if self.settings_ui.handle_event(event):
+                # Update game speed if changed in settings
+                self.game_speed = self.settings_manager.get('gameplay', 'game_speed', 1.0)
+                continue  # Event was handled by settings UI
+
             # Let controls help handle events first if visible
             if self.controls_help.handle_event(event):
                 continue  # Event was handled by controls help
@@ -365,34 +412,43 @@ class Game:
 
             # Keyboard events
             elif event.type == pygame.KEYDOWN:
-                # ESC to quit
+                # Get key bindings from settings
+                key_bindings = self.settings_manager.get('controls', 'key_bindings', {})
+
+                # ESC to open pause menu / quit (if no menu open)
                 if event.key == pygame.K_ESCAPE:
                     self.running = False
                 # Space to pause
                 elif event.key == pygame.K_SPACE:
                     self.paused = not self.paused
-                    print(f"Game {'paused' if self.paused else 'resumed'}")
+                    logger.debug(f"Game {'paused' if self.paused else 'resumed'}")
+                # O key to open settings menu
+                elif event.key == pygame.K_o:
+                    self.settings_ui.toggle()
+                    self.audio.play_sfx('ui_open' if self.settings_ui.visible else 'ui_close')
+                    logger.debug(f"Settings menu: {'opened' if self.settings_ui.visible else 'closed'}")
                 # Toggle grid display with G key
                 elif event.key == pygame.K_g:
                     config.SHOW_GRID = not config.SHOW_GRID
-                    print(f"Grid display: {'ON' if config.SHOW_GRID else 'OFF'}")
-                # R key to open research menu
-                elif event.key == pygame.K_r:
+                    logger.debug(f"Grid display: {'ON' if config.SHOW_GRID else 'OFF'}")
+                # R key to open research menu (check settings binding)
+                elif event.key == pygame.K_r or self._check_key_binding(event, key_bindings, 'research_menu'):
                     self.research_ui.toggle()
-                    print(f"Research menu: {'opened' if self.research_ui.visible else 'closed'}")
+                    self.audio.play_sfx('ui_open' if self.research_ui.visible else 'ui_close')
+                    logger.debug(f"Research menu: {'opened' if self.research_ui.visible else 'closed'}")
                 # P key to toggle pollution overlay
                 elif event.key == pygame.K_p:
                     self.pollution.toggle_overlay()
-                # F5 key to quick save
-                elif event.key == pygame.K_F5:
+                # F5 key to quick save (check settings binding)
+                elif event.key == pygame.K_F5 or self._check_key_binding(event, key_bindings, 'quick_save'):
                     self._quick_save()
-                # F9 key to quick load
-                elif event.key == pygame.K_F9:
+                # F9 key to quick load (check settings binding)
+                elif event.key == pygame.K_F9 or self._check_key_binding(event, key_bindings, 'quick_load'):
                     self._quick_load()
-                # H or F1 key to toggle help overlay
-                elif event.key in (pygame.K_h, pygame.K_F1):
+                # H or F1 key to toggle help overlay (check settings binding)
+                elif event.key in (pygame.K_h, pygame.K_F1) or self._check_key_binding(event, key_bindings, 'help_menu'):
                     self.controls_help.toggle()
-                    print(f"Controls help: {'opened' if self.controls_help.visible else 'closed'}")
+                    logger.debug(f"Controls help: {'opened' if self.controls_help.visible else 'closed'}")
                 # F10 key to open save/load menu
                 elif event.key == pygame.K_F10:
                     self.save_load_menu.toggle()
@@ -400,11 +456,17 @@ class Game:
                     if self.save_load_menu.visible:
                         save_list = self.save_manager.get_save_list()
                         self.save_load_menu.update_save_list(save_list)
-                    print(f"Save/Load menu: {'opened' if self.save_load_menu.visible else 'closed'}")
-                # M key to toggle minimap
-                elif event.key == pygame.K_m:
+                    logger.debug(f"Save/Load menu: {'opened' if self.save_load_menu.visible else 'closed'}")
+                # M key to toggle minimap (check settings binding)
+                elif event.key == pygame.K_m or self._check_key_binding(event, key_bindings, 'map_menu'):
                     self.minimap.toggle()
-                    print(f"Minimap: {'visible' if self.minimap.visible else 'hidden'}")
+                    logger.debug(f"Minimap: {'visible' if self.minimap.visible else 'hidden'}")
+                # Speed up (+/= key or custom binding)
+                elif event.key in (pygame.K_EQUALS, pygame.K_PLUS, pygame.K_KP_PLUS) or self._check_key_binding(event, key_bindings, 'speed_up'):
+                    self._change_game_speed(0.25)
+                # Speed down (-/_ key or custom binding)
+                elif event.key in (pygame.K_MINUS, pygame.K_KP_MINUS) or self._check_key_binding(event, key_bindings, 'speed_down'):
+                    self._change_game_speed(-0.25)
 
             # Mouse motion (for hover effects)
             elif event.type == pygame.MOUSEMOTION:
@@ -434,13 +496,14 @@ class Game:
                 # Try to select a robot
                 selected = self.entities.select_robot_at(world_x, world_y)
                 if selected:
-                    print(f"Selected {selected}")
+                    self.audio.play_robot_select()
+                    logger.debug(f"Selected {selected}")
                 else:
                     # If no robot selected, show tile info
                     grid_x, grid_y = self.grid.world_to_grid(world_x, world_y)
                     tile = self.grid.get_tile(grid_x, grid_y)
                     if tile:
-                        print(f"Clicked tile {tile} at world({world_x:.0f}, {world_y:.0f})")
+                        logger.debug(f"Clicked tile {tile} at world({world_x:.0f}, {world_y:.0f})")
 
     def update(self, dt):
         """Update game logic."""
@@ -450,11 +513,8 @@ class Game:
         # Adjust delta time by game speed
         adjusted_dt = dt * self.game_speed
 
-        # Handle robot movement input
-        self._handle_robot_input()
-
-        # Update camera
-        self.camera.update(adjusted_dt)
+        # Update camera (handles WASD/arrow key movement)
+        self.camera.update(adjusted_dt, self.settings_manager)
 
         # Update grid
         self.grid.update(adjusted_dt)
@@ -477,7 +537,8 @@ class Game:
             self.entities.apply_research_effects_to_robots(self.research)
             self.buildings.apply_research_effects_to_buildings(self.research)
             self.research.effects_changed = False
-            print("Applied research effects to all robots and buildings")
+            self.audio.play_research_complete()
+            logger.info("Applied research effects to all robots and buildings")
 
         # Update entities (includes collection mechanics)
         self.entities.update(adjusted_dt)
@@ -491,19 +552,18 @@ class Game:
         # Update vehicles
         self.vehicles.update(adjusted_dt)
 
+        # Calculate time of day and night status
+        time_of_day = self.hour + self.minute / 60.0
+        is_night = self._is_night_time()
+
         # Update traffic system (moving vehicles on roads)
-        # Pass NPCs for pedestrian detection and time for headlights
         npc_list = self.npcs.npcs if hasattr(self.npcs, 'npcs') else []
-        time_of_day = self.npcs.game_time if hasattr(self.npcs, 'game_time') else 12.0
         self.traffic_manager.update(adjusted_dt, npcs=npc_list, time_of_day=time_of_day)
 
         # Update bus system (public transportation)
-        # Pass NPCs for boarding/alighting and game_time for scheduling
         self.bus_manager.update(adjusted_dt, npcs=npc_list, game_time=time_of_day)
 
-        # Update prop system (turn lights on/off based on time - placeholder for now)
-        # TODO: Integrate with day/night cycle when implemented
-        is_night = False  # Placeholder - will be replaced with actual day/night check
+        # Update prop system (lights on at night)
         self.prop_manager.update(adjusted_dt, is_night)
 
         # Update camera system (camera timers)
@@ -527,6 +587,7 @@ class Game:
             changed = self.suspicion.process_detection_report(report)
             if changed:
                 tier_changed = True
+                self.audio.play_alert('warning')
             # Notify police of high-level detections
             self.police.handle_detection_report(report)
 
@@ -543,6 +604,12 @@ class Game:
         # Update inspection system
         self.inspection.update(adjusted_dt, self.npcs.game_time)
 
+        # Update FBI manager (tracks high suspicion, camera hacks, investigation timers)
+        self.fbi.update(adjusted_dt, self.npcs.game_time)
+
+        # Update authority manager (tier escalation, FBI raids, game endings)
+        self.authority.update(adjusted_dt, self.npcs.game_time)
+
         # Update game time (1 game minute = 1 real second by default)
         self.time_elapsed += adjusted_dt
         if self.time_elapsed >= 1.0:  # Every second
@@ -556,7 +623,7 @@ class Game:
                 if self.hour >= 24:
                     self.day += 1
                     self.hour = 0
-                    print(f"\n=== Day {self.day} ===")
+                    logger.info(f"Day {self.day} started")
 
                     # Auto-save check (every N days)
                     game_state = SaveManager.serialize_game_state(self)
@@ -565,39 +632,155 @@ class Game:
         # Check if police captured any robots (game over condition)
         captured = self.police.check_captures(self.entities.robots)
         if captured:
-            # TODO: Implement game over
-            print("⚠️ GAME OVER: Police captured robot!")
+            self._trigger_game_over(GameEnding.POLICE_CAPTURE, "Police captured your robot!")
+
+        # Check if FBI raided the factory (game over condition)
+        if self.fbi.is_raided():
+            self._trigger_game_over(GameEnding.FBI_RAID, "FBI raided your factory!")
+
+        # Check authority manager game endings
+        if self.authority.is_game_over():
+            ending = self.authority.get_game_ending()
+            # Map authority endings to game_over_ui endings
+            if ending.name == 'FBI_RAID':
+                self._trigger_game_over(GameEnding.FBI_RAID, self.authority.ending_reason)
+            elif ending.name == 'BANKRUPTCY':
+                self._trigger_game_over(GameEnding.BANKRUPTCY, self.authority.ending_reason)
+            elif ending.name == 'INSPECTOR_FAILURE':
+                self._trigger_game_over(GameEnding.INSPECTOR_FAILURE, self.authority.ending_reason)
 
         # Update minimap (hover detection)
         mouse_pos = pygame.mouse.get_pos()
         self.minimap.update(mouse_pos)
 
-    def _handle_robot_input(self):
-        """Handle arrow key input for controlling the selected robot."""
-        if not self.entities.selected_robot:
+    def _check_key_binding(self, event, key_bindings: dict, action: str) -> bool:
+        """
+        Check if a key event matches a custom key binding.
+
+        Args:
+            event: Pygame key event
+            key_bindings: Dictionary of action -> key name
+            action: Action name to check
+
+        Returns:
+            True if the event matches the binding
+        """
+        if action not in key_bindings:
+            return False
+
+        bound_key = key_bindings[action].upper()
+        pressed_key = pygame.key.name(event.key).upper()
+        return bound_key == pressed_key
+
+    def _change_game_speed(self, delta: float):
+        """
+        Change game speed by delta amount.
+
+        Args:
+            delta: Amount to change speed (positive = faster, negative = slower)
+        """
+        min_speed = 0.25
+        max_speed = 4.0
+        old_speed = self.game_speed
+        self.game_speed = max(min_speed, min(max_speed, self.game_speed + delta))
+
+        if self.game_speed != old_speed:
+            # Update settings manager so it persists
+            self.settings_manager.set('gameplay', 'game_speed', self.game_speed)
+            logger.debug(f"Game speed: {self.game_speed:.2f}x")
+
+    def _is_night_time(self) -> bool:
+        """Check if it's currently night time (before 6am or after 8pm)."""
+        return self.hour < 6 or self.hour >= 20
+
+    def _get_ambient_light(self) -> float:
+        """
+        Get ambient light level based on time of day.
+
+        Returns:
+            Float from 0.0 (darkest) to 1.0 (brightest)
+        """
+        hour = self.hour + self.minute / 60.0
+
+        if 6 <= hour < 7:
+            # Dawn transition (6am-7am)
+            return 0.3 + (hour - 6) * 0.7
+        elif 7 <= hour < 18:
+            # Full daylight
+            return 1.0
+        elif 18 <= hour < 20:
+            # Dusk transition (6pm-8pm)
+            return 1.0 - (hour - 18) * 0.35
+        else:
+            # Night (8pm-6am)
+            return 0.3
+
+    def _get_sky_color(self) -> tuple:
+        """Get sky/background color based on time of day."""
+        light = self._get_ambient_light()
+
+        # Interpolate between night color and day color
+        night_color = (10, 10, 25)
+        day_color = (135, 206, 235)
+
+        r = int(night_color[0] + (day_color[0] - night_color[0]) * light)
+        g = int(night_color[1] + (day_color[1] - night_color[1]) * light)
+        b = int(night_color[2] + (day_color[2] - night_color[2]) * light)
+
+        return (r, g, b)
+
+    def _render_night_overlay(self):
+        """Render semi-transparent overlay for night time darkness."""
+        if not self._is_night_time():
             return
 
-        keys = pygame.key.get_pressed()
-        dx, dy = 0, 0
+        light = self._get_ambient_light()
+        darkness = int((1.0 - light) * 180)
 
-        # Arrow keys for robot movement
-        if keys[pygame.K_UP]:
-            dy = -1
-        if keys[pygame.K_DOWN]:
-            dy = 1
-        if keys[pygame.K_LEFT]:
-            dx = -1
-        if keys[pygame.K_RIGHT]:
-            dx = 1
+        if darkness > 0:
+            overlay = pygame.Surface((config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
+            overlay.fill((0, 0, 30))
+            overlay.set_alpha(darkness)
+            self.screen.blit(overlay, (0, 0))
 
-        # Set robot velocity
-        if dx != 0 or dy != 0:
-            self.entities.selected_robot.move(dx, dy)
+    def _trigger_game_over(self, ending: GameEnding, reason: str = ""):
+        """
+        Trigger game over state and show game over UI.
+
+        Args:
+            ending: Type of game ending
+            reason: Optional reason text
+        """
+        self.paused = True
+        self.audio.play_alert('police' if ending == GameEnding.POLICE_CAPTURE else 'danger')
+
+        # Gather final statistics
+        final_stats = {
+            'days': self.day,
+            'money_earned': self.stats.get('money_earned', 0),
+            'materials_collected': self.stats.get('materials_collected', 0),
+            'buildings_built': self.stats.get('buildings_built', 0),
+            'research_completed': len(self.research.completed) if hasattr(self.research, 'completed') else 0,
+            'inspections_passed': self.inspection.pass_count if hasattr(self.inspection, 'pass_count') else 0,
+        }
+
+        self.game_over_ui.show(ending, reason, final_stats)
+        logger.info(f"GAME OVER: {ending.name} - {reason}")
+
+    def _restart_game(self):
+        """Restart the game (reinitialize everything)."""
+        self.game_over_ui.hide()
+        self.__init__()
+
+    def _quit_game(self):
+        """Quit the game."""
+        self.running = False
 
     def render(self):
         """Render game to screen."""
-        # Clear screen
-        self.screen.fill((20, 20, 20))  # Dark gray background
+        # Clear screen with sky color based on time of day
+        sky_color = self._get_sky_color()
+        self.screen.fill(sky_color)
 
         # Render grid
         self.grid.render(self.screen, self.camera, config.SHOW_GRID)
@@ -641,6 +824,9 @@ class Game:
         # Render pollution overlay (if enabled)
         self.pollution.render_overlay(self.screen, self.camera, config.TILE_SIZE)
 
+        # Render night overlay for ambient lighting
+        self._render_night_overlay()
+
         # Render HUD (overlays everything)
         self.ui.render(self.screen, self.resources, self.entities, self.clock,
                       self.power, self.buildings, self.research, self.suspicion,
@@ -653,6 +839,9 @@ class Game:
         adjusted_dt = self.clock.get_time() / 1000.0
         self.inspection_ui.render(self.screen, self.inspection, adjusted_dt)
 
+        # Render authority UI (tier indicator, FBI investigation, raid countdown)
+        self.authority_ui.render(self.screen, self.authority)
+
         # Render save/load menu (if visible)
         self.save_load_menu.render(self.screen)
 
@@ -662,8 +851,15 @@ class Game:
         # Render minimap (if visible)
         self.minimap.render(self.screen, self.grid, self.entities, self.camera, self.buildings)
 
-        # Show paused indicator
-        if self.paused:
+        # Render settings UI (if visible)
+        self.settings_ui.render(self.screen)
+
+        # Render game over UI (if visible)
+        self.game_over_ui.update(self.clock.get_time() / 1000.0)
+        self.game_over_ui.render(self.screen)
+
+        # Show paused indicator (but not if game over screen is showing)
+        if self.paused and not self.game_over_ui.visible:
             font = pygame.font.Font(None, 72)
             text = font.render("PAUSED", True, (255, 255, 0))
             text_rect = text.get_rect(center=(config.SCREEN_WIDTH // 2, config.SCREEN_HEIGHT // 2))
@@ -679,26 +875,26 @@ class Game:
 
     def _quick_save(self):
         """Quick save the game to the quicksave slot."""
-        print("\n=== QUICK SAVE ===")
+        logger.info("Quick save initiated")
         game_state = SaveManager.serialize_game_state(self)
         success = self.save_manager.quick_save(game_state)
         if success:
-            print("✓ Quick save successful! (Press F9 to load)")
+            logger.info("Quick save successful")
         else:
-            print("✗ Quick save failed!")
+            logger.error("Quick save failed")
 
     def _quick_load(self):
         """Quick load the game from the quicksave slot."""
-        print("\n=== QUICK LOAD ===")
+        logger.info("Quick load initiated")
         game_state = self.save_manager.quick_load()
         if game_state:
             success = SaveManager.deserialize_game_state(self, game_state)
             if success:
-                print("✓ Quick load successful!")
+                logger.info("Quick load successful")
             else:
-                print("✗ Failed to restore game state!")
+                logger.error("Failed to restore game state")
         else:
-            print("✗ No quicksave found!")
+            logger.warning("No quicksave found")
 
     def save_game(self, save_name: str = None):
         """
@@ -731,36 +927,36 @@ class Game:
         # Check for load request
         load_save_name = self.save_load_menu.get_and_clear_load_request()
         if load_save_name:
-            print(f"\n=== LOADING GAME: {load_save_name} ===")
+            logger.info(f"Loading game: {load_save_name}")
             success = self.load_game(load_save_name)
             if success:
-                print(f"✓ Game loaded successfully from '{load_save_name}'")
+                logger.info(f"Game loaded successfully from '{load_save_name}'")
                 self.save_load_menu.hide()
             else:
-                print(f"✗ Failed to load game from '{load_save_name}'")
+                logger.error(f"Failed to load game from '{load_save_name}'")
 
         # Check for save request
         save_name = self.save_load_menu.get_and_clear_save_request()
         if save_name:
-            print(f"\n=== SAVING GAME: {save_name} ===")
+            logger.info(f"Saving game: {save_name}")
             success = self.save_game(save_name)
             if success:
-                print(f"✓ Game saved successfully as '{save_name}'")
+                logger.info(f"Game saved successfully as '{save_name}'")
                 # Refresh save list
                 save_list = self.save_manager.get_save_list()
                 self.save_load_menu.update_save_list(save_list)
             else:
-                print(f"✗ Failed to save game as '{save_name}'")
+                logger.error(f"Failed to save game as '{save_name}'")
 
         # Check for delete request
         delete_save_name = self.save_load_menu.get_and_clear_delete_request()
         if delete_save_name:
-            print(f"\n=== DELETING SAVE: {delete_save_name} ===")
+            logger.info(f"Deleting save: {delete_save_name}")
             success = self.save_manager.delete_save(delete_save_name)
             if success:
-                print(f"✓ Save '{delete_save_name}' deleted successfully")
+                logger.info(f"Save '{delete_save_name}' deleted successfully")
                 # Refresh save list
                 save_list = self.save_manager.get_save_list()
                 self.save_load_menu.update_save_list(save_list)
             else:
-                print(f"✗ Failed to delete save '{delete_save_name}'")
+                logger.error(f"Failed to delete save '{delete_save_name}'")

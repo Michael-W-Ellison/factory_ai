@@ -10,8 +10,12 @@ Handles:
 
 import random
 from typing import List, Tuple
+
+from src.core.logger import get_logger
 from src.entities.police_officer import PoliceOfficer, PoliceBehavior
 from src.world.tile import TileType
+
+logger = get_logger(__name__)
 
 
 class PoliceManager:
@@ -54,7 +58,7 @@ class PoliceManager:
         for route in patrol_routes:
             self._spawn_patrol(route, rng)
 
-        print(f"Spawned {len(self.police_officers)} police officers in {len(patrol_routes)} patrols")
+        logger.debug(f"Spawned {len(self.police_officers)} police officers in {len(patrol_routes)} patrols")
 
     def _generate_patrol_routes(self, rng: random.Random, count: int) -> List[List[Tuple[int, int]]]:
         """
@@ -78,7 +82,7 @@ class PoliceManager:
                     road_tiles.append((x, y))
 
         if not road_tiles:
-            print("Warning: No road tiles found for police patrols")
+            logger.warning("No road tiles found for police patrols")
             return routes
 
         # Generate routes
@@ -182,14 +186,14 @@ class PoliceManager:
             new_routes = self._generate_patrol_routes(rng, to_add)
             for route in new_routes:
                 self._spawn_patrol(route, rng)
-            print(f"⚠ Police presence increased: {current_patrol_count} → {target_patrols} patrols (suspicion: {suspicion_level:.1f})")
+            logger.warning(f"Police presence increased: {current_patrol_count} -> {target_patrols} patrols (suspicion: {suspicion_level:.1f})")
         elif current_patrol_count > target_patrols and suspicion_level < 20:
             # Remove patrols (only when suspicion is low)
             to_remove = (current_patrol_count - target_patrols) * self.officers_per_patrol
             for i in range(to_remove):
                 if self.police_officers:
                     self.police_officers.pop()
-            print(f"✓ Police presence decreased: {current_patrol_count} → {target_patrols} patrols")
+            logger.info(f"Police presence decreased: {current_patrol_count} -> {target_patrols} patrols")
 
     def update(self, dt: float, game_time: float):
         """
@@ -237,11 +241,11 @@ class PoliceManager:
                 if robot and hasattr(robot, 'id'):
                     # Chase the robot if we have a reference
                     nearest_officer.start_chase(robot)
-                    print(f"🚨 Police officer dispatched to chase robot at ({location[0]:.0f}, {location[1]:.0f})")
+                    logger.warning(f"Police officer dispatched to chase robot at ({location[0]:.0f}, {location[1]:.0f})")
                 else:
                     # Just investigate the location
                     nearest_officer.start_investigation(location)
-                    print(f"🔍 Police officer investigating suspicious activity at ({location[0]:.0f}, {location[1]:.0f})")
+                    logger.info(f"Police officer investigating suspicious activity at ({location[0]:.0f}, {location[1]:.0f})")
 
     def check_captures(self, robots: List) -> List:
         """
@@ -259,7 +263,7 @@ class PoliceManager:
             if officer.behavior == PoliceBehavior.CAPTURE and officer.chase_target:
                 if officer.chase_target in robots:
                     captured.append(officer.chase_target)
-                    print(f"⚠️ POLICE CAPTURED ROBOT! Game Over!")
+                    logger.error("POLICE CAPTURED ROBOT! Game Over!")
 
         return captured
 

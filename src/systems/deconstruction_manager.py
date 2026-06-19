@@ -14,6 +14,10 @@ from enum import Enum
 from typing import Dict, List, Tuple, Optional
 from dataclasses import dataclass
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class DeconstructionState(Enum):
     """Deconstruction operation states."""
@@ -148,14 +152,7 @@ class DeconstructionManager:
         self.jobs[self.next_job_id] = job
         self.next_job_id += 1
 
-        print(f"\n🔨 DECONSTRUCTION STARTED")
-        print(f"  Target: {target_type.title()} #{target_id}")
-        print(f"  Position: ({target_position[0]:.0f}, {target_position[1]:.0f})")
-        print(f"  Workers: {workers}")
-        print(f"  Estimated time: {total_time:.0f} seconds")
-        print(f"  Materials to recover:")
-        for material, quantity in materials_to_recover.items():
-            print(f"    {material}: {quantity:.1f}")
+        logger.info(f"Deconstruction started: {target_type.title()} #{target_id} at ({target_position[0]:.0f}, {target_position[1]:.0f}) - Workers: {workers}, Est. time: {total_time:.0f}s")
 
         if is_illegal:
             self.total_illegal_deconstructions += 1
@@ -183,9 +180,7 @@ class DeconstructionManager:
         # Cancel job
         job.state = DeconstructionState.CANCELLED
 
-        print(f"\n🔨 DECONSTRUCTION CANCELLED")
-        print(f"  Job #{job_id}")
-        print(f"  Progress: {job.progress:.1f}%")
+        logger.info(f"Deconstruction cancelled: Job #{job_id} at {job.progress:.1f}% progress")
 
         # Remove job
         del self.jobs[job_id]
@@ -229,14 +224,11 @@ class DeconstructionManager:
         job.progress = 100.0
         job.time_remaining = 0.0
 
-        print(f"\n🔨 DECONSTRUCTION COMPLETED")
-        print(f"  Job #{job.id}")
-        print(f"  Recovered materials:")
+        logger.info(f"Deconstruction completed: Job #{job.id}")
 
         # Recover materials
         total_recovered = 0
         for material, quantity in job.materials_to_recover.items():
-            print(f"    {material}: {quantity:.1f}")
             total_recovered += quantity
 
             # Add to inventory if available
@@ -290,9 +282,7 @@ class DeconstructionManager:
         # Adjust time remaining
         job.time_remaining *= worker_multiplier_new / worker_multiplier_old
 
-        print(f"\n🔨 WORKERS ASSIGNED: {workers}")
-        print(f"  Job #{job_id}")
-        print(f"  New estimated time: {job.time_remaining:.0f} seconds")
+        logger.debug(f"Workers assigned: {workers} to Job #{job_id}, Est. time: {job.time_remaining:.0f}s")
 
         return True
 

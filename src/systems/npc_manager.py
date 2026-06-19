@@ -11,8 +11,12 @@ Handles:
 
 import random
 from typing import List, Tuple, Optional
+
+from src.core.logger import get_logger
 from src.entities.npc import NPC, Activity
 from src.world.tile import TileType
+
+logger = get_logger(__name__)
 
 
 class NPCManager:
@@ -56,7 +60,7 @@ class NPCManager:
         # Find all houses and stores
         houses = self._find_buildings(TileType.BUILDING)
 
-        print(f"Found {len(houses)} buildings for NPC housing")
+        logger.debug(f"Found {len(houses)} buildings for NPC housing")
 
         # Spawn NPCs in houses
         npc_count = 0
@@ -87,7 +91,7 @@ class NPCManager:
                 npc_count += 1
 
         employed = sum(1 for npc in self.npcs if npc.has_job)
-        print(f"Spawned {npc_count} NPCs ({employed} employed, {npc_count - employed} unemployed)")
+        logger.debug(f"Spawned {npc_count} NPCs ({employed} employed, {npc_count - employed} unemployed)")
 
     def _find_buildings(self, tile_type: int) -> List[Tuple[int, int]]:
         """

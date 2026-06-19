@@ -4,12 +4,16 @@ Grid class - manages the tile-based game world.
 
 import pygame
 import random
+
+from src.core.logger import get_logger
 from src.world.tile import Tile, TileType, TerrainType
 from src.world.city_generator import CityGenerator
 from src.world.river_generator import RiverGenerator
 from src.entities.city_building import (
     CityBuilding, House, Store, Office, CityFactory, PoliceStation
 )
+
+logger = get_logger(__name__)
 
 
 class Grid:
@@ -54,7 +58,7 @@ class Grid:
         self.river_generator = None
         self.has_geographic_features = False
 
-        print(f"Grid created: {width_tiles}x{height_tiles} tiles ({self.world_width}x{self.world_height} pixels)")
+        logger.debug(f"Grid created: {width_tiles}x{height_tiles} tiles ({self.world_width}x{self.world_height} pixels)")
 
     def get_tile(self, grid_x, grid_y):
         """
@@ -181,7 +185,7 @@ class Grid:
                         # Grass
                         self.tiles[y][x].set_type(TileType.GRASS)
 
-        print("Test world created with factory, landfill, and city areas")
+        logger.debug("Test world created with factory, landfill, and city areas")
 
     def generate_geographic_features(self, seed=None, num_rivers=1, ocean_edges=None):
         """
@@ -193,10 +197,10 @@ class Grid:
             ocean_edges (list, optional): List of edges to add ocean ('north', 'south', 'east', 'west')
         """
         if self.has_geographic_features:
-            print("Geographic features already generated")
+            logger.debug("Geographic features already generated")
             return
 
-        print("Generating geographic features...")
+        logger.debug("Generating geographic features...")
 
         # Create river generator
         self.river_generator = RiverGenerator(
@@ -233,10 +237,7 @@ class Grid:
         self.has_geographic_features = True
 
         stats = self.river_generator.get_statistics()
-        print(f"Geographic features generated:")
-        print(f"  Rivers: {stats['num_rivers']}")
-        print(f"  River tiles: {stats['river_tiles']}")
-        print(f"  Ocean tiles: {len(ocean_tiles)}")
+        logger.debug(f"Geographic features generated: Rivers: {stats['num_rivers']}, River tiles: {stats['river_tiles']}, Ocean tiles: {len(ocean_tiles)}")
 
     def place_bridges_on_roads(self):
         """
@@ -244,11 +245,11 @@ class Grid:
         Must be called after both generate_geographic_features() and generate_city().
         """
         if not self.has_geographic_features:
-            print("Cannot place bridges: no geographic features generated")
+            logger.warning("Cannot place bridges: no geographic features generated")
             return
 
         if not self.city_generated:
-            print("Cannot place bridges: no city generated")
+            logger.warning("Cannot place bridges: no city generated")
             return
 
         if not self.river_generator:
@@ -268,7 +269,7 @@ class Grid:
                     tile.set_terrain_type(TerrainType.BRIDGE)
 
             stats = self.river_generator.get_statistics()
-            print(f"Bridges placed: {stats['num_bridges']} ({stats['bridge_tiles']} tiles)")
+            logger.debug(f"Bridges placed: {stats['num_bridges']} ({stats['bridge_tiles']} tiles)")
 
     def generate_city(self, seed=None):
         """
@@ -278,10 +279,10 @@ class Grid:
             seed (int, optional): Random seed for reproducible generation
         """
         if self.city_generated:
-            print("City already generated")
+            logger.debug("City already generated")
             return
 
-        print("Generating city...")
+        logger.debug("Generating city...")
 
         # Create city generator
         self.city_generator = CityGenerator(
@@ -324,7 +325,7 @@ class Grid:
                             self.set_tile_type(tile_x, tile_y, TileType.BUILDING)
 
         self.city_generated = True
-        print(f"City generated with {len(self.city_buildings)} buildings")
+        logger.debug(f"City generated with {len(self.city_buildings)} buildings")
 
     def get_city_building_at(self, grid_x, grid_y):
         """

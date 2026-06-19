@@ -11,7 +11,11 @@ Handles:
 
 import random
 from typing import List, Optional, Tuple
+
+from src.core.logger import get_logger
 from src.entities.traffic_vehicle import TrafficVehicle
+
+logger = get_logger(__name__)
 
 
 class ParkedVehicle:
@@ -492,7 +496,7 @@ class TrafficManager:
 
             self.parked_vehicles.append(parked)
 
-        print(f"Generated {len(self.parked_vehicles)} parked vehicles")
+        logger.debug(f"Generated {len(self.parked_vehicles)} parked vehicles")
 
     def render(self, screen, camera):
         """

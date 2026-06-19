@@ -12,7 +12,11 @@ Handles:
 import random
 import math
 from typing import List, Tuple, Set, Optional
+
+from src.core.logger import get_logger
 from src.world.tile import TerrainType
+
+logger = get_logger(__name__)
 
 
 class RiverSegment:
@@ -103,7 +107,7 @@ class RiverGenerator:
         Returns:
             dict: River data with tiles, bridges, etc.
         """
-        print(f"Generating {num_rivers} river(s) flowing {flow_direction}...")
+        logger.debug(f"Generating {num_rivers} river(s) flowing {flow_direction}...")
 
         self.rivers = []
         self.river_tiles = set()
@@ -113,7 +117,7 @@ class RiverGenerator:
             if river_path:
                 self.rivers.append(river_path)
 
-        print(f"  Generated {len(self.rivers)} rivers with {len(self.river_tiles)} water tiles")
+        logger.debug(f"Generated {len(self.rivers)} rivers with {len(self.river_tiles)} water tiles")
 
         return {
             'rivers': self.rivers,
@@ -157,7 +161,7 @@ class RiverGenerator:
             start_y = self.grid_height // (river_index + 2) + random.randint(-5, 5)
             primary_dir = (-1, 0)  # Move left
         else:
-            print(f"Unknown flow direction: {flow_direction}, using south")
+            logger.warning(f"Unknown flow direction: {flow_direction}, using south")
             start_x = self.grid_width // 2
             start_y = 0
             primary_dir = (0, 1)
@@ -232,7 +236,7 @@ class RiverGenerator:
 
             steps += 1
 
-        print(f"  River {river_index}: {len(path)} segments")
+        logger.debug(f"River {river_index}: {len(path)} segments")
         return path
 
     def _add_river_tiles(self, center_x: int, center_y: int, width: int):
@@ -266,7 +270,7 @@ class RiverGenerator:
             road_tiles (set): Set of (x, y) tiles that are roads
             min_spacing (int): Minimum spacing between bridges
         """
-        print("Placing bridges at river crossings...")
+        logger.debug("Placing bridges at river crossings...")
 
         self.bridges = []
         self.bridge_tiles = set()
@@ -278,7 +282,7 @@ class RiverGenerator:
                 intersections.append(road_tile)
 
         if not intersections:
-            print("  No river-road intersections found")
+            logger.debug("No river-road intersections found")
             return
 
         # Group nearby intersections into bridge locations
@@ -327,7 +331,7 @@ class RiverGenerator:
                         for tile in bridge_tiles_list:
                             used_intersections.add(tile)
 
-        print(f"  Placed {len(self.bridges)} bridges")
+        logger.debug(f"Placed {len(self.bridges)} bridges")
 
     def _find_bridge_crossing(self, start_tile: Tuple[int, int], road_tiles: Set[Tuple[int, int]]) -> List[Tuple[int, int]]:
         """
@@ -393,7 +397,7 @@ class RiverGenerator:
             edge (str): Which edge ('north', 'south', 'east', 'west')
             depth (int): How many tiles deep the ocean extends
         """
-        print(f"Adding ocean on {edge} edge (depth {depth})...")
+        logger.debug(f"Adding ocean on {edge} edge (depth {depth})...")
 
         ocean_tiles = set()
 
@@ -414,7 +418,7 @@ class RiverGenerator:
                 for y in range(self.grid_height):
                     ocean_tiles.add((x, y))
 
-        print(f"  Added {len(ocean_tiles)} ocean tiles")
+        logger.debug(f"Added {len(ocean_tiles)} ocean tiles")
         return ocean_tiles
 
     def get_statistics(self) -> dict:

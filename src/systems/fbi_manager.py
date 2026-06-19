@@ -12,6 +12,10 @@ Handles:
 from typing import Optional, Dict, List
 from enum import Enum
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class FBIStatus(Enum):
     """FBI investigation status."""
@@ -116,10 +120,7 @@ class FBIManager:
                 if self.status != FBIStatus.RAID_IMMINENT:
                     self.status = FBIStatus.RAID_IMMINENT
                     self._log_event("raid_imminent", "FBI raid imminent!", game_time)
-                    print("\n🚨 FBI RAID IMMINENT!")
-                    print(f"  Raid will occur in {self.investigation_countdown / 3600:.1f} hours")
-                    print("  Reduce suspicion below 60 NOW or face consequences!")
-                    print()
+                    logger.error(f"FBI raid imminent! Raid in {self.investigation_countdown / 3600:.1f} hours - Reduce suspicion below 60 NOW!")
 
         # Update lay low timer
         if self.laying_low:
@@ -163,18 +164,7 @@ class FBIManager:
 
         self._log_event("investigation_triggered", f"FBI investigation triggered: {trigger.value}", game_time)
 
-        print("\n🚨 FBI INVESTIGATION TRIGGERED!")
-        print(f"  Reason: {self._get_trigger_description(trigger)}")
-        print(f"  Investigation duration: {self.investigation_countdown / (24 * 3600):.0f} days")
-        print("  FBI agents are now in the city")
-        print("  Camera hacking is disabled during investigation")
-        print()
-        print("  TO AVOID RAID:")
-        print("    - Reduce suspicion below 60")
-        print("    - Pass all inspections")
-        print(f"    - OR bribe officials (${self.bribe_cost:,}) - RISKY!")
-        print(f"    - OR lay low for 7 days (no operations)")
-        print()
+        logger.warning(f"FBI investigation triggered! Reason: {self._get_trigger_description(trigger)}, Duration: {self.investigation_countdown / (24 * 3600):.0f} days")
 
     def _get_trigger_description(self, trigger: FBITrigger) -> str:
         """Get human-readable trigger description."""
@@ -198,11 +188,11 @@ class FBIManager:
             bool: True if successful, False if failed
         """
         if not self.can_bribe:
-            print("Cannot bribe - option not available")
+            logger.warning("Cannot bribe - option not available")
             return False
 
         if self.resources.money < self.bribe_cost:
-            print(f"Not enough money to bribe (need ${self.bribe_cost:,})")
+            logger.warning(f"Not enough money to bribe (need ${self.bribe_cost:,})")
             return False
 
         # Pay the bribe
@@ -222,11 +212,7 @@ class FBIManager:
 
             self._log_event("bribe_success", "Bribe successful", game_time)
 
-            print("\n💰 BRIBE SUCCESSFUL!")
-            print(f"  Paid ${self.bribe_cost:,}")
-            print("  FBI investigation cancelled")
-            print("  Suspicion reduced by 20")
-            print()
+            logger.info(f"Bribe successful! Paid ${self.bribe_cost:,}, FBI investigation cancelled, Suspicion -20")
 
             self.can_bribe = False  # Can only bribe once
             return True
@@ -237,11 +223,7 @@ class FBIManager:
 
             self._log_event("bribe_failed", "Bribe failed - investigation intensified", game_time)
 
-            print("\n💀 BRIBE FAILED!")
-            print(f"  Lost ${self.bribe_cost:,}")
-            print("  Suspicion increased by 20")
-            print("  Investigation accelerated!")
-            print()
+            logger.error(f"Bribe failed! Lost ${self.bribe_cost:,}, Suspicion +20, Investigation accelerated!")
 
             self.can_bribe = False
             return False
@@ -257,11 +239,11 @@ class FBIManager:
             bool: True if started successfully
         """
         if self.laying_low:
-            print("Already laying low")
+            logger.debug("Already laying low")
             return False
 
         if self.status not in [FBIStatus.TRIGGERED, FBIStatus.INVESTIGATING]:
-            print("No FBI investigation to avoid")
+            logger.debug("No FBI investigation to avoid")
             return False
 
         self.laying_low = True
@@ -269,12 +251,7 @@ class FBIManager:
 
         self._log_event("lay_low_started", "Laying low to avoid FBI", game_time)
 
-        print("\n🔇 LAYING LOW")
-        print("  All operations suspended for 7 days")
-        print("  No material collection allowed")
-        print("  No building construction allowed")
-        print("  If successful, FBI investigation will be cancelled")
-        print()
+        logger.info("Laying low - All operations suspended for 7 days")
 
         return True
 
@@ -293,18 +270,12 @@ class FBIManager:
 
             self._log_event("lay_low_success", "Laying low successful", game_time)
 
-            print("\n✓ LAYING LOW SUCCESSFUL!")
-            print("  FBI investigation cancelled")
-            print("  Normal operations can resume")
-            print()
+            logger.info("Laying low successful! FBI investigation cancelled, normal operations can resume")
         else:
             # Failed - suspicion still too high
             self._log_event("lay_low_failed", "Laying low failed - suspicion still high", game_time)
 
-            print("\n❌ LAYING LOW FAILED!")
-            print(f"  Suspicion still at {self.suspicion.suspicion_level:.0f}")
-            print("  Investigation continues")
-            print()
+            logger.warning(f"Laying low failed! Suspicion still at {self.suspicion.suspicion_level:.0f}, investigation continues")
 
     def _trigger_raid(self, game_time: float):
         """Trigger FBI raid (game over)."""
@@ -314,22 +285,7 @@ class FBIManager:
 
         self._log_event("raid", "FBI raid executed", game_time)
 
-        print("\n" + "=" * 80)
-        print("💀 FBI RAID 💀".center(80))
-        print("=" * 80)
-        print()
-        print("Federal agents have raided your factory!")
-        print()
-        print("CONSEQUENCES:")
-        print("  - Factory operations shut down")
-        print("  - All robots seized")
-        print("  - Assets frozen")
-        print("  - Illegal materials discovered")
-        print()
-        print("GAME OVER")
-        print()
-        print("=" * 80)
-        print()
+        logger.error("FBI RAID - GAME OVER! Federal agents raided factory, operations shut down, all robots seized, assets frozen")
 
     def report_inspection_failure(self, is_critical: bool):
         """

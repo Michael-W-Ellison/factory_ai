@@ -11,6 +11,10 @@ import random
 from typing import List, Dict, Tuple, Optional
 from enum import Enum
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class DeliveryVehicleType(Enum):
     """Types of delivery vehicles."""
@@ -410,7 +414,7 @@ class MarketplaceManager:
                         if hasattr(self.resource_manager, 'money'):
                             self.resource_manager.money += sale.total_value
                         sale.complete = True
-                        print(f"💰 Delivery complete! Received ${sale.total_value:.2f}")
+                        logger.info(f"Delivery complete! Received ${sale.total_value:.2f}")
 
                 # Remove completed vehicle
                 self.delivery_vehicles.remove(vehicle)
