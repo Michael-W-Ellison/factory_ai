@@ -5,6 +5,10 @@ A* pathfinding system for robot navigation.
 import heapq
 from typing import List, Tuple, Optional
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class Node:
     """A node in the pathfinding graph."""

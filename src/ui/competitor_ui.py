@@ -7,6 +7,10 @@ Provides UI panels for competitive gameplay.
 import pygame
 from typing import List, Dict, Optional, Tuple
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class CompetitorPanel:
     """UI panel showing competitor information."""

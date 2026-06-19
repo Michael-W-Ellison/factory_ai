@@ -8,6 +8,10 @@ of outputs, material routing preferences, and robot task prioritization.
 from typing import Dict, List, Optional, Tuple, Set
 from enum import Enum, auto
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class TaskPriority(Enum):
     """Priority levels for automated tasks."""

@@ -10,6 +10,10 @@ Handles:
 import pygame
 from src.systems.inspection_manager import InspectionStatus, InspectionResult
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class InspectionUI:
     """UI for inspection system."""

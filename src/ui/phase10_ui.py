@@ -14,6 +14,10 @@ Displays:
 import pygame
 from typing import Dict, List, Tuple, Optional
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class Phase10UI:
     """

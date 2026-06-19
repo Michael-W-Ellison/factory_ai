@@ -3,6 +3,9 @@ Silo - bulk storage for a single material type.
 """
 
 from src.entities.building import Building
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class Silo(Building):

@@ -4,6 +4,10 @@ HUD (Heads-Up Display) - displays game information to the player.
 
 import pygame
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class HUD:
     """

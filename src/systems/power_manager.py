@@ -10,6 +10,10 @@ Features:
 from enum import IntEnum
 from typing import List, Dict, Any
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class PowerPriority(IntEnum):
     """Power priority levels (higher = more important)."""

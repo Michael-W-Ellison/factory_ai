@@ -3,6 +3,9 @@ Motor Assembly - manufactures electric motors from iron, copper, and magnets.
 """
 
 from src.entities.buildings.manufacturing_building import ManufacturingBuilding
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class MotorAssembly(ManufacturingBuilding):

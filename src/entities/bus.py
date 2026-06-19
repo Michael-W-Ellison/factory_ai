@@ -12,6 +12,9 @@ import pygame
 from typing import List, Optional, Set
 from src.entities.traffic_vehicle import TrafficVehicle
 from src.entities.npc import Activity
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class Bus(TrafficVehicle):

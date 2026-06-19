@@ -11,6 +11,10 @@ from enum import Enum
 
 from entities.ai_factory import AIFactory, AIPersonality
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class GameMode(Enum):
     """Game mode types."""

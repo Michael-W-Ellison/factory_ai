@@ -12,6 +12,10 @@ from enum import Enum
 from typing import Dict, List, Tuple
 from collections import defaultdict
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class MaterialSource(Enum):
     """Material source types (legal vs illegal)."""

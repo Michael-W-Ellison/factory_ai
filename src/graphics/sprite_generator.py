@@ -10,6 +10,10 @@ import math
 from typing import Dict, List, Tuple, Optional
 from enum import Enum
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class Direction(Enum):
     """8-way directional sprites."""

@@ -11,6 +11,10 @@ Allows players to:
 import pygame
 from typing import Optional, List, Dict
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class SaveLoadMenu:
     """

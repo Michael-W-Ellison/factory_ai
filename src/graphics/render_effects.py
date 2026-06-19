@@ -8,6 +8,10 @@ import pygame
 import math
 from typing import Tuple, Optional
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class RenderEffects:
     """

@@ -11,6 +11,10 @@ Handles:
 from src.world.tile import TerrainType
 import math
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class BridgeBuilder:
     """

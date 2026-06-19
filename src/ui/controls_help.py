@@ -7,6 +7,10 @@ Shows a comprehensive guide to all game controls organized by category.
 import pygame
 from typing import List, Tuple
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class ControlsHelp:
     """

@@ -13,6 +13,10 @@ Displays a scaled-down view of the entire world showing:
 import pygame
 from typing import Optional
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class Minimap:
     """

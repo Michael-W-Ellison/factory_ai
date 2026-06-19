@@ -10,6 +10,10 @@ Components:
 
 from typing import Dict, List, Optional
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class ResourcePanel:
     """

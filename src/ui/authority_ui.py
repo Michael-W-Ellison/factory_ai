@@ -12,6 +12,10 @@ Handles:
 import pygame
 from src.systems.authority_manager import AuthorityTier, GameEnding
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class AuthorityUI:
     """UI for authority escalation and FBI system."""

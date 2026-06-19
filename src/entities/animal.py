@@ -11,6 +11,9 @@ from typing import Tuple, Optional, List
 import pygame
 
 from graphics import SpriteType, Direction, AnimalAnimationController, BirdAnimationController, FishAnimationController
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class AnimalBehavior(Enum):

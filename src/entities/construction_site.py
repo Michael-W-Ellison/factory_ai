@@ -8,6 +8,10 @@ import pygame
 from src.entities.entity import Entity
 from typing import Dict, Optional
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class ConstructionSite(Entity):
     """

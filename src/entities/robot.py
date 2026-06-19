@@ -6,6 +6,9 @@ import pygame
 import math
 from src.entities.entity import Entity
 from src.core.constants import Colors, RobotState
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class Robot(Entity):

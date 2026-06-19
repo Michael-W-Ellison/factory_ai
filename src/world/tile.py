@@ -5,6 +5,10 @@ Tile class - represents a single tile in the game world.
 import pygame
 from src.core.constants import Colors
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class TileType:
     """Tile type enumeration."""

@@ -13,6 +13,10 @@ from enum import Enum
 from typing import List, Dict, Optional
 import time
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class NotificationType(Enum):
     """Notification severity types."""
