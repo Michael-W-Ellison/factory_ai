@@ -29,6 +29,9 @@ class InspectionConfig:
     SUSPICION_THRESHOLD: int = 60
     FINE_MINOR: int = 5000
     FINE_MAJOR: int = 20000
+    REINSPECTION_INTERVAL: float = 259200.0  # 3 days for reinspection after minor fail
+    RESTRICTION_DURATION: float = 604800.0  # 7 days of restrictions after major fail
+    RESTRICTION_PENALTY: float = 0.5  # 50% production penalty
 
 
 @dataclass(frozen=True)
@@ -84,6 +87,7 @@ class WeatherConfig:
     DEFAULT_DURATION_MIN: float = 7200.0  # 2 hours
     DEFAULT_DURATION_MAX: float = 21600.0  # 6 hours
     TRANSITION_DURATION: float = 1800.0  # 30 minutes
+    FORECAST_DURATION: float = 259200.0  # 3 days forecast window
 
 
 @dataclass(frozen=True)

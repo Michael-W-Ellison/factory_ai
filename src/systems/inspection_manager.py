@@ -73,7 +73,7 @@ class InspectionManager:
         self.max_warning_time = INSPECTION.WARNING_TIME_MAX
         self.inspection_duration = INSPECTION.DURATION
         self.immunity_duration = INSPECTION.IMMUNITY_PERIOD
-        self.reinspection_interval = 259200.0  # 3 days in game seconds (for FAIL_MINOR)
+        self.reinspection_interval = INSPECTION.REINSPECTION_INTERVAL
 
         # Illegal material counts (simplified - will be expanded in Phase 8.4)
         self.illegal_material_count = 0
@@ -290,8 +290,12 @@ class InspectionManager:
             self.suspicion.add_suspicion(30, "Failed inspection (major violations)")
             self.resources.modify_money(-20000)
             logger.error("Inspection FAILED (Major) - Illegal materials discovered! Fine: $20,000, Suspicion +30, Restrictions applied")
-            # Apply restrictions (7 days, 50% production penalty)
-            self._apply_restrictions(game_time, duration=604800.0, penalty=0.5)
+            # Apply restrictions with configured duration and penalty
+            self._apply_restrictions(
+                game_time,
+                duration=INSPECTION.RESTRICTION_DURATION,
+                penalty=INSPECTION.RESTRICTION_PENALTY
+            )
 
         elif result == InspectionResult.FAIL_CRITICAL:
             # FAIL (critical): game over (FBI raid immediate)

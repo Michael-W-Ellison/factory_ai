@@ -248,8 +248,8 @@ class WeatherManager:
         self.forecast.append((self.current_weather, remaining_time))
         current_time += remaining_time
 
-        # Generate next 3 days
-        forecast_duration = 3 * 24 * 3600  # 3 days
+        # Generate forecast for configured duration
+        forecast_duration = WEATHER.FORECAST_DURATION
         last_weather = self.current_weather
 
         while current_time < forecast_duration:
@@ -267,7 +267,7 @@ class WeatherManager:
                     next_weather = weather
                     break
 
-            duration = random.uniform(2 * 3600, 6 * 3600)
+            duration = random.uniform(WEATHER.DEFAULT_DURATION_MIN, WEATHER.DEFAULT_DURATION_MAX)
             self.forecast.append((next_weather, duration))
             current_time += duration
             last_weather = next_weather
