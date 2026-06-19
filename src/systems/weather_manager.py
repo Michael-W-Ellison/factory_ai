@@ -15,6 +15,7 @@ from enum import Enum
 import random
 
 from src.core.logger import get_logger
+from src.core.game_config import WEATHER, TIME
 
 logger = get_logger(__name__)
 
@@ -49,10 +50,10 @@ class WeatherManager:
         self.weather_duration = 0.0
         self.weather_elapsed = 0.0
 
-        # Weather transition
+        # Weather transition (using centralized config)
         self.transitioning = False
         self.next_weather = None
-        self.transition_duration = 30 * 60  # 30 minutes
+        self.transition_duration = WEATHER.TRANSITION_DURATION
         self.transition_elapsed = 0.0
 
         # Forecast (requires research)
@@ -123,8 +124,9 @@ class WeatherManager:
             WeatherType.SNOW: 0.05,
         }
 
-        # Start with clear weather
-        self._set_weather(WeatherType.CLEAR, duration=4 * 3600)  # 4 hours
+        # Start with clear weather (4 hours = midpoint of min/max duration)
+        initial_duration = (WEATHER.DEFAULT_DURATION_MIN + WEATHER.DEFAULT_DURATION_MAX) / 2
+        self._set_weather(WeatherType.CLEAR, duration=initial_duration)
 
     def update(self, dt: float, game_time: float):
         """
@@ -162,8 +164,11 @@ class WeatherManager:
         self.next_weather = new_weather
         self.transition_elapsed = 0.0
 
-        # Set duration for new weather (2-6 hours)
-        self.weather_duration = random.uniform(2 * 3600, 6 * 3600)
+        # Set duration for new weather (from config)
+        self.weather_duration = random.uniform(
+            WEATHER.DEFAULT_DURATION_MIN,
+            WEATHER.DEFAULT_DURATION_MAX
+        )
 
         logger.info(f"Weather changing to {new_weather.value}")
 

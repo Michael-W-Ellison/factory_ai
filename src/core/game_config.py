@@ -93,6 +93,15 @@ class MarketConfig:
     PRICE_UPDATE_INTERVAL: float = 60.0  # Every game minute
     ORGANIC_DECAY_RATE: float = 0.001  # 0.1% per check
     DECAY_CHECK_INTERVAL: float = 300.0  # Every 5 game minutes
+    TREND_CHANGE_INTERVAL: float = 172800.0  # 48 game hours
+    EVENT_CHECK_INTERVAL: float = 86400.0  # 24 game hours
+    EVENT_PROBABILITY: float = 0.1  # 10% chance per check
+    MIN_PRICE_MULTIPLIER: float = 0.3  # Prices can't go below 30% of base
+    MAX_PRICE_MULTIPLIER: float = 3.0  # Prices can't go above 300% of base
+    # Event durations
+    EVENT_DURATION_SHORT: float = 43200.0  # 12 hours
+    EVENT_DURATION_MEDIUM: float = 86400.0  # 24 hours
+    EVENT_DURATION_LONG: float = 172800.0  # 48 hours
 
 
 @dataclass(frozen=True)
@@ -115,6 +124,45 @@ class UIConfig:
     PANEL_ALPHA: int = 180
 
 
+@dataclass(frozen=True)
+class FBIConfig:
+    """FBI investigation system constants."""
+    INVESTIGATION_DURATION: float = 1209600.0  # 14 days in seconds
+    RAID_WARNING_TIME: float = 86400.0  # 24 hours before raid
+    HIGH_SUSPICION_THRESHOLD: float = 604800.0  # 7 days of high suspicion
+    LAY_LOW_DURATION: float = 604800.0  # 7 days to lay low
+    BRIBE_COST: int = 50000
+    BRIBE_FAILURE_RISK: float = 0.3  # 30% chance of making things worse
+    INITIAL_AGENT_COUNT: int = 5
+    RAID_AGENT_COUNT: int = 20
+    HIGH_SUSPICION_LEVEL: int = 80  # Level above which suspicion is "high"
+    LAY_LOW_SUCCESS_THRESHOLD: int = 60  # Must be below this to succeed
+
+
+@dataclass(frozen=True)
+class AuthorityConfig:
+    """Authority escalation system constants."""
+    CHECK_INTERVAL: float = 3600.0  # 1 hour
+    RESPONSE_TIME_MIN: float = 300.0  # 5 minutes minimum response
+    RESPONSE_TIME_MAX: float = 1800.0  # 30 minutes maximum response
+    PATROL_DURATION: float = 7200.0  # 2 hours patrol duration
+    ALERT_DECAY_RATE: float = 0.05  # Alert level decay per check
+    STATE_THRESHOLD: int = 50  # Suspicion level for state police
+    FEDERAL_THRESHOLD: int = 100  # Suspicion level for FBI
+    RAID_WARNING_MIN: float = 7200.0  # 2 hours minimum warning before raid
+    RAID_WARNING_MAX: float = 14400.0  # 4 hours maximum warning before raid
+    BRIBE_COOLDOWN_MIN: float = 86400.0  # 24 hours minimum bribe cooldown
+    BRIBE_COOLDOWN_MAX: float = 172800.0  # 48 hours maximum bribe cooldown
+    BRIBE_COOLDOWN_FAILURE_MIN: float = 172800.0  # 48 hours on failure
+    BRIBE_COOLDOWN_FAILURE_MAX: float = 345600.0  # 96 hours on failure
+    LOCAL_BRIBE_SUCCESS_RATE: float = 0.7  # 70% with local police
+    STATE_BRIBE_SUCCESS_RATE: float = 0.4  # 40% with state police
+    FEDERAL_BRIBE_SUCCESS_RATE: float = 0.15  # 15% with FBI
+    FALSE_EVIDENCE_COST: int = 15000
+    FALSE_EVIDENCE_SUCCESS_RATE: float = 0.6
+    BANKRUPTCY_THRESHOLD: int = -50000
+
+
 # Create singleton instances
 TIME = TimeConfig()
 INSPECTION = InspectionConfig()
@@ -126,3 +174,5 @@ WEATHER = WeatherConfig()
 MARKET = MarketConfig()
 CAMERA = CameraConfig()
 UI = UIConfig()
+FBI = FBIConfig()
+AUTHORITY = AuthorityConfig()

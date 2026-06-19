@@ -14,6 +14,7 @@ from enum import Enum
 from typing import Optional, Dict, List
 
 from src.core.logger import get_logger
+from src.core.game_config import AUTHORITY, TIME
 
 logger = get_logger(__name__)
 
@@ -82,8 +83,8 @@ class AuthorityManager:
         self.tier_changed = False  # Flag for tier change events
 
         # Tier thresholds
-        self.state_threshold = 50
-        self.federal_threshold = 100
+        self.state_threshold = AUTHORITY.STATE_THRESHOLD
+        self.federal_threshold = AUTHORITY.FEDERAL_THRESHOLD
 
         # FBI Investigation
         self.fbi_investigation_active = False
@@ -95,8 +96,8 @@ class AuthorityManager:
         # FBI Raid
         self.raid_scheduled = False
         self.raid_countdown = 0.0  # Time until raid (game seconds)
-        self.raid_min_warning = 7200.0   # 2 hours minimum warning
-        self.raid_max_warning = 14400.0  # 4 hours maximum warning
+        self.raid_min_warning = AUTHORITY.RAID_WARNING_MIN
+        self.raid_max_warning = AUTHORITY.RAID_WARNING_MAX
 
         # Social Engineering
         self.bribe_cooldown = 0.0  # Time until next bribe possible
@@ -269,7 +270,7 @@ class AuthorityManager:
             return  # Already ended
 
         # Check bankruptcy
-        if self.resources.money < -50000:
+        if self.resources.money < AUTHORITY.BANKRUPTCY_THRESHOLD:
             self._trigger_ending(
                 GameEnding.BANKRUPTCY,
                 "Bankruptcy - Cannot recover from debt"
@@ -332,7 +333,7 @@ class AuthorityManager:
         max_suspicion = stats['max_suspicion']
         illegal_processed = stats['illegal_materials_processed']
         city_materials = stats['city_materials_collected']
-        game_days = game_time / (24 * 3600)  # Convert to days
+        game_days = game_time / TIME.SECONDS_PER_DAY
         violations = stats['violations_count']
         fines = stats['fines_paid']
         renewable_ratio = (stats['renewable_energy_used'] / max(1, stats['total_energy_used']))
@@ -485,7 +486,7 @@ class AuthorityManager:
             'details': 'You have successfully completed the landfill cleanup.',
         })
 
-        game_days = game_time / (24 * 3600)
+        game_days = game_time / TIME.SECONDS_PER_DAY
 
         logger.info(f"GAME COMPLETE - {info['title']}: {game_days:.1f} days, ${self.resources.money:,.0f}")
 
@@ -527,11 +528,11 @@ class AuthorityManager:
 
         # Bribe success probability based on authority tier
         if self.current_tier == AuthorityTier.LOCAL:
-            success_rate = 0.7  # 70% success with local police
+            success_rate = AUTHORITY.LOCAL_BRIBE_SUCCESS_RATE
         elif self.current_tier == AuthorityTier.STATE:
-            success_rate = 0.4  # 40% success with state police
+            success_rate = AUTHORITY.STATE_BRIBE_SUCCESS_RATE
         else:  # FEDERAL
-            success_rate = 0.15  # 15% success with FBI (very risky)
+            success_rate = AUTHORITY.FEDERAL_BRIBE_SUCCESS_RATE
 
         # Attempt bribe
         if random.random() < success_rate:
@@ -550,8 +551,10 @@ class AuthorityManager:
                 self.suspicion.add_suspicion(-suspicion_reduction, "Successful bribe")
                 logger.info(f"Bribe successful! Paid ${amount:,}, suspicion reduced by {suspicion_reduction}")
 
-            # Set cooldown (24-48 hours)
-            self.bribe_cooldown = random.uniform(86400.0, 172800.0)
+            # Set cooldown
+            self.bribe_cooldown = random.uniform(
+                AUTHORITY.BRIBE_COOLDOWN_MIN, AUTHORITY.BRIBE_COOLDOWN_MAX
+            )
 
             return True
         else:
@@ -563,7 +566,9 @@ class AuthorityManager:
             logger.error(f"Bribe failed! Lost ${amount:,}, official reported, suspicion +{suspicion_increase}")
 
             # Double cooldown on failure
-            self.bribe_cooldown = random.uniform(172800.0, 345600.0)  # 48-96 hours
+            self.bribe_cooldown = random.uniform(
+                AUTHORITY.BRIBE_COOLDOWN_FAILURE_MIN, AUTHORITY.BRIBE_COOLDOWN_FAILURE_MAX
+            )
 
             return False
 
@@ -589,8 +594,7 @@ class AuthorityManager:
             logger.warning(f"Insufficient funds for false evidence (need ${cost:,})")
             return False
 
-        # 60% success rate
-        if random.random() < 0.6:
+        if random.random() < AUTHORITY.FALSE_EVIDENCE_SUCCESS_RATE:
             self.resources.modify_money(-cost)
             self.evidence_planted = True
 

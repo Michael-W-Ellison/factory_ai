@@ -16,6 +16,7 @@ from typing import Dict, List, Tuple, Optional
 from dataclasses import dataclass
 
 from src.core.logger import get_logger
+from src.core.game_config import MARKET, TIME
 
 logger = get_logger(__name__)
 
@@ -93,7 +94,7 @@ class MarketManager:
         # Market state
         self.current_trend = MarketTrend.STABLE
         self.trend_duration = 0.0  # How long current trend has lasted
-        self.trend_change_interval = 172800.0  # Change trend every 48 game hours
+        self.trend_change_interval = MARKET.TREND_CHANGE_INTERVAL
 
         # Price change rates (per game hour)
         self.trend_change_rates = {
@@ -105,16 +106,16 @@ class MarketManager:
         }
 
         # Price bounds
-        self.min_multiplier = 0.3  # Prices can't go below 30% of base
-        self.max_multiplier = 3.0  # Prices can't go above 300% of base
+        self.min_multiplier = MARKET.MIN_PRICE_MULTIPLIER
+        self.max_multiplier = MARKET.MAX_PRICE_MULTIPLIER
 
         # Active events
         self.active_events: List[MarketEvent] = []
 
         # Event probability
-        self.event_check_interval = 86400.0  # Check for events every 24 game hours
+        self.event_check_interval = MARKET.EVENT_CHECK_INTERVAL
         self.last_event_check = 0.0
-        self.event_probability = 0.1  # 10% chance per check
+        self.event_probability = MARKET.EVENT_PROBABILITY
 
         # Statistics
         self.total_price_changes = 0
@@ -187,11 +188,11 @@ class MarketManager:
             # Calculate change
             if self.current_trend == MarketTrend.VOLATILE:
                 # Random fluctuations
-                change = random.uniform(-change_rate, change_rate) * (dt / 3600.0)
+                change = random.uniform(-change_rate, change_rate) * (dt / TIME.SECONDS_PER_HOUR)
             else:
                 # Directional change with some randomness
-                base_change = change_rate * (dt / 3600.0)
-                randomness = random.uniform(-0.001, 0.001) * (dt / 3600.0)
+                base_change = change_rate * (dt / TIME.SECONDS_PER_HOUR)
+                randomness = random.uniform(-0.001, 0.001) * (dt / TIME.SECONDS_PER_HOUR)
                 change = base_change + randomness
 
             # Apply change
@@ -226,37 +227,37 @@ class MarketManager:
             {
                 'name': 'Electronics Shortage',
                 'description': 'Global chip shortage drives up electronics prices',
-                'duration': 86400.0,  # 24 hours
+                'duration': MARKET.EVENT_DURATION_MEDIUM,
                 'price_multipliers': {'electronics': 1.5, 'copper': 1.3}
             },
             {
                 'name': 'Plastic Surplus',
                 'description': 'Oversupply of plastic drives prices down',
-                'duration': 43200.0,  # 12 hours
+                'duration': MARKET.EVENT_DURATION_SHORT,
                 'price_multipliers': {'plastic': 0.7}
             },
             {
                 'name': 'Metal Boom',
                 'description': 'Construction boom increases metal demand',
-                'duration': 172800.0,  # 48 hours
+                'duration': MARKET.EVENT_DURATION_LONG,
                 'price_multipliers': {'metal': 1.4, 'copper': 1.3}
             },
             {
                 'name': 'Paper Mill Strike',
                 'description': 'Worker strike reduces paper supply',
-                'duration': 64800.0,  # 18 hours
+                'duration': (MARKET.EVENT_DURATION_SHORT + MARKET.EVENT_DURATION_MEDIUM) / 2,
                 'price_multipliers': {'paper': 1.6}
             },
             {
                 'name': 'Rubber Crisis',
                 'description': 'Natural disaster affects rubber supply',
-                'duration': 129600.0,  # 36 hours
+                'duration': (MARKET.EVENT_DURATION_MEDIUM + MARKET.EVENT_DURATION_LONG) / 2,
                 'price_multipliers': {'rubber': 1.8}
             },
             {
                 'name': 'Glass Glut',
                 'description': 'New recycling facilities oversupply glass market',
-                'duration': 86400.0,  # 24 hours
+                'duration': MARKET.EVENT_DURATION_MEDIUM,
                 'price_multipliers': {'glass': 0.6}
             },
         ]
@@ -276,7 +277,7 @@ class MarketManager:
         self.active_events.append(event)
         self.total_events += 1
 
-        logger.info(f"Market event: {event.name} - {event.description} (Duration: {event.duration / 3600.0:.1f} hours)")
+        logger.info(f"Market event: {event.name} - {event.description} (Duration: {event.duration / TIME.SECONDS_PER_HOUR:.1f} hours)")
 
         # Apply event multipliers
         for material, multiplier in event.price_multipliers.items():
@@ -391,7 +392,7 @@ class MarketManager:
         """
         return {
             'current_trend': self.current_trend.name,
-            'trend_duration_hours': self.trend_duration / 3600.0,
+            'trend_duration_hours': self.trend_duration / TIME.SECONDS_PER_HOUR,
             'active_events': len(self.active_events),
             'total_events': self.total_events,
             'price_changes': self.total_price_changes,

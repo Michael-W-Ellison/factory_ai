@@ -13,6 +13,7 @@ from typing import Optional, Dict, List
 from enum import Enum
 
 from src.core.logger import get_logger
+from src.core.game_config import FBI, TIME
 
 logger = get_logger(__name__)
 
@@ -61,12 +62,12 @@ class FBIManager:
 
         # Investigation countdown (in game seconds)
         self.investigation_countdown = 0.0
-        self.investigation_duration = 14 * 24 * 3600  # 14 game days
-        self.raid_warning_time = 24 * 3600  # 24 hours before raid
+        self.investigation_duration = FBI.INVESTIGATION_DURATION
+        self.raid_warning_time = FBI.RAID_WARNING_TIME
 
         # High suspicion tracking
-        self.high_suspicion_duration = 0.0  # Time spent above 80 suspicion
-        self.high_suspicion_threshold = 7 * 24 * 3600  # 7 days
+        self.high_suspicion_duration = 0.0
+        self.high_suspicion_threshold = FBI.HIGH_SUSPICION_THRESHOLD
 
         # Failed inspections tracking
         self.failed_inspections = 0
@@ -78,13 +79,13 @@ class FBIManager:
 
         # Avoidance options
         self.can_bribe = True
-        self.bribe_cost = 50000
-        self.bribe_risk = 0.3  # 30% chance of making things worse
+        self.bribe_cost = FBI.BRIBE_COST
+        self.bribe_risk = FBI.BRIBE_FAILURE_RISK
 
         # Laying low
         self.laying_low = False
         self.lay_low_duration = 0.0
-        self.lay_low_required = 7 * 24 * 3600  # 7 days
+        self.lay_low_required = FBI.LAY_LOW_DURATION
 
         # Event history
         self.events: List[Dict] = []
@@ -98,7 +99,7 @@ class FBIManager:
             game_time: Current game time
         """
         # Track high suspicion duration
-        if self.suspicion.suspicion_level > 80:
+        if self.suspicion.suspicion_level > FBI.HIGH_SUSPICION_LEVEL:
             self.high_suspicion_duration += dt
         else:
             self.high_suspicion_duration = 0.0
@@ -160,7 +161,7 @@ class FBIManager:
         self.trigger_reason = trigger
         self.investigation_countdown = self.investigation_duration
         self.fbi_agents_active = True
-        self.agent_count = 5
+        self.agent_count = FBI.INITIAL_AGENT_COUNT
 
         self._log_event("investigation_triggered", f"FBI investigation triggered: {trigger.value}", game_time)
 
@@ -260,8 +261,8 @@ class FBIManager:
         self.laying_low = False
         self.lay_low_duration = 0.0
 
-        # Check if successful (suspicion must be below 60)
-        if self.suspicion.suspicion_level < 60:
+        # Check if successful (suspicion must be below threshold)
+        if self.suspicion.suspicion_level < FBI.LAY_LOW_SUCCESS_THRESHOLD:
             # Success - investigation cancelled
             self.status = FBIStatus.NONE
             self.trigger_reason = None
@@ -281,7 +282,7 @@ class FBIManager:
         """Trigger FBI raid (game over)."""
         self.status = FBIStatus.RAIDED
         self.fbi_agents_active = True
-        self.agent_count = 20
+        self.agent_count = FBI.RAID_AGENT_COUNT
 
         self._log_event("raid", "FBI raid executed", game_time)
 

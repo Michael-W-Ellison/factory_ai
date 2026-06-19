@@ -135,6 +135,7 @@ class BusRoute:
         try:
             return self.stops.index((grid_x, grid_y))
         except ValueError:
+            logger.debug(f"Position ({grid_x}, {grid_y}) is not a bus stop on route {self.route_id}")
             return None
 
     def calculate_express_stops(self, skip_factor: int = 2):

@@ -470,6 +470,7 @@ class SettingsUI:
         try:
             res_index = resolutions.index(current_res)
         except ValueError:
+            logger.debug(f"Current resolution {current_res} not in preset list, defaulting to first option")
             res_index = 0
 
         self.widgets[SettingsTab.GRAPHICS].append(
