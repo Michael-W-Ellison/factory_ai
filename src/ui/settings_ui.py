@@ -621,10 +621,17 @@ class SettingsUI:
 
     def _on_resolution_change(self, index: int, resolution: str):
         """Handle resolution change."""
-        width, height = map(int, resolution.split('x'))
-        self.settings.set('graphics', 'resolution_width', width)
-        self.settings.set('graphics', 'resolution_height', height)
-        self.has_changes = True
+        try:
+            width, height = map(int, resolution.split('x'))
+            # Validate resolution bounds
+            if not (800 <= width <= 3840 and 600 <= height <= 2160):
+                logger.warning(f"Resolution {resolution} out of bounds, ignoring")
+                return
+            self.settings.set('graphics', 'resolution_width', width)
+            self.settings.set('graphics', 'resolution_height', height)
+            self.has_changes = True
+        except (ValueError, AttributeError) as e:
+            logger.error(f"Invalid resolution format '{resolution}': {e}")
 
     def _on_key_change(self, action: str, key: str):
         """Handle key binding change."""

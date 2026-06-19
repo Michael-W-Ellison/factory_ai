@@ -9,11 +9,19 @@ Allows players to:
 """
 
 import pygame
+import re
 from typing import Optional, List, Dict
 
 from src.core.logger import get_logger
 
 logger = get_logger(__name__)
+
+# Characters not allowed in save filenames
+INVALID_FILENAME_CHARS = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
+# Reserved names on Windows
+RESERVED_NAMES = {'CON', 'PRN', 'AUX', 'NUL', 'COM1', 'COM2', 'COM3', 'COM4',
+                  'COM5', 'COM6', 'COM7', 'COM8', 'COM9', 'LPT1', 'LPT2',
+                  'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9'}
 
 
 class SaveLoadMenu:
@@ -103,6 +111,47 @@ class SaveLoadMenu:
         """Hide the menu."""
         self.visible = False
 
+    def _sanitize_save_name(self, name: str) -> Optional[str]:
+        """
+        Sanitize and validate a save name.
+
+        Args:
+            name: Raw save name input
+
+        Returns:
+            Sanitized name if valid, None if invalid
+        """
+        # Strip whitespace
+        name = name.strip()
+
+        # Check for empty name
+        if not name:
+            logger.warning("Save name cannot be empty")
+            return None
+
+        # Remove invalid characters
+        sanitized = INVALID_FILENAME_CHARS.sub('_', name)
+
+        # Check for reserved names (Windows compatibility)
+        base_name = sanitized.split('.')[0].upper()
+        if base_name in RESERVED_NAMES:
+            logger.warning(f"Save name '{name}' is a reserved system name")
+            return None
+
+        # Remove leading/trailing dots and spaces
+        sanitized = sanitized.strip('. ')
+
+        # Ensure we still have a valid name after sanitization
+        if not sanitized:
+            logger.warning(f"Save name '{name}' contains only invalid characters")
+            return None
+
+        # Log if name was modified
+        if sanitized != name:
+            logger.info(f"Save name sanitized: '{name}' -> '{sanitized}'")
+
+        return sanitized
+
     def update_save_list(self, save_files: List[Dict]):
         """
         Update the list of save files.
@@ -129,12 +178,14 @@ class SaveLoadMenu:
         if self.creating_new_save:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN:
-                    # Confirm new save
-                    if self.new_save_name.strip():
-                        self.save_game_name = self.new_save_name.strip()
+                    # Confirm new save with validation
+                    sanitized_name = self._sanitize_save_name(self.new_save_name)
+                    if sanitized_name:
+                        self.save_game_name = sanitized_name
                         self.creating_new_save = False
                         self.new_save_name = ""
                         return True
+                    # Invalid name - stay in input mode (user sees no change)
                 elif event.key == pygame.K_ESCAPE:
                     # Cancel
                     self.creating_new_save = False
