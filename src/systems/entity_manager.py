@@ -312,6 +312,25 @@ class EntityManager:
             'buildings': len(self.buildings),
         }
 
+    def clear_all(self) -> None:
+        """
+        Clear all entities from the manager.
+
+        Used when loading a saved game to start fresh before restoring state.
+        """
+        # Deselect any selected robot
+        self.selected_robot = None
+
+        # Clear all lists
+        self.robots.clear()
+        self.collectibles.clear()
+        self.buildings.clear()
+
+        # Clear main entity dictionary
+        self.entities.clear()
+
+        logger.debug("Cleared all entities")
+
     def __repr__(self):
         """String representation for debugging."""
         return (f"EntityManager(robots={len(self.robots)}, "
