@@ -357,8 +357,8 @@ class AudioManager:
             pygame.mixer.music.fadeout(fade_ms)
             self.current_music = None
             self.music_paused = False
-        except pygame.error:
-            pass
+        except pygame.error as e:
+            logger.debug(f"Audio operation failed (non-critical): {e}")
 
     def pause_music(self) -> None:
         """Pause background music."""
@@ -368,8 +368,8 @@ class AudioManager:
         try:
             pygame.mixer.music.pause()
             self.music_paused = True
-        except pygame.error:
-            pass
+        except pygame.error as e:
+            logger.debug(f"Audio operation failed (non-critical): {e}")
 
     def resume_music(self) -> None:
         """Resume paused background music."""
@@ -379,8 +379,8 @@ class AudioManager:
         try:
             pygame.mixer.music.unpause()
             self.music_paused = False
-        except pygame.error:
-            pass
+        except pygame.error as e:
+            logger.debug(f"Audio operation failed (non-critical): {e}")
 
     def is_music_playing(self) -> bool:
         """Check if music is currently playing."""
@@ -400,8 +400,8 @@ class AudioManager:
             pygame.mixer.music.stop()  # Stop music
             self.current_music = None
             self.music_paused = False
-        except pygame.error:
-            pass
+        except pygame.error as e:
+            logger.debug(f"Audio operation failed (non-critical): {e}")
 
     def get_available_sounds(self) -> List[str]:
         """Get list of loaded sound effect names."""
@@ -427,7 +427,7 @@ class AudioManager:
                 self.stop_all()
                 pygame.mixer.quit()
                 logger.info("Audio system cleaned up")
-            except pygame.error:
-                pass
+            except pygame.error as e:
+                logger.debug(f"Audio cleanup failed (non-critical): {e}")
         self.initialized = False
         self.sounds.clear()

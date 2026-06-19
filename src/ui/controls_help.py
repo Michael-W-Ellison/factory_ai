@@ -59,6 +59,13 @@ class ControlsHelp:
         self.scroll_offset = 0
         self.max_scroll = 0
 
+        # Animation state
+        self.alpha = 0
+        self.target_alpha = 0
+        self.fade_speed = 800  # Alpha units per second
+        self.scroll_velocity = 0
+        self.scroll_friction = 10.0  # Deceleration multiplier
+
         # Controls data organized by category
         self.controls = self._build_controls_data()
 
@@ -291,10 +298,38 @@ class ControlsHelp:
 
     def update(self, dt: float):
         """
-        Update help overlay (for animations if needed).
+        Update help overlay animations.
 
         Args:
             dt: Delta time in seconds
         """
-        # Currently no animations, but method here for future use
-        pass
+        # Update target alpha based on visibility
+        self.target_alpha = 255 if self.visible else 0
+
+        # Animate alpha towards target
+        if self.alpha < self.target_alpha:
+            self.alpha = min(255, self.alpha + self.fade_speed * dt)
+        elif self.alpha > self.target_alpha:
+            self.alpha = max(0, self.alpha - self.fade_speed * dt)
+
+        # Update scroll momentum
+        if abs(self.scroll_velocity) > 0.1:
+            # Apply friction
+            self.scroll_velocity *= max(0, 1.0 - self.scroll_friction * dt)
+
+            # Update scroll offset
+            self.scroll_offset += self.scroll_velocity * dt
+
+            # Clamp to bounds
+            self.scroll_offset = max(0, min(self.max_scroll, self.scroll_offset))
+        else:
+            self.scroll_velocity = 0
+
+    def scroll(self, amount: float):
+        """
+        Add scroll velocity.
+
+        Args:
+            amount: Scroll amount (positive = down, negative = up)
+        """
+        self.scroll_velocity += amount * 500
