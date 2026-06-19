@@ -51,6 +51,7 @@ class RoadSegment:
         return self.direction == 'vertical'
 
     def __repr__(self):
+        """Return string representation for debugging."""
         return f"RoadSegment(id={self.id}, tiles={len(self.tiles)}, dir={self.direction})"
 
 

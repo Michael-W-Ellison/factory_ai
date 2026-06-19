@@ -29,6 +29,7 @@ class UIWidget:
     """Base class for UI widgets."""
 
     def __init__(self, x: int, y: int, width: int, height: int, label: str):
+        """Initialize widget with position, dimensions, and label."""
         self.x = x
         self.y = y
         self.width = width
@@ -61,6 +62,7 @@ class Slider(UIWidget):
                  min_val: float, max_val: float, value: float,
                  on_change: Callable[[float], None] = None,
                  format_func: Callable[[float], str] = None):
+        """Initialize slider with value range and optional callbacks."""
         super().__init__(x, y, width, 30, label)
         self.min_val = min_val
         self.max_val = max_val
@@ -74,6 +76,7 @@ class Slider(UIWidget):
         self.handle_radius = 10
 
     def handle_event(self, event: pygame.event.Event, mouse_pos: Tuple[int, int]) -> bool:
+        """Handle mouse clicks and drags to update slider value."""
         local_x = mouse_pos[0] - self.x
         local_y = mouse_pos[1] - self.y
 
@@ -115,6 +118,7 @@ class Slider(UIWidget):
                 self.on_change(self.value)
 
     def render(self, surface: pygame.Surface, fonts: Dict):
+        """Render slider track, handle, and current value text."""
         # Colors
         track_color = (60, 60, 80)
         fill_color = (100, 150, 255)
@@ -155,11 +159,13 @@ class Toggle(UIWidget):
 
     def __init__(self, x: int, y: int, label: str, value: bool,
                  on_change: Callable[[bool], None] = None):
+        """Initialize toggle switch with current state and change callback."""
         super().__init__(x, y, 50, 26, label)
         self.value = value
         self.on_change = on_change
 
     def handle_event(self, event: pygame.event.Event, mouse_pos: Tuple[int, int]) -> bool:
+        """Handle click to toggle boolean value."""
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if self.get_rect().collidepoint(mouse_pos):
                 self.value = not self.value
@@ -169,6 +175,7 @@ class Toggle(UIWidget):
         return False
 
     def render(self, surface: pygame.Surface, fonts: Dict):
+        """Render toggle switch with on/off visual state."""
         # Colors
         bg_off = (60, 60, 80)
         bg_on = (80, 160, 80)
@@ -196,6 +203,7 @@ class Dropdown(UIWidget):
     def __init__(self, x: int, y: int, width: int, label: str,
                  options: List[str], selected_index: int,
                  on_change: Callable[[int, str], None] = None):
+        """Initialize dropdown with options list and selected index."""
         super().__init__(x, y, width, 30, label)
         self.options = options
         self.selected_index = selected_index
@@ -204,6 +212,7 @@ class Dropdown(UIWidget):
         self.hover_index = -1
 
     def handle_event(self, event: pygame.event.Event, mouse_pos: Tuple[int, int]) -> bool:
+        """Handle click to expand/collapse dropdown and select options."""
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             main_rect = self.get_rect()
 
@@ -237,6 +246,7 @@ class Dropdown(UIWidget):
         return False
 
     def render(self, surface: pygame.Surface, fonts: Dict):
+        """Render dropdown box and expanded options list if open."""
         # Colors
         bg_color = (50, 50, 70)
         border_color = (100, 150, 255) if self.hovered or self.expanded else (80, 80, 100)
@@ -276,6 +286,7 @@ class KeyCapture(UIWidget):
     def __init__(self, x: int, y: int, width: int, label: str,
                  action: str, current_key: str,
                  on_change: Callable[[str, str], None] = None):
+        """Initialize key capture widget for remapping a control action."""
         super().__init__(x, y, width, 30, label)
         self.action = action
         self.current_key = current_key
@@ -283,6 +294,7 @@ class KeyCapture(UIWidget):
         self.capturing = False
 
     def handle_event(self, event: pygame.event.Event, mouse_pos: Tuple[int, int]) -> bool:
+        """Handle click to start capture and keypress to assign new binding."""
         if self.capturing:
             if event.type == pygame.KEYDOWN:
                 # Escape cancels capture
@@ -307,6 +319,7 @@ class KeyCapture(UIWidget):
         return False
 
     def render(self, surface: pygame.Surface, fonts: Dict):
+        """Render key capture button with current binding or capture prompt."""
         # Colors
         bg_color = (50, 50, 70)
         capture_color = (100, 80, 60)

@@ -21,12 +21,15 @@ class Node:
         self.f = 0  # Total cost (g + h)
 
     def __eq__(self, other):
+        """Check equality based on position."""
         return self.position == other.position
 
     def __lt__(self, other):
+        """Compare nodes by total cost for heap ordering."""
         return self.f < other.f
 
     def __hash__(self):
+        """Hash based on position for set membership."""
         return hash(self.position)
 
 

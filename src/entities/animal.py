@@ -242,6 +242,7 @@ class Bird(Animal):
     """Small bird (pigeon, sparrow, etc.)."""
 
     def __init__(self, x: float, y: float, variant: int = 0):
+        """Initialize a small bird with fast speed and high flee distance."""
         super().__init__(x, y, SpriteType.BIRD, variant)
         self.speed = 3.0  # Birds are fast
         self.vision_range = 120.0
@@ -256,6 +257,7 @@ class BirdOfPrey(Animal):
     """Large bird of prey (hawk, eagle, etc.)."""
 
     def __init__(self, x: float, y: float, variant: int = 0):
+        """Initialize a bird of prey with excellent vision and hunting ability."""
         super().__init__(x, y, SpriteType.BIRD_OF_PREY, variant)
         self.speed = 4.0  # Fast predator
         self.vision_range = 200.0  # Excellent vision
@@ -270,6 +272,7 @@ class Dog(Animal):
     """Dog - can be pet or stray."""
 
     def __init__(self, x: float, y: float, variant: int = 0, is_pet: bool = True):
+        """Initialize a dog, optionally as a pet that follows an owner."""
         super().__init__(x, y, SpriteType.DOG, variant)
         self.speed = 2.5
         self.vision_range = 150.0
@@ -316,6 +319,7 @@ class Cat(Animal):
     """Cat - independent hunter."""
 
     def __init__(self, x: float, y: float, variant: int = 0):
+        """Initialize a cat with quick speed and hunting behavior."""
         super().__init__(x, y, SpriteType.CAT, variant)
         self.speed = 3.0  # Cats are quick
         self.vision_range = 100.0
@@ -328,6 +332,7 @@ class Deer(Animal):
     """Deer - timid herbivore."""
 
     def __init__(self, x: float, y: float, variant: int = 0):
+        """Initialize a timid deer that grazes and flees easily."""
         super().__init__(x, y, SpriteType.DEER, variant)
         self.speed = 3.5  # Fast when fleeing
         self.vision_range = 150.0
@@ -350,6 +355,7 @@ class Rat(Animal):
     """Small rodent - scurries around."""
 
     def __init__(self, x: float, y: float, variant: int = 0):
+        """Initialize a skittish rat with poor vision."""
         super().__init__(x, y, SpriteType.RAT, variant)
         self.speed = 2.0
         self.vision_range = 60.0  # Poor vision
@@ -375,6 +381,7 @@ class Raccoon(Animal):
     """Raccoon - curious scavenger."""
 
     def __init__(self, x: float, y: float, variant: int = 0):
+        """Initialize a nocturnal raccoon scavenger."""
         super().__init__(x, y, SpriteType.RACCOON, variant)
         self.speed = 2.0
         self.vision_range = 100.0
@@ -387,6 +394,7 @@ class Fish(Animal):
     """Fish - swims in water bodies."""
 
     def __init__(self, x: float, y: float, variant: int = 0):
+        """Initialize a fish that swims in water and can school with others."""
         super().__init__(x, y, SpriteType.FISH, variant)
         self.speed = 1.5
         self.vision_range = 80.0
