@@ -14,6 +14,7 @@ from typing import List, Dict, Optional
 import time
 
 from src.core.logger import get_logger
+from src.core.game_config import UI
 
 logger = get_logger(__name__)
 
@@ -30,7 +31,7 @@ class Notification:
     """Individual notification."""
 
     def __init__(self, message: str, notification_type: NotificationType = NotificationType.INFO,
-                 duration: float = 5.0, priority: int = 0):
+                 duration: float = UI.NOTIFICATION_DEFAULT_DURATION, priority: int = 0):
         """
         Initialize notification.
 
@@ -88,7 +89,7 @@ class NotificationSystem:
     Handles notification queue, display, and auto-dismissal.
     """
 
-    def __init__(self, max_visible: int = 5):
+    def __init__(self, max_visible: int = UI.MAX_VISIBLE_NOTIFICATIONS):
         """
         Initialize notification system.
 
@@ -117,7 +118,7 @@ class NotificationSystem:
         }
 
     def notify(self, message: str, notification_type: NotificationType = NotificationType.INFO,
-               duration: float = 5.0, priority: int = 0) -> Notification:
+               duration: float = UI.NOTIFICATION_DEFAULT_DURATION, priority: int = 0) -> Notification:
         """
         Create and queue a notification.
 
@@ -148,7 +149,7 @@ class NotificationSystem:
 
         return notification
 
-    def info(self, message: str, duration: float = 5.0):
+    def info(self, message: str, duration: float = UI.NOTIFICATION_DEFAULT_DURATION):
         """Create info notification."""
         return self.notify(message, NotificationType.INFO, duration)
 
