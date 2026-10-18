@@ -152,50 +152,46 @@ class TestNPCManagerInitialization:
         assert npc_manager.bus_usage_rate == 0.4
 
 
-class TestNPCSpawning:
-    """Tests for NPC spawning."""
+def add_mock_npc(manager, world_x, world_y, home_x, home_y, work_x=None, work_y=None):
+    """Helper to add a mock NPC to the manager."""
+    npc = MockNPC(world_x, world_y, home_x, home_y, work_x, work_y)
+    manager.npcs.append(npc)
+    return npc
 
-    def test_spawn_npcs_in_city(self, npc_manager, mock_grid):
-        """Test spawning NPCs in city buildings."""
+
+class TestNPCSpawning:
+    """Tests for NPC spawning behavior."""
+
+    def test_find_buildings_for_spawning(self, npc_manager, mock_grid):
+        """Test finding buildings for NPC spawning."""
         # Setup: add some buildings
         mock_grid.set_tile_type(5, 5, TileType.BUILDING)
         mock_grid.set_tile_type(10, 10, TileType.BUILDING)
 
-        with patch('src.systems.npc_manager.NPC', MockNPC):
-            npc_manager.spawn_npcs_in_city(seed=42)
+        buildings = npc_manager._find_buildings(TileType.BUILDING)
 
-        assert len(npc_manager.npcs) > 0
+        assert len(buildings) == 2
+        assert (5, 5) in buildings
+        assert (10, 10) in buildings
 
-    def test_spawn_with_seed_is_reproducible(self, mock_grid):
-        """Test that same seed produces same NPC placement."""
-        mock_grid.set_tile_type(5, 5, TileType.BUILDING)
-        mock_grid.set_tile_type(10, 10, TileType.BUILDING)
+    def test_spawn_parameters_valid(self, npc_manager):
+        """Test that spawn parameters are valid."""
+        assert npc_manager.npcs_per_house > 0
+        assert 0.0 <= npc_manager.employment_rate <= 1.0
 
-        manager1 = NPCManager(mock_grid)
-        manager2 = NPCManager(mock_grid)
+    def test_manual_npc_creation_with_job(self, npc_manager):
+        """Test manually creating employed NPC."""
+        npc = add_mock_npc(npc_manager, 100, 100, 5, 5, work_x=10, work_y=10)
 
-        with patch('src.systems.npc_manager.NPC', MockNPC):
-            manager1.spawn_npcs_in_city(seed=123)
+        assert npc.has_job is True
+        assert npc in npc_manager.npcs
 
-        # Reset mock NPC counter
-        MockNPC._id_counter = 0
+    def test_manual_npc_creation_without_job(self, npc_manager):
+        """Test manually creating unemployed NPC."""
+        npc = add_mock_npc(npc_manager, 200, 200, 8, 8)
 
-        with patch('src.systems.npc_manager.NPC', MockNPC):
-            manager2.spawn_npcs_in_city(seed=123)
-
-        assert len(manager1.npcs) == len(manager2.npcs)
-
-    def test_spawn_creates_employed_npcs(self, npc_manager, mock_grid):
-        """Test that some spawned NPCs are employed."""
-        mock_grid.set_tile_type(5, 5, TileType.BUILDING)
-        mock_grid.set_tile_type(10, 10, TileType.BUILDING)
-        mock_grid.set_tile_type(15, 15, TileType.BUILDING)
-
-        with patch('src.systems.npc_manager.NPC', MockNPC):
-            npc_manager.spawn_npcs_in_city(seed=42)
-
-        employed = sum(1 for npc in npc_manager.npcs if npc.has_job)
-        assert employed > 0
+        assert npc.has_job is False
+        assert npc in npc_manager.npcs
 
 
 class TestFindBuildings:

@@ -8,15 +8,8 @@ import pytest
 from unittest.mock import Mock, MagicMock, patch
 from enum import Enum
 
-
-class MockTileType(Enum):
-    """Mock tile types for testing."""
-    GRASS = 'grass'
-    BUILDING = 'building'
-    FACTORY = 'factory'
-    ROAD_DIRT = 'road_dirt'
-    ROAD_TAR = 'road_tar'
-    ROAD_ASPHALT = 'road_asphalt'
+# Import the actual TileType so comparisons work
+from src.world.tile import TileType
 
 
 class MockTile:
@@ -66,11 +59,9 @@ def mock_grid():
 @pytest.fixture
 def fence_manager(mock_grid):
     """Create FenceManager instance with mock grid."""
-    # Patch TileType enum
-    with patch('src.systems.fence_manager.TileType', MockTileType):
-        with patch('src.systems.fence_manager.Fence', MockFence):
-            from src.systems.fence_manager import FenceManager
-            return FenceManager(mock_grid)
+    with patch('src.systems.fence_manager.Fence', MockFence):
+        from src.systems.fence_manager import FenceManager
+        return FenceManager(mock_grid)
 
 
 class TestFenceManagerInit:
@@ -78,13 +69,12 @@ class TestFenceManagerInit:
 
     def test_init_with_grid(self, mock_grid):
         """Test initialization with grid."""
-        with patch('src.systems.fence_manager.TileType', MockTileType):
-            with patch('src.systems.fence_manager.Fence', MockFence):
-                from src.systems.fence_manager import FenceManager
-                fm = FenceManager(mock_grid)
+        with patch('src.systems.fence_manager.Fence', MockFence):
+            from src.systems.fence_manager import FenceManager
+            fm = FenceManager(mock_grid)
 
-                assert fm.grid == mock_grid
-                assert fm.fences == []
+            assert fm.grid == mock_grid
+            assert fm.fences == []
 
     def test_init_fence_types(self, fence_manager):
         """Test fence type configuration."""

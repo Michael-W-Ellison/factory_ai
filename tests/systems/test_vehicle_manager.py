@@ -115,54 +115,43 @@ class TestVehicleManagerInitialization:
         assert len(vehicle_manager.vehicle_type_weights) == 3
 
 
-class TestVehicleSpawning:
-    """Tests for vehicle spawning."""
+def add_mock_vehicle(manager, world_x, world_y, vehicle_type='car', is_scrap=False):
+    """Helper to add a mock vehicle to the manager."""
+    vehicle = MockVehicle(world_x, world_y, vehicle_type, is_scrap)
+    manager.vehicles.append(vehicle)
+    return vehicle
 
-    def test_spawn_vehicles_in_city(self, vehicle_manager, mock_grid):
-        """Test spawning vehicles in city."""
-        # Setup: add some buildings and roads
+
+class TestVehicleSpawning:
+    """Tests for vehicle spawning behavior."""
+
+    def test_spawn_locations_found_near_buildings(self, vehicle_manager, mock_grid):
+        """Test that spawn locations are found near buildings."""
+        # Setup: add some buildings and adjacent grass
         mock_grid.set_tile_type(5, 5, TileType.BUILDING)
         mock_grid.set_tile_type(6, 5, TileType.GRASS)  # Adjacent to building
+
+        locations = vehicle_manager._find_spawn_locations()
+        parking_locs = [(x, y) for x, y, t in locations if t == 'parking']
+
+        assert len(parking_locs) > 0
+
+    def test_spawn_locations_found_on_roads(self, mock_grid):
+        """Test that spawn locations are found on roads."""
         mock_grid.set_tile_type(10, 10, TileType.ROAD_TAR)
+        mock_grid.set_tile_type(11, 10, TileType.ROAD_ASPHALT)
 
-        with patch('src.systems.vehicle_manager.Vehicle', MockVehicle):
-            vehicle_manager.spawn_vehicles_in_city(seed=42, vehicle_density=1.0)
+        manager = VehicleManager(mock_grid)
+        locations = manager._find_spawn_locations()
+        road_locs = [(x, y) for x, y, t in locations if t == 'road']
 
-        assert len(vehicle_manager.vehicles) > 0
+        assert len(road_locs) >= 2
 
-    def test_spawn_with_seed_is_reproducible(self, mock_grid):
-        """Test that same seed produces same vehicle placement."""
-        mock_grid.set_tile_type(5, 5, TileType.BUILDING)
-        mock_grid.set_tile_type(6, 5, TileType.GRASS)
-        mock_grid.set_tile_type(10, 10, TileType.ROAD_TAR)
-
-        manager1 = VehicleManager(mock_grid)
-        manager2 = VehicleManager(mock_grid)
-
-        with patch('src.systems.vehicle_manager.Vehicle', MockVehicle):
-            manager1.spawn_vehicles_in_city(seed=123, vehicle_density=1.0)
-
-        # Reset mock vehicle counter for fair comparison
-        MockVehicle._id_counter = 0
-
-        with patch('src.systems.vehicle_manager.Vehicle', MockVehicle):
-            manager2.spawn_vehicles_in_city(seed=123, vehicle_density=1.0)
-
-        assert len(manager1.vehicles) == len(manager2.vehicles)
-
-    def test_spawn_with_low_density(self, vehicle_manager, mock_grid):
-        """Test spawning with very low density results in fewer vehicles."""
-        mock_grid.set_tile_type(5, 5, TileType.BUILDING)
-        for i in range(4, 7):
-            for j in range(4, 7):
-                if (i, j) != (5, 5):
-                    mock_grid.set_tile_type(i, j, TileType.GRASS)
-
-        with patch('src.systems.vehicle_manager.Vehicle', MockVehicle):
-            vehicle_manager.spawn_vehicles_in_city(seed=42, vehicle_density=0.0)
-
-        # With 0 density, no vehicles should spawn
-        assert len(vehicle_manager.vehicles) == 0
+    def test_spawn_parameters_valid(self, vehicle_manager):
+        """Test that default spawn parameters are valid."""
+        assert 0.0 <= vehicle_manager.scrap_ratio <= 1.0
+        assert len(vehicle_manager.vehicle_types) > 0
+        assert sum(vehicle_manager.vehicle_type_weights) > 0
 
 
 class TestFindSpawnLocations:

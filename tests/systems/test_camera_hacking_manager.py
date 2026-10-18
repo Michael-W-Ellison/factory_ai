@@ -432,6 +432,9 @@ class TestSecurityUpgrade:
                 chm.hack_target = camera
                 chm._complete_hack(game_time=float(i))
 
+            # Call _check_consequences to trigger the upgrade
+            chm._check_consequences(game_time=11.0)
+
             assert chm.security_upgrade_triggered is True
 
     def test_security_upgrade_adds_cameras(self, mock_camera_manager, mock_research_manager, mock_suspicion_manager):
