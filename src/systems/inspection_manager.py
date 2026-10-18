@@ -15,6 +15,7 @@ from typing import Optional, Dict
 
 from src.core.logger import get_logger
 from src.core.game_config import INSPECTION, SUSPICION
+from src.systems.audio_events import get_audio_events
 
 logger = get_logger(__name__)
 
@@ -147,6 +148,11 @@ class InspectionManager:
         hours = warning_time / 3600.0
 
         logger.warning(f"Inspection scheduled! Inspector arrives in {hours:.1f} game hours (Suspicion: {self.suspicion.suspicion_level})")
+
+        # Play inspection warning audio
+        audio = get_audio_events()
+        if audio:
+            audio.on_inspection_warning()
 
     def _start_inspection(self, game_time: float):
         """Start the inspection process."""

@@ -14,6 +14,7 @@ from typing import List, Tuple
 from src.core.logger import get_logger
 from src.entities.police_officer import PoliceOfficer, PoliceBehavior
 from src.world.tile import TileType
+from src.systems.audio_events import get_audio_events
 
 logger = get_logger(__name__)
 
@@ -238,6 +239,11 @@ class PoliceManager:
 
             # Dispatch officer
             if nearest_officer and min_distance < 500:  # Within 500 pixels
+                # Play police alert audio
+                audio = get_audio_events()
+                if audio:
+                    audio.on_police_alert()
+
                 if robot and hasattr(robot, 'id'):
                     # Chase the robot if we have a reference
                     nearest_officer.start_chase(robot)

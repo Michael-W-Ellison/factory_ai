@@ -51,6 +51,7 @@ from src.ui.settings_manager import SettingsManager
 from src.ui.settings_ui import SettingsUI
 from src.ui.game_over_ui import GameOverUI, GameEnding
 from src.systems.audio_manager import AudioManager
+from src.systems.audio_events import AudioEventHandler, MusicState
 
 
 class Game:
@@ -193,6 +194,9 @@ class Game:
 
         # Initialize audio system
         self.audio = AudioManager(self.settings_manager, sound_dir='data/sounds')
+
+        # Initialize audio event handler for game events
+        self.audio_events = AudioEventHandler(self.audio)
 
         # Initialize settings UI (pass audio manager for live volume control)
         self.settings_ui = SettingsUI(config.SCREEN_WIDTH, config.SCREEN_HEIGHT,
@@ -362,6 +366,9 @@ class Game:
     def run(self):
         """Main game loop."""
         logger.info("Starting game loop...")
+
+        # Start gameplay music
+        self.audio_events.on_game_start()
 
         while self.running:
             # Calculate delta time (time since last frame)
@@ -594,6 +601,9 @@ class Game:
 
         # Update suspicion (decay over time)
         self.suspicion.update(adjusted_dt, self.npcs.game_time)
+
+        # Update dynamic music based on suspicion level
+        self.audio_events.update_music_for_suspicion(self.suspicion.suspicion_level)
 
         # Update police presence based on suspicion (check every tier change)
         if tier_changed:
