@@ -464,9 +464,16 @@ class TestUpdateCampaigns:
         mock_suspicion_manager.suspicion_level = 30.0
         social_manager.counter_rumors(game_time=0.0)
 
-        # Update well past duration
-        long_time = 10 * 24 * 3600  # 10 days
-        social_manager.update(dt=long_time, game_time=long_time)
+        # Update first to activate the campaign
+        activation_time = 3 * 24 * 3600 + 1
+        social_manager.update(dt=activation_time, game_time=activation_time)
+
+        # Campaign should now be active
+        assert social_manager.active_campaigns[0]['status'] == CampaignStatus.ACTIVE
+
+        # Update again past the full duration to complete and remove
+        # Duration is activation_time + 1, so need another update
+        social_manager.update(dt=10, game_time=activation_time + 10)
 
         # Campaign should be removed after completion
         assert len(social_manager.active_campaigns) == 0

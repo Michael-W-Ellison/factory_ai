@@ -197,11 +197,12 @@ class TestCameraPlacement:
         with patch.dict('sys.modules', {'pygame': MagicMock()}):
             with patch('src.systems.camera_manager.SecurityCamera', MockSecurityCamera):
                 from src.systems.camera_manager import CameraManager
+                from src.world.tile import TileType
 
                 # Add buildings to grid
                 for x in range(10):
                     for y in range(10):
-                        mock_grid.set_tile(x, y, MockTileType.BUILDING)
+                        mock_grid.set_tile(x, y, TileType.BUILDING)
 
                 cm = CameraManager(mock_grid)
                 cm.building_camera_chance = 1.0  # 100% chance for testing

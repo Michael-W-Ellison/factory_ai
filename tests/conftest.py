@@ -5,6 +5,22 @@ Pytest configuration and shared fixtures for factory_ai tests.
 import sys
 import os
 from pathlib import Path
+from unittest.mock import MagicMock
+
+# Mock pygame before any imports that might need it
+# This prevents pygame from being imported in the test environment
+pygame_mock = MagicMock()
+sys.modules['pygame'] = pygame_mock
+sys.modules['pygame.mixer'] = MagicMock()
+sys.modules['pygame.font'] = MagicMock()
+sys.modules['pygame.image'] = MagicMock()
+sys.modules['pygame.display'] = MagicMock()
+sys.modules['pygame.time'] = MagicMock()
+sys.modules['pygame.event'] = MagicMock()
+sys.modules['pygame.draw'] = MagicMock()
+sys.modules['pygame.transform'] = MagicMock()
+sys.modules['pygame.Surface'] = MagicMock()
+sys.modules['pygame.Rect'] = MagicMock()
 
 import pytest
 

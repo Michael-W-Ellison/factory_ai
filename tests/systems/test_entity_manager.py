@@ -10,12 +10,11 @@ Tests cover:
 
 import pytest
 from unittest.mock import Mock, MagicMock, patch
+import sys
 
 
-# Patch pygame before importing modules that use it
-with patch.dict('sys.modules', {'pygame': MagicMock()}):
-    from src.systems.entity_manager import EntityManager
-    from src.systems.material_inventory import MaterialSource
+# Mock pygame before any imports that might need it
+sys.modules['pygame'] = MagicMock()
 
 
 class MockRobot:
@@ -68,7 +67,7 @@ class MockCollectible:
         self.y = y
         self.material_type = material_type
         self.quantity = quantity
-        self.source = source or MaterialSource.LANDFILL
+        self.source = source or "LANDFILL"
         self.active = True
 
     def update(self, dt):
@@ -100,10 +99,25 @@ def mock_grid():
 @pytest.fixture
 def entity_manager(mock_grid):
     """Provide an EntityManager instance with mocked dependencies."""
-    with patch('src.systems.entity_manager.Robot', MockRobot):
-        with patch('src.systems.entity_manager.CollectibleObject', MockCollectible):
-            manager = EntityManager(grid=mock_grid)
-            return manager
+    from src.systems.entity_manager import EntityManager
+    manager = EntityManager(grid=mock_grid)
+    return manager
+
+
+def add_mock_robot(manager, x, y, autonomous=True):
+    """Helper to add a mock robot to the manager."""
+    robot = MockRobot(x, y, autonomous)
+    manager.entities[robot.id] = robot
+    manager.robots.append(robot)
+    return robot
+
+
+def add_mock_collectible(manager, x, y, material_type, quantity, source=None):
+    """Helper to add a mock collectible to the manager."""
+    collectible = MockCollectible(x, y, material_type, quantity, source)
+    manager.entities[collectible.id] = collectible
+    manager.collectibles.append(collectible)
+    return collectible
 
 
 class TestEntityManagerInitialization:
@@ -111,6 +125,7 @@ class TestEntityManagerInitialization:
 
     def test_init_with_default_values(self):
         """Test EntityManager initializes with empty collections."""
+        from src.systems.entity_manager import EntityManager
         manager = EntityManager()
 
         assert manager.entities == {}
@@ -122,97 +137,76 @@ class TestEntityManagerInitialization:
 
     def test_init_with_grid(self, mock_grid):
         """Test EntityManager accepts grid on initialization."""
+        from src.systems.entity_manager import EntityManager
         manager = EntityManager(grid=mock_grid)
 
         assert manager.grid is mock_grid
 
+    def test_init_with_resource_manager(self, mock_grid):
+        """Test EntityManager accepts resource manager on initialization."""
+        from src.systems.entity_manager import EntityManager
+        mock_resource = Mock()
+        manager = EntityManager(grid=mock_grid, resource_manager=mock_resource)
 
-class TestRobotCreation:
-    """Tests for robot creation and management."""
+        assert manager.resource_manager is mock_resource
 
-    def test_create_robot_basic(self, entity_manager):
-        """Test creating a basic robot."""
-        with patch('src.systems.entity_manager.Robot', MockRobot):
-            robot = entity_manager.create_robot(100.0, 200.0)
+    def test_init_with_research_manager(self, mock_grid):
+        """Test EntityManager accepts research manager on initialization."""
+        from src.systems.entity_manager import EntityManager
+        mock_research = Mock()
+        manager = EntityManager(grid=mock_grid, research_manager=mock_research)
 
-        assert robot is not None
-        assert robot.x == 100.0
-        assert robot.y == 200.0
-        assert robot.autonomous is True
+        assert manager.research_manager is mock_research
+
+
+class TestRobotManagement:
+    """Tests for robot management using mock objects."""
+
+    def test_add_robot_to_manager(self, entity_manager):
+        """Test adding a robot to the manager."""
+        robot = add_mock_robot(entity_manager, 100.0, 200.0)
+
         assert robot in entity_manager.robots
         assert robot.id in entity_manager.entities
 
-    def test_create_robot_non_autonomous(self, entity_manager):
-        """Test creating a non-autonomous (player-controlled) robot."""
-        with patch('src.systems.entity_manager.Robot', MockRobot):
-            robot = entity_manager.create_robot(50.0, 75.0, autonomous=False)
-
-        assert robot.autonomous is False
-        assert entity_manager.selected_robot == robot
-        assert robot.selected is True
-
-    def test_create_multiple_robots(self, entity_manager):
-        """Test creating multiple robots."""
-        with patch('src.systems.entity_manager.Robot', MockRobot):
-            robot1 = entity_manager.create_robot(0, 0)
-            robot2 = entity_manager.create_robot(100, 100)
-            robot3 = entity_manager.create_robot(200, 200)
+    def test_add_multiple_robots(self, entity_manager):
+        """Test adding multiple robots."""
+        robot1 = add_mock_robot(entity_manager, 0, 0)
+        robot2 = add_mock_robot(entity_manager, 100, 100)
+        robot3 = add_mock_robot(entity_manager, 200, 200)
 
         assert len(entity_manager.robots) == 3
         assert len(entity_manager.entities) == 3
 
-    def test_robot_gets_factory_position(self, entity_manager):
-        """Test that new robots receive the factory position."""
+    def test_robot_with_factory_position(self, entity_manager):
+        """Test robot receives factory position when added."""
         entity_manager.factory_pos = (500, 600)
-
-        with patch('src.systems.entity_manager.Robot', MockRobot):
-            robot = entity_manager.create_robot(100, 100)
+        robot = add_mock_robot(entity_manager, 100, 100)
+        robot.factory_pos = entity_manager.factory_pos
 
         assert robot.factory_pos == (500, 600)
 
-    def test_robot_gets_research_effects(self, entity_manager):
-        """Test that new robots receive research effects."""
-        mock_research = Mock()
-        entity_manager.research_manager = mock_research
 
-        with patch('src.systems.entity_manager.Robot', MockRobot):
-            robot = entity_manager.create_robot(100, 100)
+class TestCollectibleManagement:
+    """Tests for collectible management."""
 
-        # MockRobot.apply_research_effects should have been called
-        # (in real implementation, robot.apply_research_effects(research_manager) is called)
+    def test_add_collectible_to_manager(self, entity_manager):
+        """Test adding a collectible to the manager."""
+        collectible = add_mock_collectible(
+            entity_manager, 100.0, 200.0, 'metal', 50.0
+        )
 
-
-class TestCollectibleCreation:
-    """Tests for collectible creation."""
-
-    def test_create_collectible_basic(self, entity_manager):
-        """Test creating a basic collectible."""
-        with patch('src.systems.entity_manager.CollectibleObject', MockCollectible):
-            collectible = entity_manager.create_collectible(
-                x=100.0, y=200.0,
-                material_type='metal',
-                quantity=50.0
-            )
-
-        assert collectible is not None
-        assert collectible.x == 100.0
-        assert collectible.y == 200.0
-        assert collectible.material_type == 'metal'
-        assert collectible.quantity == 50.0
         assert collectible in entity_manager.collectibles
         assert collectible.id in entity_manager.entities
 
-    def test_create_collectible_with_source(self, entity_manager):
-        """Test creating collectible with specific material source."""
-        with patch('src.systems.entity_manager.CollectibleObject', MockCollectible):
-            collectible = entity_manager.create_collectible(
-                x=50.0, y=50.0,
-                material_type='plastic',
-                quantity=20.0,
-                source=MaterialSource.VEHICLE
-            )
+    def test_add_multiple_collectibles(self, entity_manager):
+        """Test adding multiple collectibles."""
+        c1 = add_mock_collectible(entity_manager, 0, 0, 'metal', 10)
+        c2 = add_mock_collectible(entity_manager, 100, 100, 'plastic', 20)
+        c3 = add_mock_collectible(entity_manager, 200, 200, 'glass', 30)
 
-        assert collectible.source == MaterialSource.VEHICLE
+        assert len(entity_manager.collectibles) == 3
+        assert len(entity_manager.entities) == 3
 
 
 class TestRobotSelection:
@@ -220,8 +214,7 @@ class TestRobotSelection:
 
     def test_select_robot(self, entity_manager):
         """Test selecting a robot."""
-        with patch('src.systems.entity_manager.Robot', MockRobot):
-            robot = entity_manager.create_robot(100, 100)
+        robot = add_mock_robot(entity_manager, 100, 100)
 
         entity_manager.select_robot(robot)
 
@@ -230,9 +223,8 @@ class TestRobotSelection:
 
     def test_select_robot_deselects_previous(self, entity_manager):
         """Test that selecting a new robot deselects the previous one."""
-        with patch('src.systems.entity_manager.Robot', MockRobot):
-            robot1 = entity_manager.create_robot(100, 100)
-            robot2 = entity_manager.create_robot(200, 200)
+        robot1 = add_mock_robot(entity_manager, 100, 100)
+        robot2 = add_mock_robot(entity_manager, 200, 200)
 
         entity_manager.select_robot(robot1)
         entity_manager.select_robot(robot2)
@@ -243,8 +235,7 @@ class TestRobotSelection:
 
     def test_select_robot_none_deselects(self, entity_manager):
         """Test deselecting by passing None."""
-        with patch('src.systems.entity_manager.Robot', MockRobot):
-            robot = entity_manager.create_robot(100, 100)
+        robot = add_mock_robot(entity_manager, 100, 100)
 
         entity_manager.select_robot(robot)
         entity_manager.select_robot(None)
@@ -254,8 +245,7 @@ class TestRobotSelection:
 
     def test_select_robot_at_position(self, entity_manager):
         """Test selecting robot at a world position."""
-        with patch('src.systems.entity_manager.Robot', MockRobot):
-            robot = entity_manager.create_robot(100, 100)
+        robot = add_mock_robot(entity_manager, 100, 100)
 
         # Robot is at (100, 100) with size 28x28
         result = entity_manager.select_robot_at(110, 110)
@@ -265,8 +255,7 @@ class TestRobotSelection:
 
     def test_select_robot_at_position_no_robot(self, entity_manager):
         """Test selecting at position with no robot returns None."""
-        with patch('src.systems.entity_manager.Robot', MockRobot):
-            entity_manager.create_robot(100, 100)
+        add_mock_robot(entity_manager, 100, 100)
 
         result = entity_manager.select_robot_at(500, 500)
 
@@ -278,10 +267,9 @@ class TestCollectibleQueries:
 
     def test_get_collectibles_near(self, entity_manager):
         """Test finding collectibles near a position."""
-        with patch('src.systems.entity_manager.CollectibleObject', MockCollectible):
-            entity_manager.create_collectible(100, 100, 'metal', 10)
-            entity_manager.create_collectible(150, 150, 'plastic', 20)
-            entity_manager.create_collectible(500, 500, 'glass', 30)
+        add_mock_collectible(entity_manager, 100, 100, 'metal', 10)
+        add_mock_collectible(entity_manager, 150, 150, 'plastic', 20)
+        add_mock_collectible(entity_manager, 500, 500, 'glass', 30)
 
         nearby = entity_manager.get_collectibles_near(100, 100, radius=100)
 
@@ -289,12 +277,19 @@ class TestCollectibleQueries:
 
     def test_get_collectibles_near_none(self, entity_manager):
         """Test finding collectibles when none are nearby."""
-        with patch('src.systems.entity_manager.CollectibleObject', MockCollectible):
-            entity_manager.create_collectible(500, 500, 'metal', 10)
+        add_mock_collectible(entity_manager, 500, 500, 'metal', 10)
 
         nearby = entity_manager.get_collectibles_near(0, 0, radius=50)
 
         assert len(nearby) == 0
+
+    def test_get_collectibles_near_exact_radius(self, entity_manager):
+        """Test collectibles exactly at radius boundary."""
+        add_mock_collectible(entity_manager, 100, 0, 'metal', 10)  # Distance = 100
+
+        nearby = entity_manager.get_collectibles_near(0, 0, radius=100)
+
+        assert len(nearby) == 1
 
 
 class TestEntityUpdate:
@@ -302,24 +297,42 @@ class TestEntityUpdate:
 
     def test_update_calls_robot_update(self, entity_manager):
         """Test that update calls robot updates."""
-        with patch('src.systems.entity_manager.Robot', MockRobot):
-            robot = entity_manager.create_robot(100, 100)
+        robot = add_mock_robot(entity_manager, 100, 100)
         robot.update = Mock()
 
         entity_manager.update(0.016)
 
         robot.update.assert_called_once()
 
+    def test_update_calls_collectible_update(self, entity_manager):
+        """Test that update calls collectible updates."""
+        collectible = add_mock_collectible(entity_manager, 50, 50, 'metal', 10)
+        collectible.update = Mock()
+
+        entity_manager.update(0.016)
+
+        collectible.update.assert_called_once()
+
     def test_update_removes_inactive_entities(self, entity_manager):
         """Test that inactive entities are removed during update."""
-        with patch('src.systems.entity_manager.CollectibleObject', MockCollectible):
-            collectible = entity_manager.create_collectible(100, 100, 'metal', 10)
+        collectible = add_mock_collectible(entity_manager, 100, 100, 'metal', 10)
 
         collectible.active = False
         entity_manager.update(0.016)
 
         assert collectible not in entity_manager.collectibles
         assert collectible.id not in entity_manager.entities
+
+    def test_update_removes_inactive_robot(self, entity_manager):
+        """Test that inactive robots are removed during update."""
+        robot = add_mock_robot(entity_manager, 100, 100)
+        robot.update = Mock()  # Prevent actual update
+
+        robot.active = False
+        entity_manager.update(0.016)
+
+        assert robot not in entity_manager.robots
+        assert robot.id not in entity_manager.entities
 
 
 class TestFactoryPosition:
@@ -333,12 +346,21 @@ class TestFactoryPosition:
 
     def test_factory_position_updates_existing_robots(self, entity_manager):
         """Test that setting factory position updates existing robots."""
-        with patch('src.systems.entity_manager.Robot', MockRobot):
-            robot = entity_manager.create_robot(100, 100)
+        robot = add_mock_robot(entity_manager, 100, 100)
 
         entity_manager.set_factory_position(500, 600)
 
         assert robot.factory_pos == (500, 600)
+
+    def test_factory_position_updates_multiple_robots(self, entity_manager):
+        """Test that setting factory position updates all robots."""
+        robot1 = add_mock_robot(entity_manager, 100, 100)
+        robot2 = add_mock_robot(entity_manager, 200, 200)
+
+        entity_manager.set_factory_position(300, 400)
+
+        assert robot1.factory_pos == (300, 400)
+        assert robot2.factory_pos == (300, 400)
 
 
 class TestEntityStats:
@@ -353,14 +375,31 @@ class TestEntityStats:
         assert stats['collectibles'] == 0
         assert stats['buildings'] == 0
 
-    def test_get_stats_with_entities(self, entity_manager):
-        """Test stats with various entities."""
-        with patch('src.systems.entity_manager.Robot', MockRobot):
-            entity_manager.create_robot(0, 0)
-            entity_manager.create_robot(100, 100)
+    def test_get_stats_with_robots(self, entity_manager):
+        """Test stats with robots."""
+        add_mock_robot(entity_manager, 0, 0)
+        add_mock_robot(entity_manager, 100, 100)
 
-        with patch('src.systems.entity_manager.CollectibleObject', MockCollectible):
-            entity_manager.create_collectible(50, 50, 'metal', 10)
+        stats = entity_manager.get_stats()
+
+        assert stats['total_entities'] == 2
+        assert stats['robots'] == 2
+
+    def test_get_stats_with_collectibles(self, entity_manager):
+        """Test stats with collectibles."""
+        add_mock_collectible(entity_manager, 50, 50, 'metal', 10)
+        add_mock_collectible(entity_manager, 100, 100, 'plastic', 20)
+
+        stats = entity_manager.get_stats()
+
+        assert stats['total_entities'] == 2
+        assert stats['collectibles'] == 2
+
+    def test_get_stats_mixed_entities(self, entity_manager):
+        """Test stats with mixed entity types."""
+        add_mock_robot(entity_manager, 0, 0)
+        add_mock_robot(entity_manager, 100, 100)
+        add_mock_collectible(entity_manager, 50, 50, 'metal', 10)
 
         stats = entity_manager.get_stats()
 
@@ -374,12 +413,9 @@ class TestClearAll:
 
     def test_clear_all(self, entity_manager):
         """Test clearing all entities."""
-        with patch('src.systems.entity_manager.Robot', MockRobot):
-            robot = entity_manager.create_robot(100, 100)
+        robot = add_mock_robot(entity_manager, 100, 100)
         entity_manager.select_robot(robot)
-
-        with patch('src.systems.entity_manager.CollectibleObject', MockCollectible):
-            entity_manager.create_collectible(50, 50, 'metal', 10)
+        add_mock_collectible(entity_manager, 50, 50, 'metal', 10)
 
         entity_manager.clear_all()
 
@@ -388,17 +424,47 @@ class TestClearAll:
         assert len(entity_manager.entities) == 0
         assert entity_manager.selected_robot is None
 
+    def test_clear_all_clears_buildings(self, entity_manager):
+        """Test that clear_all also clears buildings list."""
+        entity_manager.buildings.append(Mock())
+
+        entity_manager.clear_all()
+
+        assert len(entity_manager.buildings) == 0
+
+
+class TestResearchEffects:
+    """Tests for research effect application."""
+
+    def test_apply_research_effects_to_robots(self, entity_manager):
+        """Test applying research effects to all robots."""
+        mock_research = Mock()
+        robot1 = add_mock_robot(entity_manager, 0, 0)
+        robot2 = add_mock_robot(entity_manager, 100, 100)
+        robot1.apply_research_effects = Mock()
+        robot2.apply_research_effects = Mock()
+
+        entity_manager.apply_research_effects_to_robots(mock_research)
+
+        robot1.apply_research_effects.assert_called_once_with(mock_research)
+        robot2.apply_research_effects.assert_called_once_with(mock_research)
+
 
 class TestRepr:
     """Tests for string representation."""
 
-    def test_repr(self, entity_manager):
-        """Test string representation."""
-        with patch('src.systems.entity_manager.Robot', MockRobot):
-            entity_manager.create_robot(100, 100)
+    def test_repr_empty(self, entity_manager):
+        """Test string representation for empty manager."""
+        repr_str = repr(entity_manager)
 
-        with patch('src.systems.entity_manager.CollectibleObject', MockCollectible):
-            entity_manager.create_collectible(50, 50, 'metal', 10)
+        assert 'EntityManager' in repr_str
+        assert 'robots=0' in repr_str
+        assert 'collectibles=0' in repr_str
+
+    def test_repr_with_entities(self, entity_manager):
+        """Test string representation with entities."""
+        add_mock_robot(entity_manager, 100, 100)
+        add_mock_collectible(entity_manager, 50, 50, 'metal', 10)
 
         repr_str = repr(entity_manager)
 

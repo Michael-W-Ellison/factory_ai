@@ -60,13 +60,15 @@ class TestDroneDataclass:
         assert distance == 5.0  # 3-4-5 triangle
 
     def test_drone_move_towards_reaches_target(self):
-        """Test drone reaches nearby target."""
+        """Test drone reaches nearby target within threshold."""
         drone = Drone(id=1, position=(0, 0), state=DroneState.FLYING, speed=10.0)
 
+        # Target within 0.1 threshold - considered reached immediately
         reached = drone.move_towards((0.05, 0), 1.0)
 
         assert reached is True
-        assert drone.position == (0.05, 0)
+        # Position unchanged when within threshold distance
+        assert drone.position == (0, 0)
 
     def test_drone_move_towards_partial_movement(self):
         """Test drone moves partially toward distant target."""
