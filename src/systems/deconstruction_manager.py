@@ -15,6 +15,7 @@ from typing import Dict, List, Tuple, Optional
 from dataclasses import dataclass
 
 from src.core.logger import get_logger
+from src.core.game_config import BUILDING
 
 logger = get_logger(__name__)
 
@@ -83,14 +84,14 @@ class DeconstructionManager:
         self.jobs: Dict[int, DeconstructionJob] = {}
         self.next_job_id = 1
 
-        # Deconstruction parameters
-        self.base_deconstruction_time = 60.0  # 60 seconds for small items
-        self.time_per_size_unit = 10.0  # Additional time per size unit
-        self.worker_speed_multiplier = 0.5  # Each worker reduces time by 50%
+        # Deconstruction parameters (from centralized config)
+        self.base_deconstruction_time = BUILDING.BASE_CONSTRUCTION_TIME  # Base time for small items
+        self.time_per_size_unit = BUILDING.TIME_PER_SIZE_UNIT  # Additional time per size unit
+        self.worker_speed_multiplier = BUILDING.WORKER_SPEED_MULTIPLIER  # Each worker reduces time
 
-        # Material recovery rates
-        self.recovery_rate = 0.7  # Recover 70% of materials
-        self.illegal_structure_penalty = 0.5  # Only 50% recovery from illegal structures
+        # Material recovery rates (from centralized config)
+        self.recovery_rate = BUILDING.DEFAULT_RECOVERY_RATE  # Default recovery rate
+        self.illegal_structure_penalty = BUILDING.ILLEGAL_RECOVERY_RATE  # Recovery from illegal structures
 
         # Statistics
         self.total_jobs_completed = 0

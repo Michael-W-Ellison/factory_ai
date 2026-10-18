@@ -13,6 +13,7 @@ from typing import List, Dict, Optional, Tuple
 
 from src.core.logger import get_logger
 from src.entities.construction_site import ConstructionSite
+from src.systems.audio_events import get_audio_events
 
 logger = get_logger(__name__)
 
@@ -330,6 +331,11 @@ class ConstructionManager:
             # Place the building (building manager will mark tiles as occupied)
             self.building_manager.place_building(building)
             logger.info(f"Construction complete: {building.name} at ({order.grid_x}, {order.grid_y})")
+
+            # Play construction complete sound
+            audio = get_audio_events()
+            if audio:
+                audio.on_building_complete()
 
         # Remove from active sites and queue
         self.active_sites.remove(site)

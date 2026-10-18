@@ -7,6 +7,7 @@ import math
 from src.entities.entity import Entity
 from src.core.constants import Colors, RobotState
 from src.core.logger import get_logger
+from src.core.game_config import ROBOT
 
 logger = get_logger(__name__)
 
@@ -33,28 +34,28 @@ class Robot(Entity):
         self.color = Colors.ROBOT_COLOR  # Green
 
         # Movement (base values before research)
-        self.base_speed = 100.0  # Pixels per second
-        self.speed = 100.0
+        self.base_speed = ROBOT.BASE_SPEED  # Pixels per second
+        self.speed = ROBOT.BASE_SPEED
         self.velocity_x = 0.0
         self.velocity_y = 0.0
 
         # Inventory (base values before research)
-        self.base_capacity = 100  # kg
+        self.base_capacity = int(ROBOT.BASE_CAPACITY)  # kg
         self.inventory = {}  # material_type -> quantity
         self.material_sources = {}  # material_type -> MaterialSource (for inspection tracking)
-        self.max_capacity = 100  # kg
+        self.max_capacity = int(ROBOT.BASE_CAPACITY)  # kg
         self.current_load = 0  # kg
 
         # Power (base values before research)
-        self.base_power_capacity = 1000  # units
-        self.power_capacity = 1000  # units
-        self.current_power = 1000
-        self.power_consumption_rate = 1.0  # units per second when moving
+        self.base_power_capacity = int(ROBOT.BASE_POWER_CAPACITY)  # units
+        self.power_capacity = int(ROBOT.BASE_POWER_CAPACITY)  # units
+        self.current_power = int(ROBOT.BASE_POWER_CAPACITY)
+        self.power_consumption_rate = ROBOT.POWER_CONSUMPTION_RATE  # units per second when moving
 
         # Health/Durability (base values before research)
-        self.base_health = 100
-        self.max_health = 100
-        self.current_health = 100
+        self.base_health = int(ROBOT.BASE_HEALTH)
+        self.max_health = int(ROBOT.BASE_HEALTH)
+        self.current_health = int(ROBOT.BASE_HEALTH)
 
         # State
         self.selected = False  # For UI purposes
@@ -66,10 +67,11 @@ class Robot(Entity):
         self.current_path_index = 0
         self.target_object = None  # CollectibleObject we're moving towards
         self.factory_pos = None  # Position of factory for returning
-        self.collection_radius = 50.0  # How close we need to be to collect
+        self.collection_radius = ROBOT.COLLECTION_RADIUS  # How close we need to be to collect
 
         # Upgrade level (1-5, affects visuals and capabilities)
         self.upgrade_level = 1
+        self.max_upgrade_level = ROBOT.MAX_UPGRADE_LEVEL
 
         # Movement direction and animation
         self.facing_angle = 90.0  # degrees (0=right, 90=down, 180=left, 270=up)

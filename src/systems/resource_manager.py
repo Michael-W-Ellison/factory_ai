@@ -11,6 +11,7 @@ Provides:
 from typing import Dict, Optional, Any, TYPE_CHECKING
 
 from src.core.logger import get_logger
+from src.systems.audio_events import get_audio_events
 
 logger = get_logger(__name__)
 
@@ -196,6 +197,14 @@ class ResourceManager:
         self.money += amount
         if amount > 0:
             self.total_money_earned += amount
+
+        # Play audio for significant money changes
+        audio = get_audio_events()
+        if audio:
+            if amount >= 1000:
+                audio.on_money_gained(amount)
+            elif amount <= -500:
+                audio.on_money_lost(abs(amount))
 
     def get_material_quantity(self, material_type: str) -> float:
         """
