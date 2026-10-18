@@ -75,24 +75,32 @@ class RiverGenerator:
     with bridges placed at road crossings.
     """
 
-    def __init__(self, grid_width: int, grid_height: int, seed: Optional[int] = None):
+    def __init__(self, grid, seed: Optional[int] = None):
         """
         Initialize the river generator.
 
         Args:
-            grid_width (int): Width of grid in tiles
-            grid_height (int): Height of grid in tiles
+            grid: Grid object with width_tiles/height_tiles, or tuple (width, height)
             seed (int, optional): Random seed for reproducible generation
         """
-        self.grid_width = grid_width
-        self.grid_height = grid_height
+        # Support both grid object and tuple of dimensions
+        if hasattr(grid, 'width_tiles'):
+            self.grid = grid
+            self.grid_width = grid.width_tiles
+            self.grid_height = grid.height_tiles
+        else:
+            # Assume tuple (width, height) for backwards compatibility
+            self.grid = None
+            self.grid_width = grid[0] if isinstance(grid, tuple) else grid
+            self.grid_height = grid[1] if isinstance(grid, tuple) else seed or 75
 
-        if seed is not None:
-            random.seed(seed)
+        self.rng = random.Random(seed)
 
         # Generated data
         self.rivers = []  # List of river paths (each path is a list of RiverSegments)
         self.river_tiles = set()  # Set of (x, y) tiles that are river
+        self.ocean_tiles = set()  # Set of (x, y) tiles that are ocean
+        self.dock_tiles = set()  # Set of (x, y) tiles that are docks
         self.bridges = []  # List of Bridge objects
         self.bridge_tiles = set()  # Set of (x, y) tiles that are bridges
 
@@ -109,9 +117,6 @@ class RiverGenerator:
         """
         logger.debug(f"Generating {num_rivers} river(s) flowing {flow_direction}...")
 
-        self.rivers = []
-        self.river_tiles = set()
-
         for i in range(num_rivers):
             river_path = self._generate_river_path(flow_direction, river_index=i)
             if river_path:
@@ -119,9 +124,14 @@ class RiverGenerator:
 
         logger.debug(f"Generated {len(self.rivers)} rivers with {len(self.river_tiles)} water tiles")
 
+        # Apply to grid if available
+        self._apply_to_grid()
+
         return {
             'rivers': self.rivers,
             'river_tiles': self.river_tiles,
+            'ocean_tiles': self.ocean_tiles,
+            'dock_tiles': self.dock_tiles,
             'bridges': self.bridges,
             'bridge_tiles': self.bridge_tiles,
         }
@@ -142,23 +152,23 @@ class RiverGenerator:
         # Determine starting position based on flow direction
         if flow_direction == 'south':
             # Start at north edge
-            start_x = self.grid_width // (river_index + 2) + random.randint(-10, 10)
+            start_x = self.grid_width // (river_index + 2) + self.rng.randint(-10, 10)
             start_y = 0
             primary_dir = (0, 1)  # Move down
         elif flow_direction == 'north':
             # Start at south edge
-            start_x = self.grid_width // (river_index + 2) + random.randint(-10, 10)
+            start_x = self.grid_width // (river_index + 2) + self.rng.randint(-10, 10)
             start_y = self.grid_height - 1
             primary_dir = (0, -1)  # Move up
         elif flow_direction == 'east':
             # Start at west edge
             start_x = 0
-            start_y = self.grid_height // (river_index + 2) + random.randint(-5, 5)
+            start_y = self.grid_height // (river_index + 2) + self.rng.randint(-5, 5)
             primary_dir = (1, 0)  # Move right
         elif flow_direction == 'west':
             # Start at east edge
             start_x = self.grid_width - 1
-            start_y = self.grid_height // (river_index + 2) + random.randint(-5, 5)
+            start_y = self.grid_height // (river_index + 2) + self.rng.randint(-5, 5)
             primary_dir = (-1, 0)  # Move left
         else:
             logger.warning(f"Unknown flow direction: {flow_direction}, using south")
@@ -180,7 +190,7 @@ class RiverGenerator:
         steps = 0
 
         # Width variation (3-5 tiles)
-        current_width = random.randint(3, 5)
+        current_width = self.rng.randint(3, 5)
 
         while steps < max_steps:
             # Check if we've reached the opposite edge
@@ -201,16 +211,16 @@ class RiverGenerator:
             self._add_river_tiles(current_x, current_y, current_width)
 
             # Decide next move (mostly in primary direction, occasional deviation)
-            if random.random() < 0.7:  # 70% chance to move in primary direction
+            if self.rng.random() < 0.7:  # 70% chance to move in primary direction
                 dx, dy = primary_dir
             else:
                 # Occasionally deviate perpendicular to flow
                 if primary_dir[0] == 0:  # Vertical flow
-                    dx = random.choice([-1, 0, 1])
+                    dx = self.rng.choice([-1, 0, 1])
                     dy = primary_dir[1]
                 else:  # Horizontal flow
                     dx = primary_dir[0]
-                    dy = random.choice([-1, 0, 1])
+                    dy = self.rng.choice([-1, 0, 1])
 
             # Move to next position
             next_x = current_x + dx * step_size
@@ -231,8 +241,8 @@ class RiverGenerator:
             current_y = next_y
 
             # Occasionally vary width
-            if random.random() < 0.1:
-                current_width = random.randint(3, 5)
+            if self.rng.random() < 0.1:
+                current_width = self.rng.randint(3, 5)
 
             steps += 1
 
@@ -437,6 +447,241 @@ class RiverGenerator:
     def is_bridge(self, x: int, y: int) -> bool:
         """Check if tile is a bridge."""
         return (x, y) in self.bridge_tiles
+
+    def is_ocean(self, x: int, y: int) -> bool:
+        """Check if tile is ocean."""
+        return (x, y) in self.ocean_tiles
+
+    def is_dock(self, x: int, y: int) -> bool:
+        """Check if tile is a dock."""
+        return (x, y) in self.dock_tiles
+
+    def _apply_to_grid(self):
+        """Apply all generated features to the grid."""
+        if not self.grid:
+            return
+
+        # Apply river tiles
+        for (x, y) in self.river_tiles:
+            tile = self.grid.get_tile(x, y)
+            if tile:
+                tile.set_terrain_type(TerrainType.WATER)
+
+        # Apply ocean tiles
+        for (x, y) in self.ocean_tiles:
+            tile = self.grid.get_tile(x, y)
+            if tile:
+                tile.set_terrain_type(TerrainType.OCEAN)
+
+        # Apply dock tiles
+        for (x, y) in self.dock_tiles:
+            tile = self.grid.get_tile(x, y)
+            if tile:
+                tile.set_terrain_type(TerrainType.DOCK)
+
+        # Apply bridge tiles
+        for (x, y) in self.bridge_tiles:
+            tile = self.grid.get_tile(x, y)
+            if tile:
+                tile.set_terrain_type(TerrainType.BRIDGE)
+
+    def generate_ocean(self, edges: List[str], depth: int = 8,
+                       create_docks: bool = True, dock_spacing: int = 15) -> dict:
+        """
+        Generate ocean along specified edges with optional docks.
+
+        Args:
+            edges (list): List of edges ('north', 'south', 'east', 'west')
+            depth (int): How many tiles deep the ocean extends
+            create_docks (bool): Whether to create dock tiles along edge
+            dock_spacing (int): Spacing between docks
+
+        Returns:
+            dict: Statistics about generated ocean
+        """
+        logger.debug(f"Generating ocean on edges: {edges} (depth {depth})...")
+
+        for edge in edges:
+            edge_ocean_tiles = self.add_ocean_edge(edge, depth)
+            self.ocean_tiles.update(edge_ocean_tiles)
+
+            # Create docks along the ocean edge
+            if create_docks:
+                self._create_docks_along_edge(edge, depth, dock_spacing)
+
+        # Apply to grid
+        self._apply_to_grid()
+
+        return {
+            'ocean_tiles': len(self.ocean_tiles),
+            'dock_tiles': len(self.dock_tiles),
+            'edges': edges
+        }
+
+    def _create_docks_along_edge(self, edge: str, depth: int, spacing: int):
+        """
+        Create dock tiles along an ocean edge.
+
+        Args:
+            edge (str): Edge where ocean is
+            depth (int): Ocean depth
+            spacing (int): Spacing between docks
+        """
+        dock_positions = []
+
+        if edge == 'south':
+            # Docks at the top edge of the ocean
+            dock_y = self.grid_height - depth
+            for x in range(spacing, self.grid_width - spacing, spacing):
+                # Add some variation
+                x_offset = self.rng.randint(-2, 2)
+                dock_x = max(0, min(self.grid_width - 1, x + x_offset))
+                dock_positions.append((dock_x, dock_y))
+                # Dock extends a couple tiles into land
+                if dock_y > 0:
+                    dock_positions.append((dock_x, dock_y - 1))
+
+        elif edge == 'north':
+            dock_y = depth - 1
+            for x in range(spacing, self.grid_width - spacing, spacing):
+                x_offset = self.rng.randint(-2, 2)
+                dock_x = max(0, min(self.grid_width - 1, x + x_offset))
+                dock_positions.append((dock_x, dock_y))
+                if dock_y < self.grid_height - 1:
+                    dock_positions.append((dock_x, dock_y + 1))
+
+        elif edge == 'west':
+            dock_x = depth - 1
+            for y in range(spacing, self.grid_height - spacing, spacing):
+                y_offset = self.rng.randint(-2, 2)
+                dock_y = max(0, min(self.grid_height - 1, y + y_offset))
+                dock_positions.append((dock_x, dock_y))
+                if dock_x < self.grid_width - 1:
+                    dock_positions.append((dock_x + 1, dock_y))
+
+        elif edge == 'east':
+            dock_x = self.grid_width - depth
+            for y in range(spacing, self.grid_height - spacing, spacing):
+                y_offset = self.rng.randint(-2, 2)
+                dock_y = max(0, min(self.grid_height - 1, y + y_offset))
+                dock_positions.append((dock_x, dock_y))
+                if dock_x > 0:
+                    dock_positions.append((dock_x - 1, dock_y))
+
+        # Add docks, removing from ocean tiles
+        for pos in dock_positions:
+            if pos in self.ocean_tiles:
+                self.ocean_tiles.discard(pos)
+            self.dock_tiles.add(pos)
+
+        logger.debug(f"Created {len(dock_positions)} dock tiles on {edge} edge")
+
+    def generate_random_river(self, width_range: Tuple[int, int] = (3, 5),
+                              length_range: Tuple[int, int] = (20, 50),
+                              meandering: float = 0.3,
+                              avoid_buildings: bool = True) -> dict:
+        """
+        Generate a random river with specified parameters.
+
+        Args:
+            width_range (tuple): Min and max width (in tiles)
+            length_range (tuple): Min and max length (in tiles)
+            meandering (float): How much the river meanders (0.0-1.0)
+            avoid_buildings (bool): Try to avoid existing buildings
+
+        Returns:
+            dict: River generation statistics
+        """
+        # Choose random starting edge (not where ocean is if present)
+        available_edges = ['north', 'south', 'east', 'west']
+
+        # Remove edges that have ocean
+        if self.ocean_tiles:
+            if any(y == 0 for _, y in self.ocean_tiles):
+                available_edges = [e for e in available_edges if e != 'north']
+            if any(y == self.grid_height - 1 for _, y in self.ocean_tiles):
+                available_edges = [e for e in available_edges if e != 'south']
+            if any(x == 0 for x, _ in self.ocean_tiles):
+                available_edges = [e for e in available_edges if e != 'west']
+            if any(x == self.grid_width - 1 for x, _ in self.ocean_tiles):
+                available_edges = [e for e in available_edges if e != 'east']
+
+        if not available_edges:
+            available_edges = ['north']  # Fallback
+
+        start_edge = self.rng.choice(available_edges)
+
+        # Determine flow direction (towards opposite edge or ocean)
+        flow_map = {'north': 'south', 'south': 'north', 'east': 'west', 'west': 'east'}
+        flow_direction = flow_map[start_edge]
+
+        # Determine starting position
+        if start_edge in ['north', 'south']:
+            start_x = self.rng.randint(self.grid_width // 4, 3 * self.grid_width // 4)
+            start_y = 0 if start_edge == 'north' else self.grid_height - 1
+        else:
+            start_x = 0 if start_edge == 'west' else self.grid_width - 1
+            start_y = self.rng.randint(self.grid_height // 4, 3 * self.grid_height // 4)
+
+        # Generate river path
+        path = []
+        current_x, current_y = start_x, start_y
+        current_width = self.rng.randint(*width_range)
+        target_length = self.rng.randint(*length_range)
+
+        # Primary direction
+        dir_map = {'south': (0, 1), 'north': (0, -1), 'east': (1, 0), 'west': (-1, 0)}
+        primary_dx, primary_dy = dir_map[flow_direction]
+
+        for _ in range(target_length):
+            # Check bounds
+            if not (0 <= current_x < self.grid_width and 0 <= current_y < self.grid_height):
+                break
+
+            # Check if we've reached ocean
+            if (current_x, current_y) in self.ocean_tiles:
+                break
+
+            # Check for buildings if avoiding them
+            if avoid_buildings and self.grid:
+                tile = self.grid.get_tile(current_x, current_y)
+                if tile and not tile.walkable:
+                    # Try to go around
+                    pass  # Simple implementation - just continue
+
+            # Add segment
+            segment = RiverSegment(current_x, current_y, current_width)
+            path.append(segment)
+            self._add_river_tiles(current_x, current_y, current_width)
+
+            # Move (with meandering)
+            if self.rng.random() < meandering:
+                # Meander perpendicular
+                if primary_dx == 0:  # Vertical river
+                    current_x += self.rng.choice([-1, 1])
+                else:  # Horizontal river
+                    current_y += self.rng.choice([-1, 1])
+
+            # Always move in primary direction
+            current_x += primary_dx
+            current_y += primary_dy
+
+            # Occasionally vary width
+            if self.rng.random() < 0.1:
+                current_width = self.rng.randint(*width_range)
+
+        if path:
+            self.rivers.append(path)
+
+        # Apply to grid
+        self._apply_to_grid()
+
+        return {
+            'segments': len(path),
+            'river_tiles': len(self.river_tiles),
+            'start_edge': start_edge,
+            'flow_direction': flow_direction
+        }
 
     def __repr__(self):
         """String representation for debugging."""

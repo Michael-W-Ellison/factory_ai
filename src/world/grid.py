@@ -202,12 +202,17 @@ class Grid:
 
         logger.debug("Generating geographic features...")
 
-        # Create river generator
-        self.river_generator = RiverGenerator(
-            self.width_tiles,
-            self.height_tiles,
-            seed=seed
-        )
+        # Create river generator (pass grid object directly)
+        self.river_generator = RiverGenerator(self, seed=seed)
+
+        # Generate ocean edges first if specified
+        if ocean_edges:
+            self.river_generator.generate_ocean(
+                edges=ocean_edges,
+                depth=8,
+                create_docks=True,
+                dock_spacing=15
+            )
 
         # Generate rivers
         river_data = self.river_generator.generate(
@@ -215,29 +220,12 @@ class Grid:
             flow_direction='south'  # Rivers flow from north to south
         )
 
-        # Apply river tiles to grid
-        for (river_x, river_y) in river_data['river_tiles']:
-            tile = self.get_tile(river_x, river_y)
-            if tile:
-                tile.set_terrain_type(TerrainType.WATER)
-
-        # Generate ocean edges if specified
-        ocean_tiles = set()
-        if ocean_edges:
-            for edge in ocean_edges:
-                edge_tiles = self.river_generator.add_ocean_edge(edge, depth=8)
-                ocean_tiles.update(edge_tiles)
-
-            # Apply ocean tiles to grid
-            for (ocean_x, ocean_y) in ocean_tiles:
-                tile = self.get_tile(ocean_x, ocean_y)
-                if tile:
-                    tile.set_terrain_type(TerrainType.OCEAN)
-
         self.has_geographic_features = True
 
         stats = self.river_generator.get_statistics()
-        logger.debug(f"Geographic features generated: Rivers: {stats['num_rivers']}, River tiles: {stats['river_tiles']}, Ocean tiles: {len(ocean_tiles)}")
+        logger.debug(f"Geographic features generated: Rivers: {stats['num_rivers']}, "
+                     f"River tiles: {stats['river_tiles']}, Ocean: {len(self.river_generator.ocean_tiles)}, "
+                     f"Docks: {len(self.river_generator.dock_tiles)}")
 
     def place_bridges_on_roads(self):
         """
