@@ -5,6 +5,9 @@ CollectibleObject - materials that can be collected by robots.
 import pygame
 from src.entities.entity import Entity
 from src.systems.material_inventory import MaterialSource
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class CollectibleObject(Entity):

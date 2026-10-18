@@ -3,6 +3,9 @@ Circuit Board Fabricator - manufactures circuit boards from copper and plastic.
 """
 
 from src.entities.buildings.manufacturing_building import ManufacturingBuilding
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class CircuitBoardFab(ManufacturingBuilding):

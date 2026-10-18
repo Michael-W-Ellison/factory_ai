@@ -9,6 +9,10 @@ import pygame
 import random
 from typing import Dict, Optional
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class CityProp:
     """

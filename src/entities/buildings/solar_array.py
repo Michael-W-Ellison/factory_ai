@@ -4,6 +4,9 @@ Solar Array - clean renewable power generation.
 
 import math
 from src.entities.building import Building
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class SolarArray(Building):

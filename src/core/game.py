@@ -9,6 +9,7 @@ import pygame
 import random
 import config
 from src.core.logger import get_logger
+from src.core.game_config import ENTITY
 from src.world.grid import Grid
 
 logger = get_logger(__name__)
@@ -117,16 +118,16 @@ class Game:
         self.bus_manager.spawn_buses()
 
         # Generate parked vehicles along roads (static decoration)
-        self.traffic_manager.generate_parked_vehicles(count=30)
+        self.traffic_manager.generate_parked_vehicles(count=ENTITY.PARKED_VEHICLE_COUNT)
 
         # Initialize prop system (benches, light poles, trash cans, bicycles)
         self.prop_manager = PropManager(self.grid, self.road_network)
-        self.prop_manager.target_prop_count = 100  # Target number of props
+        self.prop_manager.target_prop_count = ENTITY.TARGET_PROP_COUNT
         self.prop_manager.generate_props()
 
         # Initialize camera system (security cameras for surveillance)
         self.camera_manager = CameraManager(self.grid, self.road_network)
-        self.camera_manager.target_camera_count = 25  # Target number of cameras
+        self.camera_manager.target_camera_count = ENTITY.TARGET_CAMERA_COUNT
         # Note: Police stations will be added in future phase, for now place on roads/buildings
         self.camera_manager.place_cameras()
 

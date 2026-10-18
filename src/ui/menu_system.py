@@ -11,6 +11,10 @@ Handles:
 from enum import Enum
 from typing import Optional, Dict, List, Callable
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class MenuType(Enum):
     """Types of game menus."""

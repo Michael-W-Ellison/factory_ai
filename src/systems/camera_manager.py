@@ -12,6 +12,7 @@ import random
 from typing import List, Optional, Tuple
 
 from src.core.logger import get_logger
+from src.core.game_config import ENTITY, CAMERA
 from src.entities.security_camera import SecurityCamera, CameraStatus
 
 logger = get_logger(__name__)
@@ -38,15 +39,15 @@ class CameraManager:
         # All cameras
         self.cameras: List[SecurityCamera] = []
 
-        # Placement configuration
-        self.target_camera_count = 25  # Target number of cameras
+        # Placement configuration (from centralized config)
+        self.target_camera_count = ENTITY.TARGET_CAMERA_COUNT
         self.police_station_camera_density = 5  # Cameras per police station
         self.main_road_camera_spacing = 50  # Tiles between road cameras
         self.building_camera_chance = 0.05  # 5% of buildings get cameras
 
         # Detection configuration
-        self.suspicion_per_detection = 5  # Suspicion added per detection
-        self.detection_cooldown = 5.0  # Seconds between detections of same robot by same camera
+        self.suspicion_per_detection = CAMERA.SUSPICION_PER_DETECTION
+        self.detection_cooldown = CAMERA.DETECTION_COOLDOWN
 
         # Detection tracking
         self.recent_detections = {}  # {(camera_id, robot_id): timestamp}

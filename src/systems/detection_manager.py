@@ -13,6 +13,10 @@ import pygame
 import math
 from typing import List, Tuple, Optional, Dict
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class DetectionLevel:
     """Detection level enumeration."""

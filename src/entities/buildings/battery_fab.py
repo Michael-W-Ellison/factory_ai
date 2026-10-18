@@ -3,6 +3,9 @@ Battery Fabrication - manufactures batteries from lithium and chemicals.
 """
 
 from src.entities.buildings.manufacturing_building import ManufacturingBuilding
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class BatteryFab(ManufacturingBuilding):
@@ -109,13 +112,8 @@ class BatteryFab(ManufacturingBuilding):
         Args:
             dt (float): Delta time in seconds
         """
+        # Parent class handles recipe checking and material consumption
         super().update(dt)
-
-        # Check if we can start a new manufacturing batch
-        if self.processing_current is None and self.can_start_manufacturing():
-            # Consume recipe materials from queue
-            # This would be implemented more fully in a complete system
-            pass
 
     def __repr__(self):
         """String representation for debugging."""

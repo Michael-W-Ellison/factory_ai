@@ -9,6 +9,10 @@ import pygame
 import random
 from typing import Dict, Optional, Tuple, List
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class BuildingVisuals:
     """Manages visual variations for buildings to create unique appearances."""
@@ -252,9 +256,12 @@ class CityBuilding:
         self.max_occupants = 0
         self.current_occupants = []
 
-    def start_deconstruction(self) -> bool:
+    def start_deconstruction(self, suspicion_manager=None) -> bool:
         """
         Start deconstructing this building.
+
+        Args:
+            suspicion_manager: Optional SuspicionManager for reporting illegal activity
 
         Returns:
             bool: True if deconstruction started
@@ -263,8 +270,14 @@ class CityBuilding:
             return False
 
         if not self.legal_to_deconstruct:
-            # Illegal deconstruction increases suspicion (handled by detection system)
-            pass
+            # Illegal deconstruction increases suspicion
+            if suspicion_manager is not None:
+                suspicion_amount = 15.0 + (self.noise_level * 2.0)
+                suspicion_manager.add_suspicion(
+                    suspicion_amount,
+                    'illegal_deconstruction',
+                    f'Illegal deconstruction of {self.name}'
+                )
 
         self.being_deconstructed = True
         self.deconstruction_progress = 0.0

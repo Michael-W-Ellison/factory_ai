@@ -9,6 +9,10 @@ import pygame
 import math
 from typing import Optional, List, Tuple
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class CameraStatus:
     """Camera status enumeration."""

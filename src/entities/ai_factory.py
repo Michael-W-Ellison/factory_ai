@@ -10,6 +10,10 @@ import math
 from enum import Enum
 from typing import Dict, List, Optional, Tuple
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class AIPersonality(Enum):
     """AI opponent personality types."""

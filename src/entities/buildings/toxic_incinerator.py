@@ -3,6 +3,9 @@ Toxic Incinerator - processes hazardous and toxic waste.
 """
 
 from src.entities.buildings.processing_building import ProcessingBuilding
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class ToxicIncinerator(ProcessingBuilding):

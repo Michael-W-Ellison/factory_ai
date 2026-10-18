@@ -12,6 +12,10 @@ import pygame
 import random
 from typing import Optional
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class PropType:
     """Prop type enumeration."""

@@ -488,6 +488,90 @@ class SaveManager:
         return os.path.join(self.SAVE_DIRECTORY, f"{save_name}.json")
 
     @staticmethod
+    def _serialize_weather_state(game) -> Dict[str, Any]:
+        """
+        Serialize weather manager state.
+
+        Args:
+            game: Game instance
+
+        Returns:
+            Dictionary of weather state
+        """
+        if not hasattr(game, 'weather_manager') or game.weather_manager is None:
+            return {"current": "CLEAR"}
+
+        wm = game.weather_manager
+        state = {
+            "current": wm.current_weather.name if hasattr(wm.current_weather, 'name') else "CLEAR",
+            "weather_duration": getattr(wm, 'weather_duration', 3600),
+            "weather_elapsed": getattr(wm, 'weather_elapsed', 0),
+            "transitioning": getattr(wm, 'transitioning', False),
+            "transition_elapsed": getattr(wm, 'transition_elapsed', 0),
+        }
+
+        # Add next weather if transitioning
+        if wm.transitioning and hasattr(wm, 'next_weather') and wm.next_weather:
+            state["next_weather"] = (wm.next_weather.name
+                                     if hasattr(wm.next_weather, 'name')
+                                     else str(wm.next_weather))
+
+        # Add intensity if available (backward compatibility)
+        if hasattr(wm, 'weather_intensity'):
+            state["intensity"] = wm.weather_intensity
+
+        return state
+
+    @staticmethod
+    def _serialize_building_data(building) -> Dict[str, Any]:
+        """
+        Serialize building-specific data for storage.
+
+        Args:
+            building: Building instance to serialize
+
+        Returns:
+            Dictionary of building-specific data
+        """
+        data = {}
+
+        # Stored materials (Factory, Warehouse, Silo)
+        if hasattr(building, 'stored_materials') and building.stored_materials:
+            data['stored_materials'] = building.stored_materials.copy()
+
+        # Processing queues (processing buildings)
+        if hasattr(building, 'input_queue') and building.input_queue:
+            data['input_queue'] = building.input_queue.copy()
+
+        if hasattr(building, 'output_queue') and building.output_queue:
+            data['output_queue'] = building.output_queue.copy()
+
+        # Current processing state
+        if hasattr(building, 'processing_current') and building.processing_current:
+            data['processing_current'] = building.processing_current
+
+        if hasattr(building, 'processing_time_remaining'):
+            data['processing_time_remaining'] = building.processing_time_remaining
+
+        # Solar array state
+        if hasattr(building, 'current_hour'):
+            data['current_hour'] = building.current_hour
+
+        # Battery bank state
+        if hasattr(building, 'stored_power'):
+            data['stored_power'] = building.stored_power
+
+        # Methane generator fuel
+        if hasattr(building, 'fuel_level'):
+            data['fuel_level'] = building.fuel_level
+
+        # Power generation for power buildings
+        if hasattr(building, 'power_generation'):
+            data['power_generation'] = building.power_generation
+
+        return data
+
+    @staticmethod
     def serialize_game_state(game) -> Dict[str, Any]:
         """
         Serialize the entire game state to a dictionary.
@@ -518,14 +602,19 @@ class SaveManager:
             "buildings": [
                 {
                     "id": building.id,
-                    "type": building.building_type.name,
-                    "x": building.x,
-                    "y": building.y,
+                    "type": (building.building_type.name
+                            if hasattr(building.building_type, 'name')
+                            else str(building.building_type)),
+                    "x": building.grid_x,
+                    "y": building.grid_y,
                     "level": building.level,
                     "powered": building.powered,
-                    "active": building.active,
-                    # Add building-specific data if available
-                    "data": building.to_dict() if hasattr(building, 'to_dict') else {}
+                    "active": getattr(building, 'active', True),
+                    "health": getattr(building, 'health', 100.0),
+                    "construction_progress": getattr(building, 'construction_progress', 100.0),
+                    "under_construction": getattr(building, 'under_construction', False),
+                    # Add building-specific data
+                    "data": SaveManager._serialize_building_data(building)
                 }
                 for building in game.building_manager.buildings.values()
             ],
@@ -537,14 +626,17 @@ class SaveManager:
                     "x": robot.x,
                     "y": robot.y,
                     "speed": robot.speed,
-                    "capacity": robot.capacity,
-                    "battery": robot.battery if hasattr(robot, 'battery') else 100,
+                    "capacity": robot.max_capacity,
+                    "battery": robot.current_power if hasattr(robot, 'current_power') else 100,
                     "inventory": robot.inventory.copy() if hasattr(robot, 'inventory') else {},
                     "state": robot.state.name if hasattr(robot.state, 'name') else str(robot.state),
-                    "target_x": robot.target_x if hasattr(robot, 'target_x') else None,
-                    "target_y": robot.target_y if hasattr(robot, 'target_y') else None
+                    "autonomous": getattr(robot, 'autonomous', True),
+                    "current_health": getattr(robot, 'current_health', 100),
+                    "upgrade_level": getattr(robot, 'upgrade_level', 1),
+                    "target_x": getattr(robot, 'target_x', None),
+                    "target_y": getattr(robot, 'target_y', None)
                 }
-                for robot in game.entity_manager.get_entities_by_type("robot")
+                for robot in game.entity_manager.robots
             ],
 
             # Research
@@ -598,10 +690,7 @@ class SaveManager:
             },
 
             # Weather
-            "weather": {
-                "current": game.weather_manager.current_weather.name if hasattr(game, 'weather_manager') else "CLEAR",
-                "intensity": game.weather_manager.weather_intensity if hasattr(game, 'weather_manager') else 0
-            },
+            "weather": SaveManager._serialize_weather_state(game),
 
             # Material Inventory (if exists)
             "material_inventory": {
@@ -672,6 +761,274 @@ class SaveManager:
         return default.copy() if default else []
 
     @staticmethod
+    def _create_building_from_data(building_data: Dict[str, Any]):
+        """
+        Create a building instance from saved data.
+
+        Args:
+            building_data: Dictionary containing building state
+
+        Returns:
+            Building instance or None if creation failed
+        """
+        building_type = building_data.get('type', '').lower()
+        grid_x = SaveManager._safe_int(building_data.get('x'), 0)
+        grid_y = SaveManager._safe_int(building_data.get('y'), 0)
+
+        # Import building classes
+        from src.entities.buildings.factory import Factory
+        from src.entities.buildings.landfill_gas_extraction import LandfillGasExtraction
+        from src.entities.buildings.paper_recycler import PaperRecycler
+        from src.entities.buildings.plastic_recycler import PlasticRecycler
+        from src.entities.buildings.metal_refinery import MetalRefinery
+        from src.entities.buildings.glassworks import Glassworks
+        from src.entities.buildings.rubber_recycler import RubberRecycler
+        from src.entities.buildings.warehouse import Warehouse
+        from src.entities.buildings.silo import Silo
+        from src.entities.buildings.solar_array import SolarArray
+        from src.entities.buildings.methane_generator import MethaneGenerator
+        from src.entities.buildings.battery_bank import BatteryBank
+        from src.entities.buildings.bio_waste_treatment import BioWasteTreatment
+        from src.entities.buildings.toxic_incinerator import ToxicIncinerator
+        from src.entities.buildings.coal_oven import CoalOven
+        from src.entities.buildings.crude_oil_refinery import CrudeOilRefinery
+        from src.entities.buildings.landfill_gas_plant import LandfillGasPlant
+        from src.entities.buildings.circuit_board_fab import CircuitBoardFab
+        from src.entities.buildings.motor_assembly import MotorAssembly
+        from src.entities.buildings.battery_fab import BatteryFab
+
+        # Map building type strings to classes
+        building_classes = {
+            'factory': Factory,
+            'landfill_gas_extraction': LandfillGasExtraction,
+            'paper_recycler': PaperRecycler,
+            'plastic_recycler': PlasticRecycler,
+            'metal_refinery': MetalRefinery,
+            'glassworks': Glassworks,
+            'rubber_recycler': RubberRecycler,
+            'warehouse': Warehouse,
+            'silo': Silo,
+            'solar_array': SolarArray,
+            'methane_generator': MethaneGenerator,
+            'battery_bank': BatteryBank,
+            'bio_waste_treatment': BioWasteTreatment,
+            'bio_waste_treatment_tank': BioWasteTreatment,
+            'toxic_incinerator': ToxicIncinerator,
+            'coal_oven': CoalOven,
+            'crude_oil_refinery': CrudeOilRefinery,
+            'landfill_gas_plant': LandfillGasPlant,
+            'circuit_board_fab': CircuitBoardFab,
+            'motor_assembly': MotorAssembly,
+            'battery_fab': BatteryFab,
+        }
+
+        # Get building class
+        building_class = building_classes.get(building_type)
+        if building_class is None:
+            logger.warning(f"Unknown building type: {building_type}")
+            return None
+
+        try:
+            # Create building instance
+            building = building_class(grid_x, grid_y)
+
+            # Restore common building state
+            building.level = SaveManager._safe_int(building_data.get('level'), 1)
+            building.powered = SaveManager._safe_bool(building_data.get('powered'), True)
+
+            # Restore active state (some buildings may not have this attribute)
+            if hasattr(building, 'active'):
+                building.active = SaveManager._safe_bool(building_data.get('active'), True)
+
+            # Restore health
+            if hasattr(building, 'health'):
+                building.health = SaveManager._safe_float(building_data.get('health'), 100.0)
+
+            # Restore construction state
+            if hasattr(building, 'construction_progress'):
+                building.construction_progress = SaveManager._safe_float(
+                    building_data.get('construction_progress'), 100.0
+                )
+
+            if hasattr(building, 'under_construction'):
+                building.under_construction = SaveManager._safe_bool(
+                    building_data.get('under_construction'), False
+                )
+
+            # Restore building ID if provided
+            if 'id' in building_data:
+                building.id = building_data['id']
+
+            # Restore additional building-specific data
+            extra_data = SaveManager._safe_dict(building_data.get('data'))
+            if extra_data:
+                SaveManager._restore_building_extra_data(building, extra_data)
+
+            # Apply level bonuses after restoring level
+            if hasattr(building, '_apply_level_bonuses'):
+                building._apply_level_bonuses()
+
+            logger.debug(
+                f"Restored building {building.name} at ({grid_x}, {grid_y}), level {building.level}"
+            )
+            return building
+
+        except Exception as e:
+            logger.error(f"Failed to create building {building_type}: {e}")
+            return None
+
+    @staticmethod
+    def _restore_building_extra_data(building, data: Dict[str, Any]):
+        """
+        Restore building-specific extra data.
+
+        Args:
+            building: Building instance to restore data to
+            data: Dictionary of extra building data
+        """
+        # Restore stored materials (for Factory, Warehouse, Silo)
+        if 'stored_materials' in data and hasattr(building, 'stored_materials'):
+            stored = SaveManager._safe_dict(data.get('stored_materials'))
+            building.stored_materials = {
+                str(k): SaveManager._safe_float(v, 0) for k, v in stored.items()
+            }
+
+        # Restore input/output queues (for processing buildings)
+        if 'input_queue' in data and hasattr(building, 'input_queue'):
+            building.input_queue = SaveManager._safe_list(data.get('input_queue'))
+
+        if 'output_queue' in data and hasattr(building, 'output_queue'):
+            building.output_queue = SaveManager._safe_list(data.get('output_queue'))
+
+        # Restore processing state
+        if 'processing_current' in data and hasattr(building, 'processing_current'):
+            building.processing_current = data.get('processing_current')
+
+        if 'processing_time_remaining' in data and hasattr(building, 'processing_time_remaining'):
+            building.processing_time_remaining = SaveManager._safe_float(
+                data.get('processing_time_remaining'), 0
+            )
+
+        # Restore construction state
+        if 'construction_progress' in data and hasattr(building, 'construction_progress'):
+            building.construction_progress = SaveManager._safe_float(
+                data.get('construction_progress'), 100.0
+            )
+
+        if 'under_construction' in data and hasattr(building, 'under_construction'):
+            building.under_construction = SaveManager._safe_bool(
+                data.get('under_construction'), False
+            )
+
+        # Restore health
+        if 'health' in data and hasattr(building, 'health'):
+            building.health = SaveManager._safe_float(data.get('health'), 100.0)
+
+        # Restore power generation/consumption overrides
+        if 'power_generation' in data and hasattr(building, 'power_generation'):
+            building.power_generation = SaveManager._safe_float(
+                data.get('power_generation'), building.power_generation
+            )
+
+        # Restore solar array time state
+        if 'current_hour' in data and hasattr(building, 'current_hour'):
+            building.current_hour = SaveManager._safe_float(data.get('current_hour'), 12.0)
+
+        # Restore battery bank state
+        if 'stored_power' in data and hasattr(building, 'stored_power'):
+            building.stored_power = SaveManager._safe_float(data.get('stored_power'), 0)
+
+        # Restore methane generator fuel
+        if 'fuel_level' in data and hasattr(building, 'fuel_level'):
+            building.fuel_level = SaveManager._safe_float(data.get('fuel_level'), 0)
+
+    @staticmethod
+    def _create_robot_from_data(entity_manager, robot_data: Dict[str, Any]):
+        """
+        Create a robot instance from saved data.
+
+        Args:
+            entity_manager: EntityManager to create robot through
+            robot_data: Dictionary containing robot state
+
+        Returns:
+            Robot instance or None if creation failed
+        """
+        from src.core.constants import RobotState
+
+        x = SaveManager._safe_float(robot_data.get('x'), 0)
+        y = SaveManager._safe_float(robot_data.get('y'), 0)
+        autonomous = SaveManager._safe_bool(robot_data.get('autonomous'), True)
+
+        try:
+            # Create robot through entity manager
+            robot = entity_manager.create_robot(x, y, autonomous=autonomous)
+
+            # Restore robot ID if provided
+            if 'id' in robot_data:
+                old_id = robot.id
+                robot.id = robot_data['id']
+                # Update entity manager's reference
+                if old_id in entity_manager.entities:
+                    del entity_manager.entities[old_id]
+                entity_manager.entities[robot.id] = robot
+
+            # Restore speed
+            robot.speed = SaveManager._safe_float(robot_data.get('speed'), robot.base_speed)
+
+            # Restore capacity
+            robot.max_capacity = SaveManager._safe_float(
+                robot_data.get('capacity'), robot.base_capacity
+            )
+
+            # Restore battery/power
+            if 'battery' in robot_data:
+                robot.current_power = SaveManager._safe_float(
+                    robot_data.get('battery'), robot.power_capacity
+                )
+
+            # Restore health
+            if 'current_health' in robot_data:
+                robot.current_health = SaveManager._safe_float(
+                    robot_data.get('current_health'), robot.max_health
+                )
+
+            # Restore upgrade level
+            if 'upgrade_level' in robot_data:
+                robot.upgrade_level = SaveManager._safe_int(
+                    robot_data.get('upgrade_level'), 1
+                )
+
+            # Restore inventory
+            inventory = SaveManager._safe_dict(robot_data.get('inventory'))
+            for material_type, quantity in inventory.items():
+                robot.add_material(material_type, SaveManager._safe_float(quantity, 0))
+
+            # Restore state
+            state_str = robot_data.get('state', 'IDLE')
+            try:
+                if hasattr(RobotState, state_str):
+                    robot.state = getattr(RobotState, state_str)
+                else:
+                    robot.state = RobotState.IDLE
+            except (ValueError, AttributeError):
+                robot.state = RobotState.IDLE
+
+            # Restore target position (for path continuation)
+            target_x = robot_data.get('target_x')
+            target_y = robot_data.get('target_y')
+            if target_x is not None and target_y is not None:
+                robot.target_x = SaveManager._safe_float(target_x)
+                robot.target_y = SaveManager._safe_float(target_y)
+
+            logger.debug(f"Restored robot at ({x:.0f}, {y:.0f}), level {robot.upgrade_level}")
+            return robot
+
+        except Exception as e:
+            logger.error(f"Failed to create robot: {e}")
+            return None
+
+    @staticmethod
     def deserialize_game_state(game, game_state: Dict[str, Any]) -> bool:
         """
         Restore the game state from a dictionary.
@@ -720,23 +1077,46 @@ class SaveManager:
 
             # Restore buildings with validation
             buildings_data = SaveManager._safe_list(game_state.get("buildings"))
+            restored_building_count = 0
             for building_data in buildings_data:
                 if not isinstance(building_data, dict):
                     logger.warning(f"Skipping invalid building data: {type(building_data)}")
                     continue
-                # This would need to call building_manager.create_building() with proper parameters
-                # Implementation depends on your building creation system
-                pass
+
+                # Create building from saved data
+                building = SaveManager._create_building_from_data(building_data)
+                if building is None:
+                    continue
+
+                # Place building through building manager
+                if game.building_manager.place_building(building):
+                    restored_building_count += 1
+                else:
+                    logger.warning(
+                        f"Failed to place building {building.name} at "
+                        f"({building.grid_x}, {building.grid_y})"
+                    )
+
+            logger.info(f"Restored {restored_building_count} buildings")
 
             # Restore robots with validation
             robots_data = SaveManager._safe_list(game_state.get("robots"))
+            restored_robot_count = 0
             for robot_data in robots_data:
                 if not isinstance(robot_data, dict):
                     logger.warning(f"Skipping invalid robot data: {type(robot_data)}")
                     continue
-                # This would need to call entity_manager.create_robot() with proper parameters
-                # Implementation depends on your robot creation system
-                pass
+
+                # Create robot from saved data
+                robot = SaveManager._create_robot_from_data(game.entity_manager, robot_data)
+                if robot is not None:
+                    restored_robot_count += 1
+
+            # Apply research effects to restored robots
+            if game.research_manager:
+                game.entity_manager.apply_research_effects_to_robots(game.research_manager)
+
+            logger.info(f"Restored {restored_robot_count} robots")
 
             # Restore research with type validation
             research_data = SaveManager._safe_dict(game_state.get("research"))
@@ -766,13 +1146,46 @@ class SaveManager:
                 )
 
             # Restore cameras with validation
-            if hasattr(game, 'camera_manager'):
+            if hasattr(game, 'camera_manager') and game.camera_manager is not None:
                 cameras_data = SaveManager._safe_list(game_state.get("cameras"))
+                restored_camera_count = 0
+
+                # Build a lookup of saved camera data by ID
+                saved_cameras_by_id = {}
                 for camera_data in cameras_data:
-                    if not isinstance(camera_data, dict):
+                    if isinstance(camera_data, dict) and 'id' in camera_data:
+                        saved_cameras_by_id[camera_data['id']] = camera_data
+
+                # Restore camera states for existing cameras
+                for camera in game.camera_manager.cameras:
+                    camera_data = saved_cameras_by_id.get(camera.id)
+                    if camera_data is None:
                         continue
-                    # Restore camera states
-                    pass
+
+                    # Restore camera state
+                    from src.entities.security_camera import CameraStatus
+
+                    # Restore active/hacked status
+                    is_active = SaveManager._safe_bool(camera_data.get('active'), True)
+                    is_hacked = SaveManager._safe_bool(camera_data.get('hacked'), False)
+
+                    if is_hacked:
+                        camera.status = CameraStatus.DISABLED
+                        camera.disabled_timer = camera.disabled_duration
+                    elif not is_active:
+                        camera.status = CameraStatus.BROKEN
+                    else:
+                        camera.status = CameraStatus.ACTIVE
+
+                    # Restore angle if provided
+                    if 'angle' in camera_data:
+                        camera.facing_angle = SaveManager._safe_float(
+                            camera_data.get('angle'), camera.facing_angle
+                        )
+
+                    restored_camera_count += 1
+
+                logger.info(f"Restored state for {restored_camera_count} cameras")
 
             # Restore inspection with validation
             if hasattr(game, 'inspection_manager'):
@@ -795,10 +1208,58 @@ class SaveManager:
                 )
 
             # Restore weather with validation
-            if hasattr(game, 'weather_manager'):
+            if hasattr(game, 'weather_manager') and game.weather_manager is not None:
                 weather_data = SaveManager._safe_dict(game_state.get("weather"))
-                # This would need to set weather state properly
-                pass
+
+                if weather_data:
+                    from src.systems.weather_manager import WeatherType
+
+                    # Restore current weather type
+                    weather_str = weather_data.get('current', 'CLEAR')
+                    try:
+                        if hasattr(WeatherType, weather_str):
+                            game.weather_manager.current_weather = getattr(WeatherType, weather_str)
+                        else:
+                            game.weather_manager.current_weather = WeatherType.CLEAR
+                    except (ValueError, AttributeError):
+                        game.weather_manager.current_weather = WeatherType.CLEAR
+
+                    # Restore weather intensity if saved (for backward compatibility)
+                    if 'intensity' in weather_data:
+                        intensity = SaveManager._safe_float(weather_data.get('intensity'), 0)
+                        if hasattr(game.weather_manager, 'weather_intensity'):
+                            game.weather_manager.weather_intensity = intensity
+
+                    # Restore transition state if saved
+                    if 'transitioning' in weather_data:
+                        game.weather_manager.transitioning = SaveManager._safe_bool(
+                            weather_data.get('transitioning'), False
+                        )
+
+                    if 'transition_elapsed' in weather_data:
+                        game.weather_manager.transition_elapsed = SaveManager._safe_float(
+                            weather_data.get('transition_elapsed'), 0
+                        )
+
+                    if 'next_weather' in weather_data:
+                        next_str = weather_data.get('next_weather')
+                        if next_str and hasattr(WeatherType, next_str):
+                            game.weather_manager.next_weather = getattr(WeatherType, next_str)
+
+                    # Restore duration state
+                    if 'weather_duration' in weather_data:
+                        game.weather_manager.weather_duration = SaveManager._safe_float(
+                            weather_data.get('weather_duration'), 3600
+                        )
+
+                    if 'weather_elapsed' in weather_data:
+                        game.weather_manager.weather_elapsed = SaveManager._safe_float(
+                            weather_data.get('weather_elapsed'), 0
+                        )
+
+                    logger.info(
+                        f"Restored weather: {game.weather_manager.current_weather.value}"
+                    )
 
             # Restore statistics with validation
             if hasattr(game, 'stats'):

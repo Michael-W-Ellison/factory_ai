@@ -3,6 +3,9 @@ Paper Recycler - processes paper and cardboard materials.
 """
 
 from src.entities.buildings.processing_building import ProcessingBuilding
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class PaperRecycler(ProcessingBuilding):

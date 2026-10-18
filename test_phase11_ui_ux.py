@@ -293,8 +293,9 @@ def test_settings_save_load():
     import tempfile
     import os
 
-    # Create temp file
-    temp_file = tempfile.mktemp(suffix='.json')
+    # Create temp file (using mkstemp for security - mktemp is deprecated)
+    fd, temp_file = tempfile.mkstemp(suffix='.json')
+    os.close(fd)
 
     try:
         # Create settings and modify

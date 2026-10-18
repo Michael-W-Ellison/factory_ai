@@ -3,6 +3,9 @@ Warehouse - general purpose storage building.
 """
 
 from src.entities.building import Building
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class Warehouse(Building):

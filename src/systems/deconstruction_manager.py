@@ -56,6 +56,7 @@ class DeconstructionJob:
     is_illegal_source: bool = False  # If true, materials will be marked illegal
 
     def __post_init__(self):
+        """Initialize default values for mutable fields."""
         if self.materials_to_recover is None:
             self.materials_to_recover = {}
 

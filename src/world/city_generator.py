@@ -360,10 +360,81 @@ class CityGenerator:
         self.buildings.append(building)
 
     def _place_park_features(self, block: CityBlock):
-        """Place park features (trees, benches, etc.)."""
-        # Parks have minimal structures
-        # Could add decorative elements in the future
-        pass
+        """Place decorative features in park blocks."""
+        import random
+
+        rng = random.Random(block.x * 10000 + block.y)
+        tile_size = self.grid.tile_size
+
+        # Calculate park area (within block boundaries)
+        park_left = block.x * tile_size + tile_size
+        park_top = block.y * tile_size + tile_size
+        park_right = (block.x + block.width) * tile_size - tile_size
+        park_bottom = (block.y + block.height) * tile_size - tile_size
+
+        park_width = park_right - park_left
+        park_height = park_bottom - park_top
+
+        if park_width <= 0 or park_height <= 0:
+            return
+
+        # Place trees at regular intervals
+        tree_spacing = tile_size * 2
+        for tx in range(int(park_left), int(park_right), tree_spacing):
+            for ty in range(int(park_top), int(park_bottom), tree_spacing):
+                # Skip some positions for variety
+                if rng.random() < 0.3:
+                    continue
+
+                # Small random offset
+                offset_x = rng.randint(-8, 8)
+                offset_y = rng.randint(-8, 8)
+
+                tree = {
+                    'type': 'tree',
+                    'x': tx + offset_x,
+                    'y': ty + offset_y,
+                    'size': rng.choice(['small', 'medium', 'large']),
+                    'variant': rng.randint(0, 2)
+                }
+                block.props.append(tree)
+
+        # Place benches along paths
+        num_benches = rng.randint(2, 4)
+        for _ in range(num_benches):
+            bench_x = rng.randint(int(park_left) + 20, int(park_right) - 20)
+            bench_y = rng.randint(int(park_top) + 20, int(park_bottom) - 20)
+
+            bench = {
+                'type': 'bench',
+                'x': bench_x,
+                'y': bench_y,
+                'facing': rng.choice(['north', 'south', 'east', 'west'])
+            }
+            block.props.append(bench)
+
+        # Place fountain at center of larger parks
+        if park_width >= tile_size * 4 and park_height >= tile_size * 4:
+            fountain = {
+                'type': 'fountain',
+                'x': park_left + park_width // 2,
+                'y': park_top + park_height // 2,
+                'size': 'large' if park_width >= tile_size * 6 else 'small'
+            }
+            block.props.append(fountain)
+
+        # Place lamp posts for lighting
+        num_lamps = rng.randint(2, 4)
+        for _ in range(num_lamps):
+            lamp_x = rng.randint(int(park_left) + 10, int(park_right) - 10)
+            lamp_y = rng.randint(int(park_top) + 10, int(park_bottom) - 10)
+
+            lamp = {
+                'type': 'lamp_post',
+                'x': lamp_x,
+                'y': lamp_y
+            }
+            block.props.append(lamp)
 
     def _get_statistics(self) -> Dict:
         """Get statistics about the generated city."""

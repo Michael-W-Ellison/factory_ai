@@ -10,6 +10,9 @@ import random
 import math
 from typing import List, Tuple
 from src.entities.npc import NPC, Activity
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class PoliceBehavior:

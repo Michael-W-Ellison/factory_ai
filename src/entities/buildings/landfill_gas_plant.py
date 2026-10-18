@@ -3,6 +3,9 @@ Landfill Gas Plant - converts bio-slop and organic waste into methane.
 """
 
 from src.entities.buildings.processing_building import ProcessingBuilding
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class LandfillGasPlant(ProcessingBuilding):

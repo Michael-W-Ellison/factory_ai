@@ -10,6 +10,10 @@ import random
 import math
 from typing import Tuple, Optional, Dict
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class Activity:
     """NPC activity enumeration."""

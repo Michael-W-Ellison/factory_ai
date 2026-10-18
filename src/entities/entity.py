@@ -4,6 +4,10 @@ Base Entity class - all game objects inherit from this.
 
 import pygame
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class Entity:
     """

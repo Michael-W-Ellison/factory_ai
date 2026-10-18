@@ -3,6 +3,9 @@ Battery Bank - stores electrical power for later use.
 """
 
 from src.entities.building import Building
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class BatteryBank(Building):
