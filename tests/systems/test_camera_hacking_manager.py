@@ -428,6 +428,8 @@ class TestSecurityUpgrade:
             for i in range(11):
                 camera = MockSecurityCamera(world_x=50 + i * 25, world_y=100)
                 mock_camera_manager.cameras.append(camera)
+                # Set hack_target before calling _complete_hack
+                chm.hack_target = camera
                 chm._complete_hack(game_time=float(i))
 
             assert chm.security_upgrade_triggered is True

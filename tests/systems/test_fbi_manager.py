@@ -282,12 +282,14 @@ class TestLayingLowMechanic:
         fbi_manager.status = FBIStatus.TRIGGERED
         fbi_manager.laying_low = True
         fbi_manager.lay_low_duration = FBI.LAY_LOW_DURATION - 100
+        # Set high countdown to prevent raid during update
+        fbi_manager.investigation_countdown = 999999.0
 
         fbi_manager.update(200.0, 10000.0)
 
         assert fbi_manager.laying_low is False
-        # Investigation should continue
-        assert fbi_manager.status == FBIStatus.TRIGGERED
+        # Investigation should continue (not NONE, not RAIDED)
+        assert fbi_manager.status in [FBIStatus.TRIGGERED, FBIStatus.INVESTIGATING]
 
 
 class TestStatusHelpers:

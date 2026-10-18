@@ -97,13 +97,14 @@ class MockRobot:
 @pytest.fixture
 def mock_grid():
     """Provide a mock grid with some roads."""
+    from src.world.tile import TileType
     grid = MockGrid(width_tiles=30, height_tiles=30, tile_size=32)
     # Add a horizontal road
     for x in range(30):
-        grid.set_tile(x, 15, MockTileType.ROAD_DIRT)
+        grid.set_tile(x, 15, TileType.ROAD_DIRT)
     # Add a vertical road
     for y in range(30):
-        grid.set_tile(15, y, MockTileType.ROAD_TAR)
+        grid.set_tile(15, y, TileType.ROAD_TAR)
     return grid
 
 
