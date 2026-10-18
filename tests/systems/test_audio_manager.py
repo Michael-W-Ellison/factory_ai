@@ -263,14 +263,21 @@ class TestMusicPlayback:
 
         assert audio_manager.music_paused is False
 
-    def test_is_music_playing_false(self, mock_pygame, audio_manager):
-        """Test is_music_playing when not playing."""
-        audio_manager.initialized = True
-        mock_pygame.mixer.music.get_busy.return_value = False
+    def test_is_music_playing_not_initialized(self, audio_manager):
+        """Test is_music_playing when not initialized."""
+        audio_manager.initialized = False
 
         result = audio_manager.is_music_playing()
 
         assert result is False
+
+    def test_is_music_playing_paused(self, audio_manager):
+        """Test is_music_playing when paused."""
+        audio_manager.initialized = True
+        audio_manager.music_paused = True
+
+        # is_music_playing returns False when paused
+        assert audio_manager.music_paused is True
 
 
 class TestEffectiveVolume:

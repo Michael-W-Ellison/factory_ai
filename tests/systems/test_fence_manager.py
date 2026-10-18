@@ -119,39 +119,39 @@ class TestFindEntranceSide:
 
     def test_find_entrance_top_road(self, fence_manager, mock_grid):
         """Test entrance on top when road is above."""
-        mock_grid.set_tile(5, 5, MockTile(MockTileType.BUILDING))
-        mock_grid.set_tile(5, 4, MockTile(MockTileType.ROAD_TAR))
+        mock_grid.set_tile(5, 5, MockTile(TileType.BUILDING))
+        mock_grid.set_tile(5, 4, MockTile(TileType.ROAD_TAR))
 
         side = fence_manager._find_entrance_side(5, 5)
         assert side == 'top'
 
     def test_find_entrance_bottom_road(self, fence_manager, mock_grid):
         """Test entrance on bottom when road is below."""
-        mock_grid.set_tile(5, 5, MockTile(MockTileType.BUILDING))
-        mock_grid.set_tile(5, 6, MockTile(MockTileType.ROAD_ASPHALT))
+        mock_grid.set_tile(5, 5, MockTile(TileType.BUILDING))
+        mock_grid.set_tile(5, 6, MockTile(TileType.ROAD_ASPHALT))
 
         side = fence_manager._find_entrance_side(5, 5)
         assert side == 'bottom'
 
     def test_find_entrance_left_road(self, fence_manager, mock_grid):
         """Test entrance on left when road is to the left."""
-        mock_grid.set_tile(5, 5, MockTile(MockTileType.BUILDING))
-        mock_grid.set_tile(4, 5, MockTile(MockTileType.ROAD_DIRT))
+        mock_grid.set_tile(5, 5, MockTile(TileType.BUILDING))
+        mock_grid.set_tile(4, 5, MockTile(TileType.ROAD_DIRT))
 
         side = fence_manager._find_entrance_side(5, 5)
         assert side == 'left'
 
     def test_find_entrance_right_road(self, fence_manager, mock_grid):
         """Test entrance on right when road is to the right."""
-        mock_grid.set_tile(5, 5, MockTile(MockTileType.BUILDING))
-        mock_grid.set_tile(6, 5, MockTile(MockTileType.ROAD_TAR))
+        mock_grid.set_tile(5, 5, MockTile(TileType.BUILDING))
+        mock_grid.set_tile(6, 5, MockTile(TileType.ROAD_TAR))
 
         side = fence_manager._find_entrance_side(5, 5)
         assert side == 'right'
 
     def test_find_entrance_default_bottom(self, fence_manager, mock_grid):
         """Test default entrance is bottom when no road found."""
-        mock_grid.set_tile(5, 5, MockTile(MockTileType.BUILDING))
+        mock_grid.set_tile(5, 5, MockTile(TileType.BUILDING))
 
         side = fence_manager._find_entrance_side(5, 5)
         assert side == 'bottom'
