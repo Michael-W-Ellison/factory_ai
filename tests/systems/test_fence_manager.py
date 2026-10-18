@@ -93,8 +93,8 @@ class TestFindBuildings:
 
     def test_find_buildings_with_buildings(self, fence_manager, mock_grid):
         """Test finding buildings when buildings exist."""
-        mock_grid.set_tile(5, 5, MockTile(MockTileType.BUILDING))
-        mock_grid.set_tile(10, 10, MockTile(MockTileType.BUILDING))
+        mock_grid.set_tile(5, 5, MockTile(TileType.BUILDING))
+        mock_grid.set_tile(10, 10, MockTile(TileType.BUILDING))
 
         buildings = fence_manager._find_buildings()
 
@@ -104,9 +104,9 @@ class TestFindBuildings:
 
     def test_find_buildings_ignores_other_tiles(self, fence_manager, mock_grid):
         """Test that only buildings are found."""
-        mock_grid.set_tile(5, 5, MockTile(MockTileType.BUILDING))
-        mock_grid.set_tile(6, 6, MockTile(MockTileType.GRASS))
-        mock_grid.set_tile(7, 7, MockTile(MockTileType.ROAD_TAR))
+        mock_grid.set_tile(5, 5, MockTile(TileType.BUILDING))
+        mock_grid.set_tile(6, 6, MockTile(TileType.GRASS))
+        mock_grid.set_tile(7, 7, MockTile(TileType.ROAD_TAR))
 
         buildings = fence_manager._find_buildings()
 
