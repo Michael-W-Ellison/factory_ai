@@ -287,7 +287,9 @@ class TestPriceFluctuations:
             base_value = manager.base_material_values[material]
             min_allowed = base_value * (1 - manager._price_fluctuation_range)
             max_allowed = base_value * (1 + manager._price_fluctuation_range)
-            assert min_allowed <= current_value <= max_allowed
+            # Use small tolerance for floating point comparison
+            assert current_value >= min_allowed - 0.001
+            assert current_value <= max_allowed + 0.001
 
 
 class TestStorageDecay:

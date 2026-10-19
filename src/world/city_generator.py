@@ -3,17 +3,19 @@ CityGenerator - Procedurally generates city layouts with buildings, roads, and z
 
 Handles:
 - Grid-based city layout (10x10 blocks)
-- Road placement
+- Road placement (terrain-aware)
 - Zone generation (residential, commercial, industrial, police)
-- Building placement with varying density
+- Building placement with varying density (terrain-aware)
 - Parks and public areas
+- Avoids water, ocean, and other impassable terrain
 """
 
 import random
 from enum import Enum
-from typing import List, Tuple, Dict, Optional
+from typing import List, Tuple, Dict, Optional, Set
 
 from src.core.logger import get_logger
+from src.world.tile import TerrainType
 
 logger = get_logger(__name__)
 
@@ -32,7 +34,7 @@ class ZoneType(Enum):
 class CityBlock:
     """Represents a 10x10 city block."""
 
-    def __init__(self, x: int, y: int, zone_type: ZoneType):
+    def __init__(self, x: int, y: int, zone_type: ZoneType, width: int = 10, height: int = 10):
         """
         Initialize a city block.
 
@@ -40,11 +42,16 @@ class CityBlock:
             x (int): Block X position (in blocks, not tiles)
             y (int): Block Y position (in blocks, not tiles)
             zone_type (ZoneType): Type of zone for this block
+            width (int): Block width in tiles (default 10)
+            height (int): Block height in tiles (default 10)
         """
         self.x = x
         self.y = y
         self.zone_type = zone_type
+        self.width = width
+        self.height = height
         self.buildings = []  # List of buildings in this block
+        self.props = []  # List of props (trees, benches, etc.) in this block
         self.density = 0.0  # 0.0-1.0, how full the block is
 
 
@@ -53,9 +60,10 @@ class CityGenerator:
     Generates procedural city layouts.
 
     Creates a grid-based city with roads, zones, and buildings.
+    Terrain-aware: avoids placing structures on water/ocean.
     """
 
-    def __init__(self, world_width: int, world_height: int, tile_size: int):
+    def __init__(self, world_width: int, world_height: int, tile_size: int, grid=None):
         """
         Initialize the city generator.
 
@@ -63,10 +71,12 @@ class CityGenerator:
             world_width (int): World width in pixels
             world_height (int): World height in pixels
             tile_size (int): Size of each tile in pixels
+            grid: Optional grid reference for terrain checking
         """
         self.world_width = world_width
         self.world_height = world_height
         self.tile_size = tile_size
+        self.grid = grid  # Reference to world grid for terrain checks
 
         # Calculate grid dimensions in tiles
         self.grid_width = world_width // tile_size
@@ -86,14 +96,21 @@ class CityGenerator:
         self.buildings = []
 
         # Road tiles (grid coordinates)
-        self.road_tiles = set()
+        self.road_tiles: Set[Tuple[int, int]] = set()
+
+        # Water tiles to avoid (cached for performance)
+        self._water_tiles: Set[Tuple[int, int]] = set()
 
         # City center (for police station placement)
         self.center_x = self.blocks_wide // 2
         self.center_y = self.blocks_high // 2
 
+        # Cache water tiles if grid is available
+        if self.grid:
+            self._cache_water_tiles()
+
         logger.debug(f"CityGenerator initialized: {self.blocks_wide}x{self.blocks_high} blocks "
-              f"({self.grid_width}x{self.grid_height} tiles)")
+              f"({self.grid_width}x{self.grid_height} tiles), water tiles: {len(self._water_tiles)}")
 
     def generate(self, seed: Optional[int] = None) -> Dict:
         """
@@ -134,40 +151,138 @@ class CityGenerator:
             'stats': stats
         }
 
+    def _cache_water_tiles(self):
+        """Cache all water/ocean tiles for fast lookup."""
+        self._water_tiles = set()
+
+        if not self.grid:
+            return
+
+        for y in range(self.grid_height):
+            for x in range(self.grid_width):
+                tile = self.grid.get_tile(x, y)
+                if tile and tile.terrain_type in [TerrainType.WATER, TerrainType.OCEAN]:
+                    self._water_tiles.add((x, y))
+
+        logger.debug(f"Cached {len(self._water_tiles)} water tiles for terrain avoidance")
+
+    def _is_water(self, x: int, y: int) -> bool:
+        """
+        Check if a tile is water/ocean.
+
+        Args:
+            x (int): Grid X coordinate
+            y (int): Grid Y coordinate
+
+        Returns:
+            bool: True if tile is water/ocean
+        """
+        return (x, y) in self._water_tiles
+
+    def _is_area_clear(self, x: int, y: int, width: int, height: int) -> bool:
+        """
+        Check if an area is clear of water.
+
+        Args:
+            x (int): Starting X coordinate
+            y (int): Starting Y coordinate
+            width (int): Width in tiles
+            height (int): Height in tiles
+
+        Returns:
+            bool: True if area is clear of water
+        """
+        for dy in range(height):
+            for dx in range(width):
+                if self._is_water(x + dx, y + dy):
+                    return False
+        return True
+
+    def _is_block_flooded(self, block_x: int, block_y: int, threshold: float = 0.5) -> bool:
+        """
+        Check if a block is mostly flooded (more than threshold % water).
+
+        Args:
+            block_x (int): Block X coordinate
+            block_y (int): Block Y coordinate
+            threshold (float): Percentage threshold (0.0-1.0)
+
+        Returns:
+            bool: True if block is flooded beyond threshold
+        """
+        start_x = block_x * self.block_size
+        start_y = block_y * self.block_size
+
+        water_count = 0
+        total_tiles = self.block_size * self.block_size
+
+        for dy in range(self.block_size):
+            for dx in range(self.block_size):
+                if self._is_water(start_x + dx, start_y + dy):
+                    water_count += 1
+
+        return (water_count / total_tiles) > threshold
+
     def _initialize_blocks(self):
         """Initialize the city blocks grid."""
         self.blocks = []
         for by in range(self.blocks_high):
             row = []
             for bx in range(self.blocks_wide):
-                # Default to empty
-                block = CityBlock(bx, by, ZoneType.EMPTY)
+                # Default to empty, with standard block dimensions
+                block = CityBlock(bx, by, ZoneType.EMPTY, self.block_size, self.block_size)
                 row.append(block)
             self.blocks.append(row)
 
     def _place_roads(self):
-        """Place roads in a grid pattern (every 10 tiles)."""
+        """Place roads in a grid pattern (every 10 tiles), avoiding water."""
         # Horizontal roads (every block_size tiles)
         for by in range(self.blocks_high + 1):
             road_y = by * self.block_size
             if road_y < self.grid_height:
                 for x in range(self.grid_width):
-                    self.road_tiles.add((x, road_y))
+                    # Skip water tiles
+                    if not self._is_water(x, road_y):
+                        self.road_tiles.add((x, road_y))
 
         # Vertical roads (every block_size tiles)
         for bx in range(self.blocks_wide + 1):
             road_x = bx * self.block_size
             if road_x < self.grid_width:
                 for y in range(self.grid_height):
-                    self.road_tiles.add((road_x, y))
+                    # Skip water tiles
+                    if not self._is_water(road_x, y):
+                        self.road_tiles.add((road_x, y))
 
     def _assign_zones(self):
-        """Assign zone types to blocks."""
-        # Center area: police station
+        """Assign zone types to blocks, avoiding flooded areas."""
+        # Center area: police station (find a dry location near center)
         police_x = self.center_x
         police_y = self.center_y
+
+        # Find a dry spot for police station near center
+        if self._is_block_flooded(police_x, police_y):
+            # Search nearby for a dry block
+            found = False
+            for radius in range(1, 5):
+                for dx in range(-radius, radius + 1):
+                    for dy in range(-radius, radius + 1):
+                        check_x = police_x + dx
+                        check_y = police_y + dy
+                        if (0 <= check_x < self.blocks_wide and
+                            0 <= check_y < self.blocks_high and
+                            not self._is_block_flooded(check_x, check_y)):
+                            police_x, police_y = check_x, check_y
+                            found = True
+                            break
+                    if found:
+                        break
+                if found:
+                    break
+
         if 0 <= police_x < self.blocks_wide and 0 <= police_y < self.blocks_high:
-            self.blocks[police_y][police_x].zone_type = ZoneType.POLICE
+            if not self._is_block_flooded(police_x, police_y):
+                self.blocks[police_y][police_x].zone_type = ZoneType.POLICE
 
         # Assign zones to non-road blocks
         for by in range(self.blocks_high):
@@ -176,6 +291,11 @@ class CityGenerator:
 
                 # Skip roads and police
                 if block.zone_type in [ZoneType.ROAD, ZoneType.POLICE]:
+                    continue
+
+                # Mark flooded blocks as empty
+                if self._is_block_flooded(bx, by, threshold=0.3):
+                    block.zone_type = ZoneType.EMPTY
                     continue
 
                 # Calculate distance from center
@@ -265,14 +385,23 @@ class CityGenerator:
         return max(0.0, min(1.0, base + variation))
 
     def _place_residential_buildings(self, block: CityBlock, density: float):
-        """Place houses in residential block."""
+        """Place houses in residential block, avoiding water."""
         # Number of houses based on density (0-4 houses per block)
         num_houses = int(density * 4)
+        attempts = 0
+        max_attempts = num_houses * 5  # Allow some retries for terrain
 
-        for _ in range(num_houses):
+        houses_placed = 0
+        while houses_placed < num_houses and attempts < max_attempts:
+            attempts += 1
+
             # Random position within block (avoid roads)
             x = block.x * self.block_size + random.randint(1, self.block_size - 4)
             y = block.y * self.block_size + random.randint(1, self.block_size - 5)
+
+            # Check if area is clear of water
+            if not self._is_area_clear(x, y, 3, 4):
+                continue
 
             # 70% livable, 30% decrepit
             is_livable = random.random() < 0.7
@@ -290,42 +419,64 @@ class CityGenerator:
 
             block.buildings.append(building)
             self.buildings.append(building)
+            houses_placed += 1
 
     def _place_commercial_buildings(self, block: CityBlock, density: float):
-        """Place stores and offices in commercial block."""
+        """Place stores and offices in commercial block, avoiding water."""
         # Number of buildings based on density (0-3 per block)
         num_buildings = int(density * 3)
+        attempts = 0
+        max_attempts = num_buildings * 5
 
-        for _ in range(num_buildings):
+        buildings_placed = 0
+        while buildings_placed < num_buildings and attempts < max_attempts:
+            attempts += 1
+
             # Random position within block
             x = block.x * self.block_size + random.randint(1, self.block_size - 5)
             y = block.y * self.block_size + random.randint(1, self.block_size - 5)
 
             # 60% stores, 40% offices
             is_store = random.random() < 0.6
+            width = 4 if is_store else 5
+            height = 4 if is_store else 5
+
+            # Check if area is clear of water
+            if not self._is_area_clear(x, y, width, height):
+                continue
 
             building = {
                 'type': 'store' if is_store else 'office',
                 'x': x,
                 'y': y,
-                'width': 4 if is_store else 5,
-                'height': 4 if is_store else 5,
+                'width': width,
+                'height': height,
                 'legal': False,  # Commercial buildings illegal to deconstruct
                 'block': (block.x, block.y)
             }
 
             block.buildings.append(building)
             self.buildings.append(building)
+            buildings_placed += 1
 
     def _place_industrial_buildings(self, block: CityBlock, density: float):
-        """Place factories in industrial block."""
+        """Place factories in industrial block, avoiding water."""
         # Number of factories based on density (0-2 per block)
         num_factories = int(density * 2)
+        attempts = 0
+        max_attempts = num_factories * 5
 
-        for _ in range(num_factories):
+        factories_placed = 0
+        while factories_placed < num_factories and attempts < max_attempts:
+            attempts += 1
+
             # Random position within block
             x = block.x * self.block_size + random.randint(1, self.block_size - 7)
             y = block.y * self.block_size + random.randint(1, self.block_size - 7)
+
+            # Check if area is clear of water
+            if not self._is_area_clear(x, y, 6, 6):
+                continue
 
             building = {
                 'type': 'city_factory',
@@ -339,24 +490,37 @@ class CityGenerator:
 
             block.buildings.append(building)
             self.buildings.append(building)
+            factories_placed += 1
 
     def _place_police_station(self, block: CityBlock):
-        """Place police station in police block."""
-        # Center of block
-        x = block.x * self.block_size + 2
-        y = block.y * self.block_size + 2
+        """Place police station in police block, avoiding water."""
+        # Try to find a clear spot in the block
+        for attempt in range(10):
+            if attempt == 0:
+                # First try center of block
+                x = block.x * self.block_size + 2
+                y = block.y * self.block_size + 2
+            else:
+                # Try random positions
+                x = block.x * self.block_size + random.randint(1, self.block_size - 6)
+                y = block.y * self.block_size + random.randint(1, self.block_size - 6)
 
-        building = {
-            'type': 'police_station',
-            'x': x,
-            'y': y,
-            'width': 5,
-            'height': 5,
-            'legal': False,  # Cannot deconstruct police station
-            'block': (block.x, block.y)
-        }
+            # Check if area is clear
+            if self._is_area_clear(x, y, 5, 5):
+                building = {
+                    'type': 'police_station',
+                    'x': x,
+                    'y': y,
+                    'width': 5,
+                    'height': 5,
+                    'legal': False,  # Cannot deconstruct police station
+                    'block': (block.x, block.y)
+                }
 
-        block.buildings.append(building)
+                block.buildings.append(building)
+                return
+
+        logger.warning(f"Could not place police station in block ({block.x}, {block.y}) - too much water")
         self.buildings.append(building)
 
     def _place_park_features(self, block: CityBlock):

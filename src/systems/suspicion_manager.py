@@ -13,7 +13,7 @@ from typing import List, Dict, Optional
 import time
 
 from src.core.logger import get_logger
-from src.core.game_config import SUSPICION
+from src.core.game_config import SUSPICION, DifficultyModifiers
 
 logger = get_logger(__name__)
 
@@ -35,8 +35,15 @@ class SuspicionManager:
     tier transitions with their associated consequences.
     """
 
-    def __init__(self):
-        """Initialize the suspicion manager."""
+    def __init__(self, difficulty_modifiers: Optional[DifficultyModifiers] = None):
+        """
+        Initialize the suspicion manager.
+
+        Args:
+            difficulty_modifiers: Optional difficulty settings affecting suspicion rates
+        """
+        self.difficulty_modifiers = difficulty_modifiers or DifficultyModifiers()
+
         # Suspicion level (0-100)
         self.suspicion_level = 0.0
 
@@ -52,9 +59,12 @@ class SuspicionManager:
             SuspicionTier.RESTRICTIONS: SUSPICION.TIER_RESTRICTED,
         }
 
-        # Suspicion decay rates (per game hour)
-        self.base_decay_rate = SUSPICION.BASE_DECAY_RATE
+        # Suspicion decay rates (per game hour) - modified by difficulty
+        self.base_decay_rate = SUSPICION.BASE_DECAY_RATE * self.difficulty_modifiers.suspicion_decay_rate
         self.decay_stops_at = SUSPICION.DECAY_STOP_LEVEL
+
+        # Suspicion gain rate modifier
+        self.gain_rate_multiplier = self.difficulty_modifiers.suspicion_gain_rate
 
         # Event history
         self.suspicion_events: List[Dict] = []
@@ -151,6 +161,10 @@ class SuspicionManager:
 
         old_level = self.suspicion_level
         old_tier = self.current_tier
+
+        # Apply difficulty modifier to suspicion gain (not to decay/reduction)
+        if amount > 0:
+            amount *= self.gain_rate_multiplier
 
         # Add or subtract suspicion (capped at 0-100)
         self.suspicion_level = max(0.0, min(100.0, self.suspicion_level + amount))

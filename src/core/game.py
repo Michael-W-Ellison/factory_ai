@@ -9,7 +9,11 @@ import pygame
 import random
 import config
 from src.core.logger import get_logger
-from src.core.game_config import ENTITY
+from src.core.game_config import (
+    ENTITY, GameSettings, DifficultyModifiers, WorldConfig,
+    DifficultyLevel, MapSize, CitySize, GeographicFeature,
+    get_difficulty_modifiers, DEFAULT_GAME_SETTINGS
+)
 from src.world.grid import Grid
 
 logger = get_logger(__name__)
@@ -57,8 +61,18 @@ from src.systems.audio_events import AudioEventHandler, MusicState
 class Game:
     """Main game controller."""
 
-    def __init__(self):
-        """Initialize the game."""
+    def __init__(self, settings: GameSettings = None):
+        """
+        Initialize the game.
+
+        Args:
+            settings: GameSettings object with difficulty and world config.
+                     If None, uses DEFAULT_GAME_SETTINGS.
+        """
+        # Store game settings
+        self.settings = settings or DEFAULT_GAME_SETTINGS
+        self.difficulty_modifiers = self.settings.get_modifiers()
+
         # Initialize Pygame
         pygame.init()
 
@@ -85,26 +99,34 @@ class Game:
         # Initialize camera
         self.camera = Camera(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
 
-        # Initialize grid (world size from config)
-        grid_width = config.WORLD_WIDTH // config.TILE_SIZE
-        grid_height = config.WORLD_HEIGHT // config.TILE_SIZE
+        # Get world dimensions from settings
+        world_config = self.settings.world
+        grid_width, grid_height = world_config.get_dimensions()
+        world_width = grid_width * config.TILE_SIZE
+        world_height = grid_height * config.TILE_SIZE
+
+        # Initialize grid with configured size
         self.grid = Grid(grid_width, grid_height, config.TILE_SIZE)
 
         # Set camera bounds to world size
-        self.camera.set_bounds(config.WORLD_WIDTH, config.WORLD_HEIGHT)
+        self.camera.set_bounds(world_width, world_height)
 
         # Create test world
         self.grid.create_test_world()
 
-        # Generate procedural city
-        self.grid.generate_city(seed=42)  # Use seed for consistent testing
+        # Get seed from settings or use default
+        generation_seed = world_config.seed if world_config.seed else 42
 
         # Initialize geographic features (rivers, bridges, ocean)
-        self.river_generator = RiverGenerator(self.grid, seed=42)
+        # Must be done BEFORE city generation for terrain awareness
+        self.river_generator = RiverGenerator(self.grid, seed=generation_seed)
         self.bridge_builder = BridgeBuilder(self.grid, resource_manager=None)
 
-        # Generate geographic features
+        # Generate geographic features based on world config
         self._generate_geographic_features()
+
+        # Generate procedural city (terrain-aware - avoids water)
+        self.grid.generate_city(seed=generation_seed)
 
         # Initialize traffic system (road network and traffic manager)
         self.road_network = RoadNetwork(self.grid)
@@ -133,7 +155,7 @@ class Game:
         self.camera_manager.place_cameras()
 
         # Center camera on factory (middle of world)
-        self.camera.center_on(config.WORLD_WIDTH // 2, config.WORLD_HEIGHT // 2)
+        self.camera.center_on(world_width // 2, world_height // 2)
 
         # Initialize game systems
         self.resources = ResourceManager()
@@ -145,8 +167,11 @@ class Game:
         self.fences = FenceManager(self.grid)
         self.npcs = NPCManager(self.grid)
         self.detection = DetectionManager(self.grid, self.npcs)
-        self.suspicion = SuspicionManager()
-        self.police = PoliceManager(self.grid, self.suspicion)
+
+        # Initialize suspicion and police with difficulty modifiers
+        self.suspicion = SuspicionManager(difficulty_modifiers=self.difficulty_modifiers)
+        self.police = PoliceManager(self.grid, self.suspicion,
+                                    difficulty_modifiers=self.difficulty_modifiers)
 
         # Initialize material inventory system (tracks materials by source for inspections)
         # Must be created before EntityManager so robots can track material sources
@@ -185,9 +210,9 @@ class Game:
         # Initialize controls/help overlay
         self.controls_help = ControlsHelp(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
 
-        # Initialize minimap
+        # Initialize minimap (use dynamic world size from settings)
         self.minimap = Minimap(config.SCREEN_WIDTH, config.SCREEN_HEIGHT,
-                              config.WORLD_WIDTH, config.WORLD_HEIGHT)
+                              world_width, world_height)
 
         # Initialize settings system
         self.settings_manager = SettingsManager()
@@ -312,36 +337,46 @@ class Game:
         logger.info(f"Created {len(self.entities.robots)} robots and {len(self.entities.collectibles)} collectibles")
 
     def _generate_geographic_features(self):
-        """Generate rivers, ocean, and bridges for the game world."""
+        """Generate rivers, ocean, and bridges based on world config."""
         logger.info("Generating geographic features...")
+        world_config = self.settings.world
 
-        # Generate ocean at south edge (for aesthetic/gameplay boundary)
-        ocean_stats = self.river_generator.generate_ocean(
-            edges=['south'],
-            depth=4,
-            create_docks=True,
-            dock_spacing=12
-        )
+        # Get ocean edges from world config
+        ocean_edges = world_config.get_ocean_edges()
+        ocean_stats = {'ocean_tiles': 0, 'dock_tiles': 0}
 
-        # Generate 1-2 rivers across the map
-        river_count = random.randint(1, 2)
-        for i in range(river_count):
-            self.river_generator.generate_random_river(
-                width_range=(3, 4),
-                length_range=(25, 40),
-                meandering=0.25,
-                avoid_buildings=True
+        if ocean_edges:
+            # Generate ocean on configured edges
+            ocean_stats = self.river_generator.generate_ocean(
+                edges=ocean_edges,
+                depth=world_config.ocean_depth,
+                create_docks=world_config.create_docks,
+                dock_spacing=12
             )
 
-        # Auto-place bridges at narrow crossing points
-        bridge_results = self.bridge_builder.auto_place_bridges(
-            max_bridges=3,
-            max_width=6,
-            min_width=2,
-            pay_cost=False  # Free bridges during world generation
-        )
+        # Generate rivers based on world config
+        river_count = 0
+        if world_config.has_rivers():
+            river_count = max(1, world_config.num_rivers)
+            for i in range(river_count):
+                self.river_generator.generate_random_river(
+                    width_range=(3, 4),
+                    length_range=(25, 40),
+                    meandering=0.25,
+                    avoid_buildings=True
+                )
 
-        successful_bridges = sum(1 for success, _, _ in bridge_results if success)
+        # Auto-place bridges if configured
+        successful_bridges = 0
+        if world_config.create_bridges and (ocean_edges or river_count > 0):
+            bridge_results = self.bridge_builder.auto_place_bridges(
+                max_bridges=3,
+                max_width=6,
+                min_width=2,
+                pay_cost=False  # Free bridges during world generation
+            )
+            successful_bridges = sum(1 for success, _, _ in bridge_results if success)
+
         logger.info(f"Geographic features generated: {ocean_stats['ocean_tiles']} ocean tiles, "
                     f"{ocean_stats['dock_tiles']} docks, {river_count} rivers, {successful_bridges} bridges")
 
