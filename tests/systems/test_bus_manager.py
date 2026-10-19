@@ -115,9 +115,16 @@ class MockBusStop:
 
 # Import directly to avoid __init__.py cascade
 import importlib.util
+import os
+
+# Get the path relative to this test file
+_test_dir = os.path.dirname(os.path.abspath(__file__))
+_project_root = os.path.dirname(os.path.dirname(_test_dir))
+_module_path = os.path.join(_project_root, "src", "systems", "bus_manager.py")
+
 spec = importlib.util.spec_from_file_location(
     "bus_manager",
-    "/home/user/factory_ai/src/systems/bus_manager.py"
+    _module_path
 )
 bus_manager_module = importlib.util.module_from_spec(spec)
 
