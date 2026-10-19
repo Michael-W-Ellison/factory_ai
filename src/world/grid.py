@@ -263,6 +263,9 @@ class Grid:
         """
         Generate a procedural city with buildings and roads.
 
+        Terrain-aware: avoids placing structures on water/ocean tiles.
+        Call generate_geographic_features() first for best results.
+
         Args:
             seed (int, optional): Random seed for reproducible generation
         """
@@ -270,13 +273,14 @@ class Grid:
             logger.debug("City already generated")
             return
 
-        logger.debug("Generating city...")
+        logger.debug("Generating terrain-aware city...")
 
-        # Create city generator
+        # Create city generator with grid reference for terrain checking
         self.city_generator = CityGenerator(
             self.world_width,
             self.world_height,
-            self.tile_size
+            self.tile_size,
+            grid=self  # Pass grid for terrain awareness
         )
 
         # Generate city data

@@ -96,15 +96,16 @@ class Game:
         # Create test world
         self.grid.create_test_world()
 
-        # Generate procedural city
-        self.grid.generate_city(seed=42)  # Use seed for consistent testing
-
         # Initialize geographic features (rivers, bridges, ocean)
+        # Must be done BEFORE city generation for terrain awareness
         self.river_generator = RiverGenerator(self.grid, seed=42)
         self.bridge_builder = BridgeBuilder(self.grid, resource_manager=None)
 
-        # Generate geographic features
+        # Generate geographic features first
         self._generate_geographic_features()
+
+        # Generate procedural city (terrain-aware - avoids water)
+        self.grid.generate_city(seed=42)  # Use seed for consistent testing
 
         # Initialize traffic system (road network and traffic manager)
         self.road_network = RoadNetwork(self.grid)
