@@ -6,6 +6,7 @@ and building automation features.
 """
 
 import sys
+import os
 import pytest
 from unittest.mock import Mock, MagicMock
 
@@ -14,9 +15,15 @@ sys.modules['pygame'] = Mock()
 
 # Import directly to avoid __init__.py cascade
 import importlib.util
+
+# Get the path relative to this test file
+_test_dir = os.path.dirname(os.path.abspath(__file__))
+_project_root = os.path.dirname(os.path.dirname(_test_dir))
+_module_path = os.path.join(_project_root, "src", "systems", "automation_manager.py")
+
 spec = importlib.util.spec_from_file_location(
     "automation_manager",
-    "/home/user/factory_ai/src/systems/automation_manager.py"
+    _module_path
 )
 automation_manager_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(automation_manager_module)
