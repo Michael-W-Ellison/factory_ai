@@ -233,7 +233,14 @@ class AIFactory:
         """
         # Critical situations override personality
         if situation['money_situation'] == 'critical':
-            return AIDecision.SELL_MATERIALS if self.materials_inventory > 5 else AIDecision.SAVE_MONEY
+            if self.materials_inventory > 5:
+                return AIDecision.SELL_MATERIALS
+            elif self.materials_inventory > 1:
+                # Sell what we have
+                return AIDecision.SELL_MATERIALS
+            else:
+                # Need to produce more materials - don't save money, increase production!
+                return AIDecision.INCREASE_PRODUCTION
 
         if situation['heat_critical'] or (situation['police_threat'] and self.heat_level > 50):
             return AIDecision.HIDE_OPERATION
@@ -265,14 +272,16 @@ class AIFactory:
             # Cautious AI avoids illegal recycling unless very profitable
             if self.recycling_illegal_materials and (situation['police_threat'] or situation['heat_critical']):
                 return AIDecision.RECYCLE_LEGAL  # Switch to legal when risky
-            elif situation['police_threat']:
+            elif situation['police_threat'] and self.heat_level > 40:
                 return AIDecision.HIDE_OPERATION
-            elif self.money < 30000:
-                return AIDecision.SAVE_MONEY
             elif situation['robots_needed']:
                 return AIDecision.BUILD_ROBOT
+            elif situation['expansion_viable'] and random.random() < 0.3:
+                return AIDecision.BUILD_WORKSTATION
+            elif self.materials_inventory > 10:
+                return AIDecision.SELL_MATERIALS
             else:
-                return AIDecision.INCREASE_PRODUCTION if random.random() < 0.5 else AIDecision.SAVE_MONEY
+                return AIDecision.INCREASE_PRODUCTION
 
         elif self.personality == AIPersonality.INNOVATOR:
             # Innovator focuses on robot upgrades and technology
@@ -297,8 +306,11 @@ class AIFactory:
                 return AIDecision.RECYCLE_LEGAL
             elif situation['expansion_viable']:
                 return AIDecision.BUILD_WORKSTATION
+            elif self.materials_inventory > 5:
+                return AIDecision.SELL_MATERIALS
             else:
-                return AIDecision.SAVE_MONEY
+                # Opportunist should produce when conditions are neutral
+                return AIDecision.INCREASE_PRODUCTION
 
         else:  # BALANCED
             # Balanced approach: mix of legal/illegal based on situation
@@ -382,13 +394,16 @@ class AIFactory:
             self.heat_level = max(0, self.heat_level - 10)
 
         elif decision == AIDecision.HIDE_OPERATION:
-            self.hiding = True
-            self.production_active = False
-            self.heat_level = max(0, self.heat_level - 20)
-            # Resume after cooldown
-            if random.random() < 0.3:  # 30% chance to resume
-                self.hiding = False
-                self.production_active = True
+            if not self.hiding:
+                # Only hide if not already hiding
+                self.hiding = True
+                self.production_active = False
+                self.heat_level = max(0, self.heat_level - 20)
+            else:
+                # Already hiding - consider resuming based on heat level
+                if self.heat_level < 30 or random.random() < 0.5:
+                    self.hiding = False
+                    self.production_active = True
 
         elif decision == AIDecision.SELL_MATERIALS:
             self._attempt_sales(market_conditions, force=True)
