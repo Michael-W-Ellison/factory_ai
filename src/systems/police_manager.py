@@ -9,9 +9,10 @@ Handles:
 """
 
 import random
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 from src.core.logger import get_logger
+from src.core.game_config import DifficultyModifiers
 from src.entities.police_officer import PoliceOfficer, PoliceBehavior
 from src.world.tile import TileType
 from src.systems.audio_events import get_audio_events
@@ -27,21 +28,30 @@ class PoliceManager:
     responses to illegal activities.
     """
 
-    def __init__(self, grid, suspicion_manager):
+    def __init__(self, grid, suspicion_manager, difficulty_modifiers: Optional[DifficultyModifiers] = None):
         """
         Initialize the police manager.
 
         Args:
             grid: The game world grid
             suspicion_manager: SuspicionManager instance
+            difficulty_modifiers: Optional difficulty settings
         """
         self.grid = grid
         self.suspicion_manager = suspicion_manager
         self.police_officers: List[PoliceOfficer] = []
+        self.difficulty_modifiers = difficulty_modifiers or DifficultyModifiers()
 
-        # Base patrol count (increases with suspicion)
-        self.base_patrol_count = 2  # 2 patrols at low suspicion
+        # Base patrol count (modified by difficulty)
+        base_count = 2
+        self.base_patrol_count = max(1, int(base_count * self.difficulty_modifiers.police_patrol_count))
         self.officers_per_patrol = 2  # 2 officers per patrol
+
+        # Vision range modifier for police
+        self.vision_range_multiplier = self.difficulty_modifiers.police_vision_range
+
+        # Response time modifier (lower = faster response)
+        self.response_time_multiplier = self.difficulty_modifiers.police_response_time
 
     def spawn_initial_patrols(self, seed: int = 42):
         """
