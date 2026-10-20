@@ -93,8 +93,8 @@ class AIFactory:
         self.ai_income_mult = getattr(difficulty_modifiers, 'ai_income_rate', 1.0) if difficulty_modifiers else 1.0
         self.ai_expense_mult = getattr(difficulty_modifiers, 'ai_expense_rate', 1.0) if difficulty_modifiers else 1.0
 
-        # Resources (apply starting money modifier)
-        self.money = int(starting_money * ai_starting_mult)
+        # Resources (apply starting money modifier, ensure non-negative)
+        self.money = max(0, int(starting_money * ai_starting_mult))
         self.robots = 3  # Start with 3 automated recycling robots
         self.workstations = 1  # Start with 1 recycling workstation
 
@@ -179,8 +179,14 @@ class AIFactory:
             market_conditions: Dict with market data (demand, price_multiplier, etc.)
             police_activity: Current police activity level (0.0-1.0)
         """
+        # Clamp dt to prevent exploits (max 10 seconds per tick)
+        dt = max(0.0, min(10.0, dt))
+
+        # Clamp police activity to valid range
+        police_activity = max(0.0, min(1.0, police_activity))
+
         self.age += dt
-        self.decision_cooldown -= dt
+        self.decision_cooldown = max(0.0, self.decision_cooldown - dt)  # Prevent negative cooldown
 
         # Recycle materials
         if self.production_active and not self.hiding:
@@ -189,15 +195,18 @@ class AIFactory:
                                    self.robot_efficiency * self.workstations * dt / 3600.0)
             self.materials_inventory += recycling_this_tick
 
-        # Heat/suspicion naturally decreases over time
-        self.heat_level = max(0, self.heat_level - dt * 0.5)
+        # Heat/suspicion naturally decreases over time (clamped to 0-100)
+        self.heat_level = max(0, min(100, self.heat_level - dt * 0.5))
 
-        # Green reputation slowly recovers if recycling legally
+        # Green reputation slowly recovers if recycling legally (clamped to 0-100)
         if not self.recycling_illegal_materials:
             self.green_reputation = min(100, self.green_reputation + dt * 0.1)
         else:
             # Slowly loses green reputation when recycling illegally
             self.green_reputation = max(0, self.green_reputation - dt * 0.05)
+
+        # Ensure green reputation stays in bounds
+        self.green_reputation = max(0, min(100, self.green_reputation))
 
         # Make strategic decisions periodically
         if self.decision_cooldown <= 0:
@@ -388,16 +397,22 @@ class AIFactory:
             market_conditions: Current market conditions
         """
         if decision == AIDecision.BUILD_WORKSTATION:
+            # Cap workstations at 20 to prevent spam
+            if self.workstations >= 20:
+                return  # Already at max workstations
             base_cost = 30000 + (self.workstations * 5000)  # Increasing cost
             cost = int(base_cost * self.ai_expense_mult)
             if self.money >= cost:
                 self.money -= cost
                 self.workstations += 1
                 self.total_expenses += cost
-                self.heat_level += 10  # Building attracts attention
+                self.heat_level = min(100, self.heat_level + 10)  # Building attracts attention
 
         elif decision == AIDecision.BUILD_ROBOT:
             # Build robot - can use materials OR just money
+            # Cap robots at 50 to prevent memory issues
+            if self.robots >= 50:
+                return  # Already at max robots
             materials_cost = 2  # Materials needed (if using materials)
             money_cost_with_materials = int(3000 * self.ai_expense_mult)  # Cheaper with materials
             money_cost_pure = int(10000 * self.ai_expense_mult)  # Cheaper robots overall
@@ -416,10 +431,13 @@ class AIFactory:
 
         elif decision == AIDecision.UPGRADE_ROBOTS:
             # Upgrade robot efficiency - balanced cost and returns
-            cost = int(12000 * self.ai_expense_mult)  # Lower cost
+            # Cap tech level at 10 to prevent unbounded efficiency
+            if self.technology_level >= 10:
+                return  # Already at max tech
+            cost = int(12000 * self.ai_expense_mult)
             if self.money >= cost:
                 self.money -= cost
-                self.robot_efficiency += 0.20  # 20% efficiency boost per level
+                self.robot_efficiency = min(5.0, self.robot_efficiency + 0.20)  # Cap efficiency at 5x
                 self.technology_level += 1
                 self.quality_level = min(1.0, self.quality_level + 0.06)
                 self.total_expenses += cost
@@ -488,12 +506,12 @@ class AIFactory:
             market_conditions: Current market conditions
             force: Force sale regardless of conditions
         """
-        if self.materials_inventory < 1:
+        if self.materials_inventory is None or self.materials_inventory < 1:
             return
 
-        # Determine how much to sell
-        demand = market_conditions.get('demand', 1.0)
-        price_mult = market_conditions.get('price_multiplier', 1.0)
+        # Determine how much to sell (clamp market values to reasonable bounds)
+        demand = max(0.1, min(5.0, market_conditions.get('demand', 1.0)))
+        price_mult = max(0.1, min(5.0, market_conditions.get('price_multiplier', 1.0)))
 
         # AI considers market conditions
         should_sell = force or (
@@ -521,7 +539,10 @@ class AIFactory:
             # Technology level provides modest price premium
             tech_bonus = 1.0 + (self.technology_level - 1) * 0.05  # +5% per tech level
 
-            actual_price = base_price * price_mult * illegal_bonus * green_bonus * quality_bonus * tech_bonus
+            # Calculate total multiplier and cap to prevent extreme profits
+            total_multiplier = price_mult * illegal_bonus * green_bonus * quality_bonus * tech_bonus
+            total_multiplier = min(10.0, total_multiplier)  # Cap total bonus at 10x
+            actual_price = base_price * total_multiplier
 
             # Apply AI income modifier from difficulty settings
             revenue = int(units_to_sell * actual_price * self.ai_income_mult)
@@ -537,6 +558,9 @@ class AIFactory:
                 self.heat_level += units_to_sell * 1.2 * tech_stealth
             else:
                 self.heat_level += units_to_sell * 0.25 * tech_stealth
+
+            # Clamp heat to valid range
+            self.heat_level = max(0, min(100, self.heat_level))
 
     def _update_goal_progress(self, dt: float):
         """Update progress toward current goal."""
