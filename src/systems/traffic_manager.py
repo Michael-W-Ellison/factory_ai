@@ -180,7 +180,7 @@ class TrafficManager:
             self.spawn_timer = 0.0
 
         # Update all vehicles
-        vehicles_to_remove = []
+        vehicles_to_remove = set()  # Use set to avoid duplicate removals
 
         for vehicle in self.vehicles:
             # Pass other vehicles for collision avoidance
@@ -191,14 +191,15 @@ class TrafficManager:
 
             # Check if vehicle is off map (despawn)
             if vehicle.is_off_map(self.grid):
-                vehicles_to_remove.append(vehicle)
+                vehicles_to_remove.add(vehicle)
+                continue  # Skip further checks for this vehicle
 
             # Check if vehicle has no waypoints and is idle
             if (vehicle.current_waypoint_index >= len(vehicle.waypoints) and
                 not vehicle.waypoints):
                 # Vehicle finished its route, give it a new one or despawn
                 if random.random() < 0.3:  # 30% chance to despawn
-                    vehicles_to_remove.append(vehicle)
+                    vehicles_to_remove.add(vehicle)
                 else:
                     # Give new random route
                     self._assign_random_route(vehicle)
