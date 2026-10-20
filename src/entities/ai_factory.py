@@ -96,12 +96,14 @@ class AIFactory:
         # Resources (apply starting money modifier)
         self.money = int(starting_money * ai_starting_mult)
         self.robots = 3  # Start with 3 automated recycling robots
-        self.robot_efficiency = 1.0  # Robot performance multiplier
         self.workstations = 1  # Start with 1 recycling workstation
-        self.technology_level = 1  # Tech level for upgrades
+
+        # All personalities start equal - strategy determines outcome
+        self.technology_level = 1
+        self.robot_efficiency = 1.0
 
         # Production/Recycling (base rate affected by ai_production_mult)
-        self.recycling_rate = 1.0 * self.ai_production_mult  # Materials processed per hour
+        self.recycling_rate = 3.0 * self.ai_production_mult  # Materials processed per hour (increased from 1.0)
         self.production_active = True
         self.materials_inventory = 0  # Recycled materials ready to sell
         self.quality_level = 0.7  # Output quality (0.0-1.0)
@@ -109,7 +111,7 @@ class AIFactory:
         # Ethical stance
         self.recycling_illegal_materials = False  # Whether recycling prohibited items
         self.green_reputation = 100  # Eco-friendly reputation (0-100)
-        self.illegal_profit_multiplier = 2.5  # Illegal materials worth 2.5x more
+        self.illegal_profit_multiplier = 1.5  # Illegal materials worth 1.5x more (modest bonus)
 
         # Market
         self.market_share = 0.0  # Percentage of total market
@@ -278,12 +280,21 @@ class AIFactory:
 
         # Personality-based decisions
         if self.personality == AIPersonality.AGGRESSIVE:
-            # Aggressive AI prioritizes profit and rapid expansion
-            if not self.recycling_illegal_materials and random.random() < 0.8:
-                return AIDecision.RECYCLE_ILLEGAL  # Go for max profit
-            elif self.money > 50000 and self.robots < 8 and random.random() < 0.5:
-                return AIDecision.BUILD_ROBOT  # Build robot army
-            elif situation['expansion_viable'] and random.random() < 0.6:
+            # Aggressive: high-risk high-reward with good heat management
+            # Key: cycle between illegal (profit) and legal (cool down)
+            if self.heat_level > 65:
+                if self.recycling_illegal_materials:
+                    return AIDecision.RECYCLE_LEGAL  # Cool down
+                return AIDecision.DECREASE_PRODUCTION  # Lay low
+            elif self.heat_level > 50 and self.recycling_illegal_materials:
+                if random.random() < 0.5:
+                    return AIDecision.RECYCLE_LEGAL  # Sometimes cool early
+            # When heat is manageable, go aggressive
+            if not self.recycling_illegal_materials and self.heat_level < 30:
+                return AIDecision.RECYCLE_ILLEGAL  # Max profit mode
+            elif self.money > 25000 and self.robots < 6 and random.random() < 0.6:
+                return AIDecision.BUILD_ROBOT  # Build army
+            elif situation['expansion_viable'] and random.random() < 0.4:
                 return AIDecision.BUILD_WORKSTATION
             elif self.materials_inventory > 5:
                 return AIDecision.SELL_MATERIALS
@@ -291,85 +302,82 @@ class AIFactory:
                 return AIDecision.INCREASE_PRODUCTION
 
         elif self.personality == AIPersonality.ECO_FRIENDLY:
-            # Eco-friendly AI ONLY recycles legal materials, invests in efficiency
+            # Eco-friendly AI ONLY recycles legal materials, maximizes green premium
+            # Strategy: high volume + green reputation = consistent premium income
             if self.recycling_illegal_materials:
-                return AIDecision.RECYCLE_LEGAL  # Switch back to legal
-            elif self.money > 50000 and self.technology_level < 4 and random.random() < 0.5:
-                return AIDecision.UPGRADE_ROBOTS  # Invest in green tech
-            elif self.money > 40000 and self.robots < 5 and random.random() < 0.4:
-                return AIDecision.BUILD_ROBOT
-            elif situation['expansion_viable'] and self.workstations < 2:
-                return AIDecision.BUILD_WORKSTATION
-            elif self.materials_inventory > 8:
-                return AIDecision.SELL_MATERIALS
+                return AIDecision.RECYCLE_LEGAL  # Always stay green
+            elif self.money > 25000 and self.robots < 6 and random.random() < 0.6:
+                return AIDecision.BUILD_ROBOT  # Volume is key for eco
+            elif self.money > 35000 and self.technology_level < 5 and random.random() < 0.5:
+                return AIDecision.UPGRADE_ROBOTS  # Efficiency + quality
+            elif situation['expansion_viable'] and self.workstations < 3 and random.random() < 0.5:
+                return AIDecision.BUILD_WORKSTATION  # Scale up
+            elif self.materials_inventory > 5:
+                return AIDecision.SELL_MATERIALS  # Sell often for green premium
             else:
                 return AIDecision.INCREASE_PRODUCTION
 
         elif self.personality == AIPersonality.CAUTIOUS:
-            # Cautious AI avoids risks, builds slowly and steadily
-            if self.recycling_illegal_materials and (situation['police_threat'] or situation['heat_critical']):
+            # Cautious AI avoids risks but invests consistently
+            if self.recycling_illegal_materials:
                 return AIDecision.RECYCLE_LEGAL
-            elif situation['police_threat'] and self.heat_level > 40:
-                return AIDecision.HIDE_OPERATION
-            elif self.money > 70000 and self.robots < 4 and random.random() < 0.3:
-                return AIDecision.BUILD_ROBOT  # Cautiously expand
-            elif self.money > 80000 and self.technology_level < 3 and random.random() < 0.25:
-                return AIDecision.UPGRADE_ROBOTS  # Safe investment
-            elif situation['expansion_viable'] and self.workstations < 2 and random.random() < 0.3:
+            elif self.money > 20000 and self.robots < 6 and random.random() < 0.55:
+                return AIDecision.BUILD_ROBOT  # Solid expansion
+            elif self.money > 25000 and self.technology_level < 4 and random.random() < 0.45:
+                return AIDecision.UPGRADE_ROBOTS  # Good tech investment
+            elif self.money > 40000 and self.workstations < 2:
                 return AIDecision.BUILD_WORKSTATION
-            elif self.materials_inventory > 8:
+            elif self.materials_inventory > 5:
                 return AIDecision.SELL_MATERIALS
             else:
                 return AIDecision.INCREASE_PRODUCTION
 
         elif self.personality == AIPersonality.INNOVATOR:
-            # Innovator prioritizes technology upgrades and robot fleet
-            if self.money > 40000 and self.technology_level < 5 and random.random() < 0.5:
-                return AIDecision.UPGRADE_ROBOTS
-            elif self.money > 30000 and self.robots < 6 and random.random() < 0.4:
-                return AIDecision.BUILD_ROBOT
-            elif situation['expansion_viable'] and self.workstations < 3:
+            # Innovator: tech-focused but needs production base first
+            if self.money > 20000 and self.robots < 4 and random.random() < 0.5:
+                return AIDecision.BUILD_ROBOT  # Build production first
+            elif self.money > 18000 and self.technology_level < 4 and random.random() < 0.5:
+                return AIDecision.UPGRADE_ROBOTS  # Then upgrade
+            elif self.money > 30000 and self.workstations < 2:
                 return AIDecision.BUILD_WORKSTATION
-            elif self.materials_inventory > 8:
+            elif self.materials_inventory > 5:
                 return AIDecision.SELL_MATERIALS
             else:
                 return AIDecision.INCREASE_PRODUCTION
 
         elif self.personality == AIPersonality.OPPORTUNIST:
-            # Opportunist adapts to market, invests when profitable
+            # Opportunist adapts to market conditions - flexible investor
             if situation['price_favorable'] and self.materials_inventory > 5:
                 return AIDecision.SELL_MATERIALS
-            elif situation['market_demand'] > 1.5 and not self.recycling_illegal_materials:
-                return AIDecision.RECYCLE_ILLEGAL if random.random() < 0.6 else AIDecision.INCREASE_PRODUCTION
+            elif situation['market_demand'] > 1.3 and not self.recycling_illegal_materials and self.heat_level < 35:
+                return AIDecision.RECYCLE_ILLEGAL if random.random() < 0.45 else AIDecision.INCREASE_PRODUCTION
             elif situation['police_threat'] and self.recycling_illegal_materials:
                 return AIDecision.RECYCLE_LEGAL
-            elif self.money > 60000 and self.robots < 6 and random.random() < 0.4:
-                return AIDecision.BUILD_ROBOT  # Invest surplus in robots
-            elif situation['expansion_viable'] and self.workstations < 4:
+            elif self.money > 22000 and self.robots < 6 and random.random() < 0.5:
+                return AIDecision.BUILD_ROBOT
+            elif self.money > 30000 and self.technology_level < 4 and random.random() < 0.4:
+                return AIDecision.UPGRADE_ROBOTS
+            elif self.money > 45000 and self.workstations < 2:
                 return AIDecision.BUILD_WORKSTATION
-            elif self.money > 80000 and random.random() < 0.3:
-                return AIDecision.UPGRADE_ROBOTS  # Sometimes upgrade when rich
             elif self.materials_inventory > 5:
                 return AIDecision.SELL_MATERIALS
             else:
                 return AIDecision.INCREASE_PRODUCTION
 
         else:  # BALANCED
-            # Balanced approach: mix of legal/illegal based on situation
-            if not self.recycling_illegal_materials and self.money < 50000 and random.random() < 0.4:
-                # Sometimes recycle illegal when money is tight
-                return AIDecision.RECYCLE_ILLEGAL
-            elif self.recycling_illegal_materials and situation['heat_critical']:
-                # Switch to legal when heat is high
+            # Balanced approach: diversified investment strategy
+            if self.recycling_illegal_materials and self.heat_level > 35:
                 return AIDecision.RECYCLE_LEGAL
-            elif situation['expansion_viable'] and random.random() < 0.5:
+            elif self.money > 20000 and self.robots < 6 and random.random() < 0.55:
+                return AIDecision.BUILD_ROBOT  # Priority on robots
+            elif self.money > 30000 and self.technology_level < 4 and random.random() < 0.45:
+                return AIDecision.UPGRADE_ROBOTS  # Good tech investment
+            elif self.money > 40000 and self.workstations < 2:
                 return AIDecision.BUILD_WORKSTATION
-            elif situation['robots_needed'] and random.random() < 0.6:
-                return AIDecision.BUILD_ROBOT
-            elif situation['inventory_high']:
+            elif self.materials_inventory > 5:
                 return AIDecision.SELL_MATERIALS
             else:
-                return random.choice([AIDecision.INCREASE_PRODUCTION, AIDecision.SAVE_MONEY])
+                return AIDecision.INCREASE_PRODUCTION
 
     def _execute_decision(self, decision: AIDecision, market_conditions: Dict):
         """
@@ -381,7 +389,7 @@ class AIFactory:
         """
         if decision == AIDecision.BUILD_WORKSTATION:
             base_cost = 30000 + (self.workstations * 5000)  # Increasing cost
-            cost = int(base_cost * self.ai_expense_mult)  # Apply expense modifier
+            cost = int(base_cost * self.ai_expense_mult)
             if self.money >= cost:
                 self.money -= cost
                 self.workstations += 1
@@ -391,8 +399,8 @@ class AIFactory:
         elif decision == AIDecision.BUILD_ROBOT:
             # Build robot - can use materials OR just money
             materials_cost = 2  # Materials needed (if using materials)
-            money_cost_with_materials = int(5000 * self.ai_expense_mult)  # Apply expense modifier
-            money_cost_pure = int(15000 * self.ai_expense_mult)  # Apply expense modifier
+            money_cost_with_materials = int(3000 * self.ai_expense_mult)  # Cheaper with materials
+            money_cost_pure = int(10000 * self.ai_expense_mult)  # Cheaper robots overall
 
             if self.materials_inventory >= materials_cost and self.money >= money_cost_with_materials:
                 # Build using materials (cheaper)
@@ -407,14 +415,13 @@ class AIFactory:
                 self.total_expenses += money_cost_pure
 
         elif decision == AIDecision.UPGRADE_ROBOTS:
-            # Upgrade robot efficiency
-            base_cost = 20000 + (int(self.robot_efficiency * 30000))  # Increasing cost
-            cost = int(base_cost * self.ai_expense_mult)  # Apply expense modifier
+            # Upgrade robot efficiency - balanced cost and returns
+            cost = int(12000 * self.ai_expense_mult)  # Lower cost
             if self.money >= cost:
                 self.money -= cost
-                self.robot_efficiency += 0.15  # 15% efficiency boost
+                self.robot_efficiency += 0.20  # 20% efficiency boost per level
                 self.technology_level += 1
-                self.quality_level = min(1.0, self.quality_level + 0.05)
+                self.quality_level = min(1.0, self.quality_level + 0.06)
                 self.total_expenses += cost
 
         elif decision == AIDecision.RECYCLE_LEGAL:
@@ -429,17 +436,19 @@ class AIFactory:
             if not self.recycling_illegal_materials:
                 self.recycling_illegal_materials = True
                 # Increase heat when starting illegal recycling
-                self.heat_level += 20
+                self.heat_level += 15
 
         elif decision == AIDecision.INCREASE_PRODUCTION:
             if not self.production_active:
                 self.production_active = True
-            # Increase recycling rate (risky)
+            # Increase recycling rate
             self.recycling_rate = min(5.0, self.recycling_rate * 1.1)
+            # Higher tech = stealthier operations (less heat from production)
+            tech_stealth = max(0.5, 1.0 - (self.technology_level - 1) * 0.1)
             if self.recycling_illegal_materials:
-                self.heat_level += 8
+                self.heat_level += 4 * tech_stealth  # Reduced from 8
             else:
-                self.heat_level += 3
+                self.heat_level += 1 * tech_stealth  # Reduced from 3
 
         elif decision == AIDecision.DECREASE_PRODUCTION:
             self.recycling_rate = max(0.5, self.recycling_rate * 0.9)
@@ -501,7 +510,18 @@ class AIFactory:
             # Apply illegal profit multiplier if recycling illegal materials
             illegal_bonus = self.illegal_profit_multiplier if self.recycling_illegal_materials else 1.0
 
-            actual_price = base_price * price_mult * illegal_bonus * (0.9 + self.quality_level * 0.2)
+            # Green reputation provides premium for legal materials (eco-certified)
+            green_bonus = 1.0
+            if not self.recycling_illegal_materials and self.green_reputation > 70:
+                green_bonus = 1.0 + (self.green_reputation - 70) * 0.01  # Up to +30% at 100 rep
+
+            # Quality impacts price (0.7 to 1.0 quality = 0.85x to 1.15x price)
+            quality_bonus = 0.85 + self.quality_level * 0.3
+
+            # Technology level provides modest price premium
+            tech_bonus = 1.0 + (self.technology_level - 1) * 0.05  # +5% per tech level
+
+            actual_price = base_price * price_mult * illegal_bonus * green_bonus * quality_bonus * tech_bonus
 
             # Apply AI income modifier from difficulty settings
             revenue = int(units_to_sell * actual_price * self.ai_income_mult)
@@ -510,11 +530,13 @@ class AIFactory:
             self.sales_this_period += units_to_sell
             self.total_revenue += revenue
 
-            # Selling illegal materials increases heat more
+            # Selling illegal materials increases heat
+            # Higher tech = stealthier operations (up to 50% heat reduction at tech 5)
+            tech_stealth = max(0.5, 1.0 - (self.technology_level - 1) * 0.1)
             if self.recycling_illegal_materials:
-                self.heat_level += units_to_sell * 1.0  # Higher heat for illegal sales
+                self.heat_level += units_to_sell * 1.2 * tech_stealth
             else:
-                self.heat_level += units_to_sell * 0.2  # Lower heat for legal sales
+                self.heat_level += units_to_sell * 0.25 * tech_stealth
 
     def _update_goal_progress(self, dt: float):
         """Update progress toward current goal."""
@@ -556,11 +578,12 @@ class AIFactory:
 
     def get_net_worth(self) -> int:
         """Calculate net worth of recycling factory."""
+        # Value assets at purchase cost equivalent
         asset_value = (
-            self.workstations * 25000 +
-            self.robots * 5000 +
-            self.technology_level * 30000 +
-            self.materials_inventory * 800
+            self.workstations * 30000 +  # Base workstation cost
+            self.robots * 10000 +  # Robot purchase cost
+            (self.technology_level - 1) * 12000 +  # Tech upgrade cost
+            self.materials_inventory * 900
         )
         return self.money + asset_value
 
