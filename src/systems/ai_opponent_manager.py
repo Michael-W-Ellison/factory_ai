@@ -6,12 +6,15 @@ Handles multiple AI opponents, market dynamics, rankings, and win conditions.
 
 import random
 import math
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Tuple, TYPE_CHECKING
 from enum import Enum
 
 from entities.ai_factory import AIFactory, AIPersonality
 
 from src.core.logger import get_logger
+
+if TYPE_CHECKING:
+    from src.core.game_config import DifficultyModifiers
 
 logger = get_logger(__name__)
 
@@ -40,7 +43,8 @@ class AIOpponentManager:
     """
 
     def __init__(self, num_opponents: int = 3, game_mode: GameMode = GameMode.COMPETITIVE,
-                 win_condition: WinCondition = WinCondition.NET_WORTH):
+                 win_condition: WinCondition = WinCondition.NET_WORTH,
+                 difficulty_modifiers: Optional['DifficultyModifiers'] = None):
         """
         Initialize AI opponent manager.
 
@@ -48,10 +52,12 @@ class AIOpponentManager:
             num_opponents: Number of AI opponents (1-5)
             game_mode: Game mode type
             win_condition: Victory condition
+            difficulty_modifiers: Game difficulty modifiers affecting AI behavior
         """
         self.game_mode = game_mode
         self.win_condition = win_condition
         self.num_opponents = max(1, min(5, num_opponents))
+        self.difficulty_modifiers = difficulty_modifiers
 
         # AI opponents
         self.opponents: List[AIFactory] = []
@@ -104,6 +110,10 @@ class AIOpponentManager:
             AIPersonality.INNOVATOR,
         ]
 
+        # Get AI starting money modifier from difficulty settings
+        ai_starting_mult = getattr(self.difficulty_modifiers, 'ai_starting_money', 1.0) if self.difficulty_modifiers else 1.0
+        base_starting_money = int(50000 * ai_starting_mult)
+
         for i in range(self.num_opponents):
             name = company_names[i]
             personality = personalities[i % len(personalities)]
@@ -113,7 +123,8 @@ class AIOpponentManager:
                 name=name,
                 personality=personality,
                 difficulty=difficulty,
-                starting_money=50000
+                starting_money=base_starting_money,
+                difficulty_modifiers=self.difficulty_modifiers
             )
             self.opponents.append(opponent)
 
@@ -349,7 +360,8 @@ _ai_opponent_manager = None
 
 def get_ai_opponent_manager(num_opponents: int = 3,
                             game_mode: GameMode = GameMode.COMPETITIVE,
-                            win_condition: WinCondition = WinCondition.NET_WORTH) -> AIOpponentManager:
+                            win_condition: WinCondition = WinCondition.NET_WORTH,
+                            difficulty_modifiers: Optional['DifficultyModifiers'] = None) -> AIOpponentManager:
     """
     Get the global AI opponent manager instance.
 
@@ -357,13 +369,14 @@ def get_ai_opponent_manager(num_opponents: int = 3,
         num_opponents: Number of AI opponents
         game_mode: Game mode
         win_condition: Win condition
+        difficulty_modifiers: Game difficulty modifiers affecting AI behavior
 
     Returns:
         AIOpponentManager: The global instance
     """
     global _ai_opponent_manager
     if _ai_opponent_manager is None:
-        _ai_opponent_manager = AIOpponentManager(num_opponents, game_mode, win_condition)
+        _ai_opponent_manager = AIOpponentManager(num_opponents, game_mode, win_condition, difficulty_modifiers)
     return _ai_opponent_manager
 
 

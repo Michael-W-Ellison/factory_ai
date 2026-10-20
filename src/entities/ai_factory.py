@@ -8,9 +8,12 @@ Factories can choose between legal (green) and illegal (profitable) recycling.
 import random
 import math
 from enum import Enum
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
 
 from src.core.logger import get_logger
+
+if TYPE_CHECKING:
+    from src.core.game_config import DifficultyModifiers
 
 logger = get_logger(__name__)
 
@@ -62,7 +65,8 @@ class AIFactory:
     """
 
     def __init__(self, name: str, personality: AIPersonality = AIPersonality.BALANCED,
-                 difficulty: float = 0.5, starting_money: int = 50000):
+                 difficulty: float = 0.5, starting_money: int = 50000,
+                 difficulty_modifiers: Optional['DifficultyModifiers'] = None):
         """
         Initialize AI recycling factory.
 
@@ -71,20 +75,33 @@ class AIFactory:
             personality: AI personality type
             difficulty: Difficulty level (0.0 = easy, 1.0 = hard)
             starting_money: Initial capital
+            difficulty_modifiers: Game difficulty modifiers affecting AI behavior
         """
         self.name = name
         self.personality = personality
         self.difficulty = difficulty
 
-        # Resources
-        self.money = starting_money
+        # Store difficulty modifiers (use defaults if not provided)
+        self.difficulty_modifiers = difficulty_modifiers
+
+        # Extract AI-specific modifiers (default to 1.0 if not provided)
+        ai_starting_mult = getattr(difficulty_modifiers, 'ai_starting_money', 1.0) if difficulty_modifiers else 1.0
+        self.ai_production_mult = getattr(difficulty_modifiers, 'ai_production_rate', 1.0) if difficulty_modifiers else 1.0
+        self.ai_expansion_mult = getattr(difficulty_modifiers, 'ai_expansion_rate', 1.0) if difficulty_modifiers else 1.0
+        self.ai_decision_quality = getattr(difficulty_modifiers, 'ai_decision_quality', 1.0) if difficulty_modifiers else 1.0
+        self.ai_risk_mult = getattr(difficulty_modifiers, 'ai_risk_tolerance', 1.0) if difficulty_modifiers else 1.0
+        self.ai_income_mult = getattr(difficulty_modifiers, 'ai_income_rate', 1.0) if difficulty_modifiers else 1.0
+        self.ai_expense_mult = getattr(difficulty_modifiers, 'ai_expense_rate', 1.0) if difficulty_modifiers else 1.0
+
+        # Resources (apply starting money modifier)
+        self.money = int(starting_money * ai_starting_mult)
         self.robots = 3  # Start with 3 automated recycling robots
         self.robot_efficiency = 1.0  # Robot performance multiplier
         self.workstations = 1  # Start with 1 recycling workstation
         self.technology_level = 1  # Tech level for upgrades
 
-        # Production/Recycling
-        self.recycling_rate = 1.0  # Materials processed per hour
+        # Production/Recycling (base rate affected by ai_production_mult)
+        self.recycling_rate = 1.0 * self.ai_production_mult  # Materials processed per hour
         self.production_active = True
         self.materials_inventory = 0  # Recycled materials ready to sell
         self.quality_level = 0.7  # Output quality (0.0-1.0)
@@ -134,7 +151,7 @@ class AIFactory:
             return random.choice([AIGoal.EXPAND_PRODUCTION, AIGoal.MAXIMIZE_PROFIT, AIGoal.UPGRADE_TECHNOLOGY])
 
     def _calculate_risk_tolerance(self) -> float:
-        """Calculate risk tolerance based on personality and difficulty."""
+        """Calculate risk tolerance based on personality, difficulty, and modifiers."""
         base_tolerance = {
             AIPersonality.AGGRESSIVE: 0.9,  # Very likely to recycle illegal materials
             AIPersonality.BALANCED: 0.5,
@@ -147,7 +164,9 @@ class AIFactory:
         tolerance = base_tolerance.get(self.personality, 0.5)
         # Higher difficulty = more willing to take risks
         tolerance += (self.difficulty - 0.5) * 0.3
-        return max(0.0, min(0.9, tolerance))
+        # Apply AI risk tolerance modifier from difficulty settings
+        tolerance *= self.ai_risk_mult
+        return max(0.0, min(0.95, tolerance))
 
     def update(self, dt: float, market_conditions: Dict, police_activity: float):
         """
@@ -181,8 +200,9 @@ class AIFactory:
         # Make strategic decisions periodically
         if self.decision_cooldown <= 0:
             self._make_decision(market_conditions, police_activity)
-            # Decision frequency based on difficulty
-            self.decision_cooldown = random.uniform(5.0, 15.0) / (1.0 + self.difficulty)
+            # Decision frequency based on difficulty and expansion rate
+            base_cooldown = random.uniform(5.0, 15.0) / (1.0 + self.difficulty)
+            self.decision_cooldown = base_cooldown / self.ai_expansion_mult
 
         # Update goal progress
         self._update_goal_progress(dt)
@@ -231,6 +251,17 @@ class AIFactory:
         Returns:
             AIDecision: Chosen decision
         """
+        # AI decision quality affects chance to make suboptimal choices
+        # Low quality = sometimes makes random/poor decisions
+        if self.ai_decision_quality < 1.0 and random.random() > self.ai_decision_quality:
+            # Make a suboptimal random decision
+            suboptimal_choices = [
+                AIDecision.SAVE_MONEY,
+                AIDecision.DECREASE_PRODUCTION,
+                AIDecision.INCREASE_PRODUCTION,
+            ]
+            return random.choice(suboptimal_choices)
+
         # Critical situations override personality
         if situation['money_situation'] == 'critical':
             if self.materials_inventory > 5:
@@ -349,7 +380,8 @@ class AIFactory:
             market_conditions: Current market conditions
         """
         if decision == AIDecision.BUILD_WORKSTATION:
-            cost = 30000 + (self.workstations * 5000)  # Increasing cost
+            base_cost = 30000 + (self.workstations * 5000)  # Increasing cost
+            cost = int(base_cost * self.ai_expense_mult)  # Apply expense modifier
             if self.money >= cost:
                 self.money -= cost
                 self.workstations += 1
@@ -359,8 +391,8 @@ class AIFactory:
         elif decision == AIDecision.BUILD_ROBOT:
             # Build robot - can use materials OR just money
             materials_cost = 2  # Materials needed (if using materials)
-            money_cost_with_materials = 5000  # Cost if using materials
-            money_cost_pure = 15000  # Cost if buying outright
+            money_cost_with_materials = int(5000 * self.ai_expense_mult)  # Apply expense modifier
+            money_cost_pure = int(15000 * self.ai_expense_mult)  # Apply expense modifier
 
             if self.materials_inventory >= materials_cost and self.money >= money_cost_with_materials:
                 # Build using materials (cheaper)
@@ -376,7 +408,8 @@ class AIFactory:
 
         elif decision == AIDecision.UPGRADE_ROBOTS:
             # Upgrade robot efficiency
-            cost = 20000 + (int(self.robot_efficiency * 30000))  # Increasing cost
+            base_cost = 20000 + (int(self.robot_efficiency * 30000))  # Increasing cost
+            cost = int(base_cost * self.ai_expense_mult)  # Apply expense modifier
             if self.money >= cost:
                 self.money -= cost
                 self.robot_efficiency += 0.15  # 15% efficiency boost
@@ -432,7 +465,7 @@ class AIFactory:
             self.recycling_rate = max(0.5, self.recycling_rate * 0.95)
 
         elif decision == AIDecision.BRIBE_OFFICIALS:
-            bribe_cost = 10000
+            bribe_cost = int(10000 * self.ai_expense_mult)  # Apply expense modifier
             if self.money >= bribe_cost:
                 self.money -= bribe_cost
                 self.heat_level = max(0, self.heat_level - 30)
@@ -470,7 +503,8 @@ class AIFactory:
 
             actual_price = base_price * price_mult * illegal_bonus * (0.9 + self.quality_level * 0.2)
 
-            revenue = int(units_to_sell * actual_price)
+            # Apply AI income modifier from difficulty settings
+            revenue = int(units_to_sell * actual_price * self.ai_income_mult)
             self.money += revenue
             self.materials_inventory -= units_to_sell
             self.sales_this_period += units_to_sell

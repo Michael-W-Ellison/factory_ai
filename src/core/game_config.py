@@ -222,6 +222,15 @@ class DifficultyModifiers:
     robot_damage_rate: float = 1.0  # How fast robots take damage
     robot_repair_cost: float = 1.0  # Cost to repair robots
 
+    # AI opponent modifiers
+    ai_starting_money: float = 1.0  # AI starting capital multiplier
+    ai_production_rate: float = 1.0  # AI production speed multiplier
+    ai_expansion_rate: float = 1.0  # How fast AI expands (builds/upgrades)
+    ai_decision_quality: float = 1.0  # AI decision intelligence (higher = smarter)
+    ai_risk_tolerance: float = 1.0  # AI willingness to take risks
+    ai_income_rate: float = 1.0  # AI income multiplier
+    ai_expense_rate: float = 1.0  # AI expense multiplier
+
 
 # Preset difficulty configurations
 DIFFICULTY_PRESETS: Dict[DifficultyLevel, DifficultyModifiers] = {
@@ -250,6 +259,14 @@ DIFFICULTY_PRESETS: Dict[DifficultyLevel, DifficultyModifiers] = {
         robot_power_drain=0.75,
         robot_damage_rate=0.5,
         robot_repair_cost=0.5,
+        # AI opponents are weaker on easy
+        ai_starting_money=0.7,
+        ai_production_rate=0.6,
+        ai_expansion_rate=0.5,
+        ai_decision_quality=0.6,
+        ai_risk_tolerance=0.8,
+        ai_income_rate=0.7,
+        ai_expense_rate=1.3,
     ),
     DifficultyLevel.NORMAL: DifficultyModifiers(),  # All defaults (1.0)
     DifficultyLevel.HARD: DifficultyModifiers(
@@ -277,6 +294,14 @@ DIFFICULTY_PRESETS: Dict[DifficultyLevel, DifficultyModifiers] = {
         robot_power_drain=1.25,
         robot_damage_rate=1.5,
         robot_repair_cost=1.5,
+        # AI opponents are stronger on hard
+        ai_starting_money=1.3,
+        ai_production_rate=1.4,
+        ai_expansion_rate=1.5,
+        ai_decision_quality=1.3,
+        ai_risk_tolerance=1.2,
+        ai_income_rate=1.3,
+        ai_expense_rate=0.8,
     ),
     DifficultyLevel.INSANE: DifficultyModifiers(
         police_patrol_frequency=2.0,
@@ -303,6 +328,14 @@ DIFFICULTY_PRESETS: Dict[DifficultyLevel, DifficultyModifiers] = {
         robot_power_drain=1.5,
         robot_damage_rate=2.0,
         robot_repair_cost=2.0,
+        # AI opponents are much stronger on insane
+        ai_starting_money=1.5,
+        ai_production_rate=1.8,
+        ai_expansion_rate=2.0,
+        ai_decision_quality=1.5,
+        ai_risk_tolerance=1.4,
+        ai_income_rate=1.5,
+        ai_expense_rate=0.6,
     ),
 }
 
